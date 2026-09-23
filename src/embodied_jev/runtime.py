@@ -692,8 +692,10 @@ class Session:
                     "last_decision": self.last_decision, "last_intent": self.last_intent,
                     "last_decision_inputs": dict(self.last_decision_inputs),
                     "frame_count": len(self.frames),
+                    "model": self.policy.model,
                     "model_calls": self.policy.calls, "input_tokens": self.policy.tokens,
                     "output_tokens": self.policy.output_tokens,
+                    "model_latency_ms": list(self.policy.latencies),
                     "model_runtime": minicpm_status() if self.policy.provider == "minicpm" else None,
                     "wall_seconds": round((self.finished or time.perf_counter()) - self.started, 2) if self.started else 0}
 

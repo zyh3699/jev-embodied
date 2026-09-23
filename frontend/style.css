@@ -2208,6 +2208,56 @@ summary:focus-visible {
     linear-gradient(#bec6c033 1px, transparent 1px) 0 0 / 32px 32px,
     #e8ebe7;
 }
+.economics-bar {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.75fr 1.5fr;
+  flex: none;
+  background: #17211f;
+  border-top: 1px solid #33413d;
+  color: #edf2ef;
+}
+.economics-metric {
+  min-width: 0;
+  padding: 12px 14px 10px;
+  border-left: 1px solid #3a4844;
+}
+.economics-metric:first-child {
+  border-left: 0;
+}
+.economics-metric .metric-label {
+  margin-bottom: 5px;
+  color: #93a29d;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+.economics-metric .metric-value {
+  overflow: hidden;
+  color: #f5f7f5;
+  font-size: 16px;
+  text-overflow: ellipsis;
+}
+.economics-metric small {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #82908c;
+  font: 8px var(--mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.economics-metric.cost-total {
+  position: relative;
+  background: #26322e;
+  box-shadow: inset 3px 0 var(--signal);
+}
+.economics-metric.cost-total .metric-label {
+  color: #ff9b75;
+}
+.economics-metric.cost-total .metric-value {
+  color: #ffd2be;
+  font-size: 18px;
+}
 .viewport-label h1 {
   font-size: 18px;
   font-weight: 640;
@@ -2337,6 +2387,15 @@ summary:focus-visible {
   .control-action span {
     display: none;
   }
+  .economics-metric {
+    padding-inline: 9px;
+  }
+  .economics-metric .metric-value {
+    font-size: 14px;
+  }
+  .economics-metric.cost-total .metric-value {
+    font-size: 15px;
+  }
 }
 @media (max-width: 820px) {
   .header {
@@ -2354,6 +2413,15 @@ summary:focus-visible {
   }
   .telemetry {
     padding-block: 10px;
+  }
+  .economics-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .economics-metric {
+    border-top: 1px solid #3a4844;
+  }
+  .economics-metric.cost-total {
+    grid-column: 1 / -1;
   }
 }
 @media (max-width: 520px) {

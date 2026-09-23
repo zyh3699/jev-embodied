@@ -146,14 +146,15 @@ $("#app").innerHTML = `
  <main class="workspace">
   <div class="scene-toolbar"><div class="workspace-label"><span class="eyebrow">RUN / 02</span><strong>仿真现场</strong></div><nav class="tabs" aria-label="实验视图"><button class="tab active" data-tab="scene">${icon("box")} 场景</button><button class="tab" data-tab="vision">${icon("scan-line")} 视觉</button><button class="tab" data-tab="data">${icon("braces")} 数据</button><button class="tab decision-tab" id="decision-open">${icon("git-branch")} 决策</button></nav><div class="scene-tools"><button class="icon-button" id="camera-top" title="俯视" aria-label="俯视">${icon("scan")}</button><button class="icon-button" id="camera-home" title="复位视角" aria-label="复位视角">${icon("focus")}</button></div></div>
   <div class="viewport" id="viewport"><div class="viewport-label"><h1>Franka Panda</h1><p>MANIPULATION / <span id="scene-task">TRANSFER</span></p></div><div class="scene-status" id="scene-status"><span class="dot"></span><span id="status-text">待命</span></div><div class="scene-axis"><span class="axis-x">X</span><span class="axis-y">Y</span><span class="axis-z">Z</span><span>WORLD / m</span></div><span class="scene-bottom-right" id="scene-time">t = 0.00 s</span><div class="success-stamp" id="success-stamp">${icon("circle-check")}物体稳定 · 夹爪已撤离</div><div class="loading" id="loading">加载机器人场景…</div><pre class="raw-state" id="raw-state"></pre></div>
-  <div class="telemetry"><div class="metric"><div class="metric-label">末端 X</div><div class="metric-value"><span id="tcp-x">—</span><small>m</small></div></div><div class="metric"><div class="metric-label">末端 Y</div><div class="metric-value"><span id="tcp-y">—</span><small>m</small></div></div><div class="metric"><div class="metric-label">末端 Z</div><div class="metric-value"><span id="tcp-z">—</span><small>m</small></div></div><div class="metric"><div class="metric-label">物体抬升</div><div class="metric-value"><span id="lift">0</span><small>mm</small></div></div></div>
+  <div class="economics-bar" aria-label="实验时间与成本" aria-live="polite"><div class="economics-metric"><div class="metric-label">总运行时间</div><div class="metric-value" id="wall-time">00:00.0</div><small>真实耗时</small></div><div class="economics-metric"><div class="metric-label">API 等待</div><div class="metric-value" id="api-time">0.00 s</div><small id="api-average">无远程调用</small></div><div class="economics-metric"><div class="metric-label">模型调用</div><div class="metric-value" id="cost-model-calls">0</div><small>requests</small></div><div class="economics-metric cost-total"><div class="metric-label">估算成本</div><div class="metric-value" id="estimated-cost">$0.0000</div><small id="cost-basis">规则基线无 API 费用</small></div></div>
+  <div class="physical-values" hidden><span id="tcp-x">—</span><span id="tcp-y">—</span><span id="tcp-z">—</span><span id="lift">0</span></div>
   <div class="timeline"><button class="icon-button" id="replay-play" aria-label="播放轨迹" title="播放轨迹">${icon("play")}</button><div class="timeline-track"><div class="timeline-caption"><span id="timeline-label">EPISODE TIMELINE</span><span id="frame-label">0000 / 0000</span></div><input id="timeline" type="range" min="0" max="0" value="0" aria-label="轨迹时间轴"></div><button class="live-link" id="live">LIVE</button></div>
   <div class="controls"><button class="primary" id="run">${icon("play")}<span id="run-label">运行实验</span></button><button class="icon-button control-action" id="step" title="单步执行" aria-label="单步执行">${icon("step-forward")}<span>单步</span></button><button class="icon-button control-action stop" id="stop" title="停止实验" aria-label="停止实验">${icon("square")}<span>停止</span></button><button class="icon-button control-action" id="reset" title="重置实验" aria-label="重置实验">${icon("rotate-ccw")}<span>重置</span></button><span class="run-budget" id="run-budget">00 / 30 ACTIONS</span></div>
  </main>
  <aside class="inspector" id="inspector" aria-label="决策与执行记录">
   <section class="inspector-section decision-section" id="decision-section" tabindex="-1"><div class="section-topline"><h2 id="decision-heading"><span class="section-index">03</span>决策审阅</h2><span class="eyebrow" id="stage">READY</span></div><div class="decision-context"><span id="decision-context" role="status">实时 · 等待开始</span><button type="button" class="text-button" id="decision-live" hidden>返回实时</button></div><div class="decision-title">${icon("git-branch")}<span id="decision-title">等待开始</span></div><div class="decision-meta"><span id="decision-provider">RULE BASELINE</span><span id="latency">— ms</span></div><div id="intent-panel" hidden><div class="decision-meta"><span>01 · 操作阶段</span><span id="intent-latency"></span></div><div class="probabilities" id="intent-probabilities"></div><div class="decision-meta"><span>02 · 执行动作</span></div></div><div class="probabilities" id="probabilities"><div class="empty">尚无候选动作</div></div><p class="decision-note" id="decision-note"></p><div class="history-observations" id="history-observations" hidden><details><summary>执行前 · 结构化观测</summary><pre id="history-before"></pre></details><details><summary>执行后 · 结构化观测</summary><pre id="history-after"></pre></details><details><summary>候选与模型返回</summary><pre id="history-payload"></pre></details><details id="history-inputs-detail" hidden><summary>本步模型输入</summary><pre id="history-inputs"></pre></details></div></section>
   <section class="inspector-section"><div class="section-topline"><h2 id="feedback-heading">物理反馈</h2><span class="eyebrow">FEEDBACK</span></div><div class="sensors"><span class="name">夹爪状态</span><span class="sensor-value" id="gripper">OPEN</span><span class="name">双侧接触</span><div class="contacts"><span class="contact" id="contact-l">L</span><span class="contact" id="contact-r">R</span></div><span class="name">目标支撑接触</span><span class="sensor-value" id="support">NO</span><span class="name">稳定时长</span><span class="sensor-value" id="stable">0.00 s</span><span class="name">动作预演</span><span class="sensor-value" id="preview-state">ON</span></div></section>
-  <div class="event-heading"><div class="section-topline"><h2>执行记录</h2><span class="eyebrow" id="event-count">0 步</span></div></div><ol class="events" id="events"><li class="empty">暂无执行记录</li></ol><details class="runtime-log" id="runtime-log"><summary>运行日志 <span id="log-count">0 条</span></summary><ol id="log-entries"></ol><p>仅展示最近 12 条，完整日志可随实验导出。</p></details><div class="inspector-footer"><span id="model-calls">调用 0 次</span><span id="tokens">输入 0 tokens</span></div>
+  <div class="event-heading"><div class="section-topline"><h2>执行记录</h2><span class="eyebrow" id="event-count">0 步</span></div></div><ol class="events" id="events"><li class="empty">暂无执行记录</li></ol><details class="runtime-log" id="runtime-log"><summary>运行日志 <span id="log-count">0 条</span></summary><ol id="log-entries"></ol><p>仅展示最近 12 条，完整日志可随实验导出。</p></details><div class="inspector-footer"><span id="model-calls">调用 0 次</span><span id="tokens">费用自动估算</span></div>
  </aside></div><footer class="bottom-bar"><div class="bottom-left"><span id="connection">连接中</span><span>物理仿真 500 Hz</span><span id="observation-source">仿真真值 · 几何与接触</span></div><span class="bottom-right" id="episode-id">实验 / —</span></footer>
 </div><div class="toast" id="toast" role="status"></div>
 <dialog id="connection-dialog" class="connection-dialog" aria-labelledby="connection-title">
@@ -400,6 +401,30 @@ const icons = {
   PlugZap,
 };
 createIcons({ icons });
+
+// Provider list prices checked 2026-09-23. Keep gateway markup separate.
+const MODEL_PRICES = {
+  jev: {
+    name: "Jev",
+    input: 0.042,
+    output: 0,
+    basis: "TypeSafe 官方价 · 输出免费",
+  },
+  "gpt-6-astra": {
+    name: "GPT-6 Astra",
+    input: 10,
+    output: 50,
+    basis: "OpenAI 基准价 · 不含中转加价",
+  },
+};
+function modelPrice(s) {
+  const model = String(s.model || "").toLowerCase();
+  if (s.provider === "jev" || model.startsWith("jev-"))
+    return MODEL_PRICES.jev;
+  if (model === "gpt-6-astra" || model.startsWith("gpt-6-astra-"))
+    return MODEL_PRICES["gpt-6-astra"];
+  return null;
+}
 
 let toastTimer;
 function toast(message) {
@@ -1074,6 +1099,55 @@ function renderLogs(s) {
       .join("") || '<li class="empty">暂无运行日志</li>';
 }
 
+function formatWallTime(seconds) {
+  const value = Math.max(0, Number(seconds) || 0);
+  const hours = Math.floor(value / 3600);
+  const minutes = Math.floor((value % 3600) / 60);
+  const remainder = (value % 60).toFixed(1).padStart(4, "0");
+  return hours
+    ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${remainder}`
+    : `${String(minutes).padStart(2, "0")}:${remainder}`;
+}
+
+function renderEconomics(s) {
+  const calls = Number(s.model_calls) || 0;
+  const inputTokens = Number(s.input_tokens) || 0;
+  const outputTokens = Number(s.output_tokens) || 0;
+  const totalTokens = inputTokens + outputTokens;
+  const latencies = Array.isArray(s.model_latency_ms)
+    ? s.model_latency_ms.filter((value) => Number.isFinite(value) && value >= 0)
+    : [];
+  const apiMilliseconds = latencies.reduce((total, value) => total + value, 0);
+  $("#wall-time").textContent = formatWallTime(s.wall_seconds);
+  $("#api-time").textContent = `${(apiMilliseconds / 1000).toFixed(2)} s`;
+  $("#api-average").textContent = latencies.length
+    ? `平均 ${(apiMilliseconds / latencies.length).toFixed(0)} ms`
+    : "无远程调用";
+  $("#cost-model-calls").textContent = calls.toLocaleString();
+  const pricing = modelPrice(s);
+  const cost = pricing
+    ? (inputTokens * pricing.input + outputTokens * pricing.output) / 1_000_000
+    : null;
+  if (calls === 0 || ["baseline", "minicpm"].includes(s.provider)) {
+    $("#estimated-cost").textContent = "$0.0000";
+    $("#cost-basis").textContent = "规则/本地运行无 API 调用";
+  } else if (totalTokens === 0) {
+    $("#estimated-cost").textContent = "未报告";
+    $("#cost-basis").textContent = "服务商未返回 token 用量";
+  } else if (!pricing) {
+    $("#estimated-cost").textContent = "未收录";
+    $("#cost-basis").textContent = "当前仅内置 Jev 与 GPT-6 Astra";
+  } else {
+    $("#estimated-cost").textContent = `$${cost.toFixed(cost < 0.01 ? 6 : 4)}`;
+    $("#cost-basis").textContent = `${pricing.name} · ${pricing.basis}`;
+  }
+  $("#estimated-cost").title =
+    pricing
+      ? `隐藏计算：输入 ${inputTokens.toLocaleString()} × $${pricing.input} + ` +
+        `输出 ${outputTokens.toLocaleString()} × $${pricing.output}，按每百万 token 计价`
+      : "该模型没有内置价格";
+}
+
 function renderState(s) {
   state = s;
   if (activeId !== s.id) {
@@ -1145,6 +1219,7 @@ function renderState(s) {
   renderDecision(s);
   renderVision(s);
   renderLogs(s);
+  renderEconomics(s);
   $("#intervention-status").hidden = !s.interventions?.length;
   $("#intervention-status").textContent = s.interventions?.length
     ? `已注入 ${s.interventions.length} 次外部评测扰动；详见运行日志。`
@@ -1166,8 +1241,9 @@ function renderState(s) {
   updateControlAvailability();
   $("#preview-state").textContent = s.preview ? "ON" : "OFF";
   $("#model-calls").textContent = "调用 " + s.model_calls + " 次";
-  $("#tokens").textContent =
-    "输入 " + s.input_tokens.toLocaleString() + " tokens";
+  $("#tokens").textContent = modelPrice(s)
+    ? "已匹配模型价格"
+    : "费用自动估算";
   $("#timeline").max = Math.max(0, s.frame_count - 1);
   if (!replayMode) {
     $("#timeline").value = s.frame_count - 1;
