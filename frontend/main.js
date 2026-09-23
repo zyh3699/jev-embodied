@@ -127,7 +127,7 @@ $("#app").innerHTML = `
    <div class="task-options"><button class="task-option active" data-task="transfer">${icon("move-up-right")}<span>搬运入盘</span><span class="task-number">01</span></button><button class="task-option" data-task="stack">${icon("layers-2")}<span>方块堆叠</span><span class="task-number">02</span></button><button class="task-option" data-task="barrier">${icon("route")}<span>越障搬运</span><span class="task-number">03</span></button></div>
    <p class="task-goal" id="task-goal"></p></section>
   <div class="divider"></div>
-  <section class="decision-setup"><div class="section-topline"><h2><span class="section-index">02</span>决策</h2><button class="icon-button connection-button" id="model-connect" title="连接模型" aria-label="连接模型">${icon("plug-zap")}</button></div><label class="field-label" for="provider">决策模型</label><div class="select-wrap"><select id="provider" aria-label="决策模型"></select>${icon("chevron-down")}</div><div class="provider-status"><span class="dot"></span><span id="provider-note">离线 · 确定性策略</span></div>
+  <section class="decision-setup"><div class="section-topline"><h2><span class="section-index">02</span>决策</h2><button class="connection-button" id="model-connect" type="button" title="连接 API">${icon("plug-zap")}<span>连接 API</span></button></div><label class="field-label" for="provider">决策模型</label><div class="select-wrap"><select id="provider" aria-label="决策模型"></select>${icon("chevron-down")}</div><div class="provider-status"><span class="dot"></span><span id="provider-note">离线 · 确定性策略</span></div>
   <div class="observation-setting"><label class="field-label" for="control-mode">动作空间</label><div class="select-wrap"><select id="control-mode" aria-describedby="control-help"><option value="skills">预设技能选择</option><option value="incremental">逐步 XYZ · 闭环规划</option><option value="hierarchical">分层 XYZ · 子目标规划</option></select>${icon("chevron-down")}</div><p id="control-help">选择预设技能，技能内部轨迹由程序执行。</p></div></section>
   <div class="section-caption"><span class="section-index">03</span><span>观测</span></div>
   <section class="observation-setting"><label class="field-label" for="observation-mode">观测来源</label><div class="select-wrap"><select id="observation-mode" aria-describedby="observation-help"><option value="privileged">仿真真值 · 默认</option><option value="rgbd">RGB-D 视觉 · 实验</option><option value="vision">直接图像 · 多模态模型</option></select>${icon("chevron-down")}</div><p id="observation-help">直接读取仿真中的物体位置。</p></section>
@@ -1610,6 +1610,10 @@ function fillConnection() {
   renderVerification();
 }
 async function openConnection(profileId = null, asProfile = false) {
+  const dialog = $("#connection-dialog");
+  if (!dialog.open) dialog.showModal();
+  dialog.setAttribute("aria-busy", "true");
+  $("#connection-result").textContent = "正在读取连接配置…";
   try {
     [connectionValues, { profiles: profileValues }] = await Promise.all([
       api("/api/connections"),
@@ -1623,13 +1627,15 @@ async function openConnection(profileId = null, asProfile = false) {
     profileEditor = asProfile || !!profileId;
     $("#api-provider").value =
       profile?.provider ||
-      (["jev", "local", "chat", "claude"].includes(state.provider)
+      (["jev", "local", "chat", "claude"].includes(state?.provider)
         ? state.provider
         : "chat");
     fillConnection();
-    $("#connection-dialog").showModal();
   } catch (error) {
+    $("#connection-result").textContent = `无法读取连接配置：${error.message}`;
     toast(error.message);
+  } finally {
+    dialog.setAttribute("aria-busy", "false");
   }
 }
 $("#model-connect").onclick = () => openConnection(state?.profile_id || null);

@@ -2078,6 +2078,28 @@ summary:focus-visible {
 .decision-setup > .field-label {
   margin: 0 0 7px;
 }
+.decision-setup .connection-button {
+  width: auto;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid #9bbab3;
+  border-radius: 2px;
+  background: #e6efeb;
+  color: #00675d;
+  font-size: 10px;
+  font-weight: 650;
+}
+.decision-setup .connection-button:hover:not(:disabled) {
+  border-color: #43877d;
+  background: #d8eae4;
+}
+.decision-setup .connection-button svg {
+  width: 13px;
+  height: 13px;
+}
 .select-wrap select,
 .number-input {
   border-radius: 2px;
