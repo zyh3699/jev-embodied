@@ -1,0 +1,39 @@
+{
+  "episode_id": "4bd78b7a8005",
+  "episode_file": "planning-vision-gpt6-v2-cameras-transfer.json.gz",
+  "episode_file_sha256": "cf601e168ca1309a3ab7caee8ac1c9d8e27bbb3511bb25c6e733a75ab83a1c71",
+  "camera_archive": "planning-vision-gpt6-v2-cameras-transfer-cameras.zip",
+  "camera_archive_sha256": "9ce111bc6bb32107bf1c63bc169a749ce4656d71bab92e44078c6f476057109d",
+  "input_images_verified": 64,
+  "frames": 868,
+  "fps": 20,
+  "duration_seconds": 43.4,
+  "original_wall_seconds": 235.41,
+  "gif_speed": 5.0,
+  "gif_nominal_duration_seconds": 8.68,
+  "decision_panel": "Recorded candidate order, selected action and API latency. Only provider-returned probabilities are shown; absent probabilities are explicitly labelled.",
+  "model_calls_during_export": 0,
+  "physics_steps_during_export": 0,
+  "playback": "Recorded qpos only; no interpolation; 1.2 seconds per decision; model waits omitted.",
+  "camera_panels": "Exact archived decision-input PNGs, resized for display; final panel shows final observation.",
+  "moments": [
+    {
+      "cycle": 11,
+      "event": "grasp_contact"
+    }
+  ],
+  "outputs": {
+    "vision-transfer.mp4": {
+      "sha256": "5cd95d98bf2260bfc93949a1efc5c1589fdbfff8040e8deae01bafac0c5705a2",
+      "bytes": 2029507
+    },
+    "vision-transfer.gif": {
+      "sha256": "887f1c6e57ebee2de5b9a311e15d4b95ca437ec1db37c2507ec551aebb33d1c8",
+      "bytes": 4383307
+    },
+    "vision-transfer.png": {
+      "sha256": "11cc3824952a6cdcfedf0f099f30b1800d3bf08304eb751d9443ed1b0aded89b",
+      "bytes": 321251
+    }
+  }
+}

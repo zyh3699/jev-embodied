@@ -1,0 +1,55 @@
+{
+  "episode_id": "27dfbc5fa782",
+  "episode_file": "planning-vision-gpt6-v2-live-target-shift-run1.json.gz",
+  "episode_file_sha256": "30e7996bbde8ea3ec2ae7f5ac331f146ec34e382b08961ee16d86541595df074",
+  "camera_archive": "planning-vision-gpt6-v2-live-target-shift-run1-cameras.zip",
+  "camera_archive_sha256": "a9511905150857203ec85f938aaa95f94a952f2ed480342a5da8712a5f33ec2f",
+  "input_images_verified": 86,
+  "frames": 1172,
+  "fps": 20,
+  "duration_seconds": 58.6,
+  "original_wall_seconds": 342.21,
+  "gif_speed": 5.0,
+  "gif_nominal_duration_seconds": 11.72,
+  "decision_panel": "Recorded candidate order, selected action and API latency. Only provider-returned probabilities are shown; absent probabilities are explicitly labelled.",
+  "model_calls_during_export": 0,
+  "physics_steps_during_export": 0,
+  "playback": "Recorded qpos only; no interpolation; 1.2 seconds per decision; model waits omitted.",
+  "camera_panels": "Exact archived decision-input PNGs, resized for display; final panel shows final observation.",
+  "moments": [
+    {
+      "cycle": 13,
+      "event": "grasp_contact"
+    },
+    {
+      "cycle": 19,
+      "event": "contact_lost"
+    },
+    {
+      "cycle": 20,
+      "event": "target_shift",
+      "delta_xy": [
+        0.06,
+        0.0
+      ]
+    },
+    {
+      "cycle": 25,
+      "event": "grasp_contact"
+    }
+  ],
+  "outputs": {
+    "vision-recovery.mp4": {
+      "sha256": "e2581f4c1edd13bb6db49d45e1bc57d1bf5d0f8d3f961798752b954eb5b54a4c",
+      "bytes": 2737551
+    },
+    "vision-recovery.gif": {
+      "sha256": "9427b223bfde70aa731765ebcd1cf4cc03d01ddddf2fe4849767fb1b9391eafc",
+      "bytes": 6138312
+    },
+    "vision-recovery.png": {
+      "sha256": "94a19ca53871ef5b3d7d54cb6c996f5d3993e09d0594db759e178ee2277d0b41",
+      "bytes": 323742
+    }
+  }
+}
