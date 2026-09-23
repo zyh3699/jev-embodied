@@ -21,7 +21,7 @@
 记录于 2026-09-20，环境为 macOS arm64、Python 3.11.15、MuJoCo 3.13.0。复现命令：
 
 ```bash
-embodied-jev benchmark --seeds 0 1 2 --tasks transfer stack barrier --output runs/benchmark.json
+jev-embodied benchmark --seeds 0 1 2 --tasks transfer stack barrier --output runs/benchmark.json
 ```
 
 [基线报告](../benchmark-baseline.json)包含九局完整结果：**9/9 成功，每局执行 8 个动作，监测到的禁止接触步数为 0**。种子让物体起点在每个水平轴上最多扰动 25 mm，跨平台浮点行为可能略有差异。规则基线不调用模型，也不输出模型概率。
@@ -30,7 +30,7 @@ embodied-jev benchmark --seeds 0 1 2 --tasks transfer stack barrier --output run
 
 对比功能测试包含真实规则基线的依次/并行运行、过期 ID、最多两路并发、停止和历史决策对齐。本机 Chrome 的 **16 项 UI 测试全部通过**，覆盖桌面/手机布局、场景运动、控制操作、配置刷新保留与模块加载失败后的恢复。
 
-随后 [CI 35494955845](https://github.com/FBddcz/embodied-jev/actions/runs/35494955845) 的 15 项浏览器测试通过、1 项失败：旧对比场景尚在加载时，“开始”按钮已经可用，新实验的启动被场景加载拖延。修复后，场景就绪前锁定设置与开始操作，并显示加载状态。新增可控请求延迟回归在旧版稳定复现失败，修复后的两项比较测试通过，原有断言与超时均保留。
+随后 [CI 35494955845](https://github.com/zyh3699/jev-embodied/actions/runs/35494955845) 的 15 项浏览器测试通过、1 项失败：旧对比场景尚在加载时，“开始”按钮已经可用，新实验的启动被场景加载拖延。修复后，场景就绪前锁定设置与开始操作，并显示加载状态。新增可控请求延迟回归在旧版稳定复现失败，修复后的两项比较测试通过，原有断言与超时均保留。
 
 [自定义场景示例](../../examples/transfer-preset.json)改变了起点和目标位置，也完成了一次 8 动作基线实验，禁止接触为 0。场景测试检查托盘围边平移、障碍高度、固定/随机起点、哈希稳定性和副本隔离；三类默认场景在 seeds 0/1/2/7 下的 XML 与修改前逐字一致。模型配置与输入测试使用合成 Key，覆盖接口隔离、密钥轮换、错误/导出脱敏，以及实验输入中的凭据拦截。
 
@@ -85,7 +85,7 @@ EMBODIED_MINICPM=1 EMBODIED_DEVICE=mps python scripts/probe_minicpm.py \
 
 额外检查包括保存配置不发网络请求、Key 脱敏、无界面运行的 `uncertain`/超时处理，以及在随机初始化小 Llama 上比较稀疏词表投影与完整 logits。最后一项只验证计算方式。固定版本的真实 MiniCPM tokenizer 已检查空历史、嵌套空列表和数值坐标三种输入，A/B/C 均映射到 token IDs 54/55/56。可运行 `python scripts/check_minicpm_tokenizer.py` 复现；需安装 `.[minicpm]`，只下载 tokenizer，不加载权重。
 
-此前 GitHub UI 测试曾在相机像素变化检查中超时。将渲染改为按场景/相机/姿态变化触发、减小阴影贴图并把视觉断言等待延长到 15 秒后，[CI 35488205230](https://github.com/FBddcz/embodied-jev/actions/runs/35488205230)通过，像素变化断言仍保留。该记录证明修订后的测试通过，不能据此确定此前超时的唯一原因。
+此前 GitHub UI 测试曾在相机像素变化检查中超时。将渲染改为按场景/相机/姿态变化触发、减小阴影贴图并把视觉断言等待延长到 15 秒后，[CI 35488205230](https://github.com/zyh3699/jev-embodied/actions/runs/35488205230)通过，像素变化断言仍保留。该记录证明修订后的测试通过，不能据此确定此前超时的唯一原因。
 
 ## 回放
 

@@ -2,15 +2,13 @@
 
 顶部 **扩展** 提供模型配置、场景预设和独立输入测试。已有任务可直接调整参数；新增机器人或任务逻辑，需要修改代码。
 
-![扩展页：模型配置](extensions-models.png)
-
 ## 保存多套模型接口
 
 为每套连接起名，填写接口类型、地址、模型 ID 和 Key，保存为模型配置。单实验和模型对比都能选择它们。同一种 OpenAI 兼容协议可以保存多个平台、不同模型和各自的 Key，不必来回覆盖同一条连接。
 
 支持 TypeSafe Jev、OpenAI 兼容聊天、Claude 原生 Messages 和结构化决策服务。模型 ID 以服务商实际开放的名称为准，保存后可用输入测试验证调用。原有“模型连接”入口仍可使用。
 
-通过 `embodied-jev serve` 启动时，Key 保存在系统钥匙串，连接信息保存在仓库外，重启后可恢复。系统存储不可用时，页面显示“仅本次会话”，不会改存明文 Key。存储位置和仅内存模式见 [技术说明](TECHNICAL_GUIDE.md#models)。
+通过 `jev-embodied serve` 启动时，Key 保存在系统钥匙串，连接信息保存在仓库外，重启后可恢复。系统存储不可用时，页面显示“仅本次会话”，不会改存明文 Key。存储位置和仅内存模式见 [技术说明](TECHNICAL_GUIDE.md#models)。
 
 Key 不回填到密码框，也不进入预设或实验导出。更换接口地址后，需重新填写 Key；实验输入会检查误粘的凭据。鉴权信息只用于请求你配置的服务商。
 
@@ -46,7 +44,7 @@ Key 不回填到密码框，也不进入预设或实验导出。更换接口地�
 同一预设也能用于命令行：
 
 ```bash
-embodied-jev benchmark --preset examples/transfer-preset.json \
+jev-embodied benchmark --preset examples/transfer-preset.json \
   --seeds 0 --provider baseline --output runs/custom-scene.json
 ```
 

@@ -1,6 +1,6 @@
 # 🤝 分享你的复现
 
-**欢迎把你的机器人仿真实验放进 [在线展示页](https://fbddcz.github.io/embodied-jev/)。** 每条作品保留作者名字、GitHub 账号、实验日期、任务、方法和结果，链接回你的代码。成功、失败和部分完成都欢迎。
+**欢迎把你的机器人仿真实验放进 [在线展示页](https://zyh3699.github.io/jev-embodied/)。** 每条作品保留作者名字、GitHub 账号、实验日期、任务、方法和结果，链接回你的代码。成功、失败和部分完成都欢迎。
 
 ## 🚀 两种投稿方式
 
@@ -10,7 +10,7 @@
 python scripts/community_entries.py --validate
 ```
 
-**不熟悉 PR：** 打开 [社区复现投稿表](https://github.com/FBddcz/embodied-jev/issues/new?template=community-reproduction.yml)，填写信息并上传录像。维护者整理为 PR 后再收录到展示页；提交 Issue 不会立即发布。
+**不熟悉 PR：** 打开 [社区复现投稿表](https://github.com/zyh3699/jev-embodied/issues/new?template=community-reproduction.yml)，填写信息并上传录像。维护者整理为 PR 后再收录到展示页；提交 Issue 不会立即发布。
 
 ## 🎬 录像和复现信息
 

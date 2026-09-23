@@ -1,5 +1,5 @@
 name: "🎬 社区复现投稿"
-description: "把你的实验、录像和署名提交到 EmbodiedJev 展示页。"
+description: "把你的实验、录像和署名提交到 jev-embodied 展示页。"
 title: "[社区复现] 平台 · 任务 · 方法"
 body:
   - type: markdown

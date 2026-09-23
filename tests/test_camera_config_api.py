@@ -129,7 +129,7 @@ def test_cli_camera_switch_reaches_headless_session_and_summary(monkeypatch, tmp
 
     monkeypatch.setattr("embodied_jev.runtime.run_headless", run_headless)
     output = tmp_path / "camera-benchmark.json"
-    argv = ["embodied-jev", "benchmark", "--tasks", "transfer", "--seeds", "0", "--output", str(output)]
+    argv = ["jev-embodied", "benchmark", "--tasks", "transfer", "--seeds", "0", "--output", str(output)]
     if option is not None:
         argv.extend(["--cameras", option])
     monkeypatch.setattr("sys.argv", argv)

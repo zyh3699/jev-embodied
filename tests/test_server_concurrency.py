@@ -159,7 +159,7 @@ def test_export_keeps_one_episode_when_reset_happens_during_read(monkeypatch):
             release.set()
         exported = pending.result(timeout=5)
         assert exported.json()["id"] == old.id
-        assert f"embodied-jev-{old.id}.json" in exported.headers["Content-Disposition"]
+        assert f"jev-embodied-{old.id}.json" in exported.headers["Content-Disposition"]
         assert client.get("/api/state").json()["id"] == new.json()["id"]
 
 

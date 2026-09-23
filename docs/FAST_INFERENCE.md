@@ -37,7 +37,7 @@ Jev 接收 `state + questions`，返回 `answers`。程序给出候选，模型�
 
 openroboto 的 [物理循环](https://github.com/openroboto-ai/jev-robot-control/blob/7a4ed8b72c3c17d7aa790678ed9660df67c10dd3/incremental_env.py) 步长为 `0.002 s`，约每 16 步输出一帧，即每仿真秒 500 步、31.25 帧。[运行脚本](https://github.com/openroboto-ai/jev-robot-control/blob/7a4ed8b72c3c17d7aa790678ed9660df67c10dd3/incremental_run.py) 则在每轮依次请求意图、动作，再执行。整局实际用时还包含模型等待，不能从帧率推算推理速度。
 
-行知也采用这种分工。比较时需要分别看模型耗时、调用次数、仿真时间和整局实际用时。
+jev-embodied 也采用这种分工。比较时需要分别看模型耗时、调用次数、仿真时间和整局实际用时。
 
 ## 三栏演示是怎样播放的
 
@@ -57,7 +57,7 @@ openroboto 的 “Same task. Different decisions.” 页面同时展示 Jev 1.13
 
 仓库也能运行真实实验：[双模型配对脚本](https://github.com/openroboto-ai/jev-robot-control/blob/7a4ed8b72c3c17d7aa790678ed9660df67c10dd3/incremental_pair.py) 用两个工作线程并发调用，[复现命令](https://github.com/openroboto-ai/jev-robot-control/blob/7a4ed8b72c3c17d7aa790678ed9660df67c10dd3/reproduce.py) 的 `--controller all` 则依次运行三组。它们与只读回放是不同入口。
 
-行知借鉴了并排展示，但将实时运行和回放分开标注。还需注意，原演示的 Jev 概率来自接口，两种 GPT 的数值来自模型生成的 JSON，含义并不相同。以上结论来自公开源码和记录，本机没有重跑该项目的模型实验或轨迹验证器。
+jev-embodied 借鉴了并排展示，但将实时运行和回放分开标注。还需注意，原演示的 Jev 概率来自接口，两种 GPT 的数值来自模型生成的 JSON，含义并不相同。以上结论来自公开源码和记录，本机没有重跑该项目的模型实验或轨迹验证器。
 
 ## MiniCPM 如何直接给候选打分
 
@@ -71,13 +71,13 @@ openroboto 的 “Same task. Different decisions.” 页面同时展示 Jev 1.13
 得到评分并选择
 ```
 
-行知只投影候选字母对应的输出权重，减少完整词表的输出计算，并检查字母在完整提示词边界处确实是单个 token。整个输入仍要经过模型，长状态和重复历史仍会增加耗时。
+jev-embodied 只投影候选字母对应的输出权重，减少完整词表的输出计算，并检查字母在完整提示词边界处确实是单个 token。整个输入仍要经过模型，长状态和重复历史仍会增加耗时。
 
 这种方式得到候选之间的相对评分，尚未在我们的机械臂任务上校准。它使用 MiniCPM 权重，训练方法和服务端实现都与官方 Jev 不同。界面展示候选评分与选择，不展示隐藏思考过程。
 
 ## M2 上的实测与输入优化
 
-早期基准为本项目提交 [`72beb40`](https://github.com/FBddcz/embodied-jev/tree/72beb407d17fa1c0d072ad472ddc258717a1a628)，提示版本 `phase-conditions-v2`。当时每轮最多调用两次模型，发送完整观察与最近三次完整结果，使用 `use_cache=False`，没有跨问题前缀复用。
+早期基准为本项目提交 [`72beb40`](https://github.com/zyh3699/jev-embodied/tree/72beb407d17fa1c0d072ad472ddc258717a1a628)，提示版本 `phase-conditions-v2`。当时每轮最多调用两次模型，发送完整观察与最近三次完整结果，使用 `use_cache=False`，没有跨问题前缀复用。
 
 M2 / 16 GB、Torch 2.6.0、Transformers 4.57.6 的 FP16 开发实验中，加载加一次预热约 **18.75–29.35 秒**，阈值为 0 时单次决策约 **1.13–5.57 秒**。后台负载不固定，这些数字仅描述当时运行。完整数据见 [验证记录](VALIDATION.md) 和 [测量汇总](results/minicpm-fp16-2026-09-20.json)。
 

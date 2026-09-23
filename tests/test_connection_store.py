@@ -282,10 +282,10 @@ def test_load_holds_file_lock_until_referenced_key_is_read(tmp_path):
 
 def test_platform_configuration_paths_are_outside_the_working_directory():
     home = Path("/synthetic-user")
-    assert default_config_dir("darwin", {}, home) == home / "Library/Application Support/EmbodiedJev"
-    assert default_config_dir("win32", {"LOCALAPPDATA": "/local-app-data"}, home) == Path("/local-app-data/EmbodiedJev")
-    assert default_config_dir("linux", {"XDG_CONFIG_HOME": "/user-config"}, home) == Path("/user-config/embodied-jev")
-    assert default_config_dir("linux", {"XDG_CONFIG_HOME": "relative-path"}, home) == home / ".config/embodied-jev"
+    assert default_config_dir("darwin", {}, home) == home / "Library/Application Support/jev-embodied"
+    assert default_config_dir("win32", {"LOCALAPPDATA": "/local-app-data"}, home) == Path("/local-app-data/jev-embodied")
+    assert default_config_dir("linux", {"XDG_CONFIG_HOME": "/user-config"}, home) == Path("/user-config/jev-embodied")
+    assert default_config_dir("linux", {"XDG_CONFIG_HOME": "relative-path"}, home) == home / ".config/jev-embodied"
 
 
 @pytest.mark.parametrize("flag", ["argument", "environment"])
@@ -298,7 +298,7 @@ def test_cli_memory_mode_never_initializes_system_store(monkeypatch, flag):
     monkeypatch.delenv("EMBODIED_JEV_PERSISTENCE", raising=False)
     if flag == "environment":
         monkeypatch.setenv("EMBODIED_JEV_PERSISTENCE", "memory")
-    monkeypatch.setattr(sys, "argv", ["embodied-jev", "serve"] + (["--memory-only"] if flag == "argument" else []))
+    monkeypatch.setattr(sys, "argv", ["jev-embodied", "serve"] + (["--memory-only"] if flag == "argument" else []))
     main()
     assert captured[0][0].state.store is None
     assert captured[0][1]["host"] == "127.0.0.1"

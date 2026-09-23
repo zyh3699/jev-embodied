@@ -262,7 +262,7 @@ def create_app(store=None):
         if app.state.comparison is not None:
             app.state.comparison.stop()
 
-    app = FastAPI(title="EmbodiedJev", lifespan=lifespan)
+    app = FastAPI(title="jev-embodied", lifespan=lifespan)
     app.state.session = Session()
     app.state.lock = threading.Lock()
     app.state.persistence_lock = threading.Lock()
@@ -364,7 +364,7 @@ def create_app(store=None):
 
     @app.get("/api/config")
     def config():
-        return {"name": "EmbodiedJev", "chinese_name": "行知", "version": "0.1.0", "tasks": TASKS,
+        return {"name": "jev-embodied", "version": "0.1.0", "tasks": TASKS,
                 "providers": configurations(app.state.connections), "robot": "Franka Panda", "physics": "MuJoCo 3.13"}
 
     @app.get("/api/connections")
@@ -617,7 +617,7 @@ def create_app(store=None):
     @app.get("/api/export")
     def export():
         session = current_session()
-        return JSONResponse(public_result(session.export()), headers={"Content-Disposition": f'attachment; filename="embodied-jev-{session.id}.json"'})
+        return JSONResponse(public_result(session.export()), headers={"Content-Disposition": f'attachment; filename="jev-embodied-{session.id}.json"'})
 
     @app.get("/api/export/cameras.zip")
     def export_cameras(episode_id: str = Query(min_length=1, max_length=64)):
@@ -697,7 +697,7 @@ def create_app(store=None):
     def comparison_export(comparison_id: str = Query(min_length=1, max_length=64)):
         comparison = current_comparison(comparison_id)
         return JSONResponse(public_result(comparison.export()), headers={
-            "Content-Disposition": f'attachment; filename="embodied-jev-comparison-{comparison.id}.json"'})
+            "Content-Disposition": f'attachment; filename="jev-embodied-comparison-{comparison.id}.json"'})
 
     web = Path(__file__).parent / "web"
     if web.exists():

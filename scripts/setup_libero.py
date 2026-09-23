@@ -22,7 +22,7 @@ def setup(root, tree_file=None, workers=8):
         tree = json.loads(Path(tree_file).read_text())
     else:
         request = Request("https://api.github.com/repos/Lifelong-Robot-Learning/LIBERO/git/trees/" + REVISION + "?recursive=1",
-                          headers={"User-Agent": "EmbodiedJev-setup"})
+                          headers={"User-Agent": "jev-embodied-setup"})
         with urlopen(request, timeout=60) as response:
             tree = json.load(response)
     if tree.get("truncated"):
@@ -37,7 +37,7 @@ def setup(root, tree_file=None, workers=8):
         last = None
         for attempt in range(4):
             try:
-                request = Request(BASE + item["path"], headers={"User-Agent": "EmbodiedJev-setup"})
+                request = Request(BASE + item["path"], headers={"User-Agent": "jev-embodied-setup"})
                 with urlopen(request, timeout=90) as response:
                     data = response.read()
                 if len(data) != item["size"] or blob_hash(data) != item["sha"]:

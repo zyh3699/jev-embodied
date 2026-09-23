@@ -59,7 +59,7 @@ python -m pip install -e '.[video]'
 下载器固定官方版本，按上游文件哈希校验；网络中断时再次运行即可跳过已完成文件。源码和资产约 416 MiB，环境和缓存另计。
 
 ~~~bash
-embodied-jev libero-compare \
+jev-embodied libero-compare \
   --manifest benchmarks/libero-vision-compare.json \
   --worker-python .venv-libero/bin/python \
   --libero-root .sim/LIBERO \
@@ -71,7 +71,7 @@ embodied-jev libero-compare \
 需要自行复现 v2 推盘子协议时，使用以下入口（当前测试已暂停）：
 
 ~~~bash
-embodied-jev libero-compare \
+jev-embodied libero-compare \
   --architecture supervisor-v2 \
   --manifest benchmarks/libero-supervisor-plate.json \
   --worker-python .venv-libero/bin/python --libero-root .sim/LIBERO \

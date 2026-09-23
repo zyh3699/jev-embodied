@@ -6,9 +6,9 @@ Meta-World 对照采用 **2 行 × 6 列**，上排 Jev、下排 GPT-6，按环�
 
 | 演示 | 动作数 | 原始实验耗时 | 视频 / 动图 |
 | --- | --- | --- | --- |
-| Jev 分层 XYZ 与真实概率 | 88 | 79.71 秒 | [下载 MP4](https://github.com/FBddcz/embodied-jev/raw/refs/heads/main/docs/media/jev-hierarchical.mp4) · [GIF](media/jev-hierarchical.gif) |
-| 看图抓取与搬运 | 32 | 235.41 秒 | [下载 MP4](https://github.com/FBddcz/embodied-jev/raw/refs/heads/main/docs/media/vision-transfer.mp4) · [GIF](media/vision-transfer.gif) |
-| 托盘移动与重新抓取 | 43 | 342.21 秒 | [下载 MP4](https://github.com/FBddcz/embodied-jev/raw/refs/heads/main/docs/media/vision-recovery.mp4) · [GIF](media/vision-recovery.gif) |
+| Jev 分层 XYZ 与真实概率 | 88 | 79.71 秒 | [下载 MP4](https://github.com/zyh3699/jev-embodied/raw/refs/heads/main/docs/media/jev-hierarchical.mp4) · [GIF](media/jev-hierarchical.gif) |
+| 看图抓取与搬运 | 32 | 235.41 秒 | [下载 MP4](https://github.com/zyh3699/jev-embodied/raw/refs/heads/main/docs/media/vision-transfer.mp4) · [GIF](media/vision-transfer.gif) |
+| 托盘移动与重新抓取 | 43 | 342.21 秒 | [下载 MP4](https://github.com/zyh3699/jev-embodied/raw/refs/heads/main/docs/media/vision-recovery.mp4) · [GIF](media/vision-recovery.gif) |
 
 MP4 可下载后播放，分辨率为 1280 × 1080，适合暂停查看决策。Jev GIF 是 **8 倍速**，约 14 秒；两段视觉 GIF 是 **5 倍速**，约 9 秒和 12 秒。完整设置与失败说明见[Jev 实测](JEV_EVALUATION.md)和[视觉规划结果](PLANNING_RESULTS.md)。
 
@@ -28,7 +28,7 @@ MP4 可下载后播放，分辨率为 1280 × 1080，适合暂停查看决策。
 
 MP4 保留全部动作，每步展示 1.2 秒，省略 API 等待，正常视频约 43 秒，扰动视频约 59 秒。GIF 在这个基础上加速 5 倍。这不是机器人或模型的实时速度。相机原图只是缩放排版，GIF 和 MP4 的压缩会改变显示像素，原始 PNG 与哈希仍在相机 ZIP 中。
 
-“行知 · EmbodiedJev”是工作台名称，画面另列实际调用模型。两段相机演示是 GPT 视觉实验，单列的分层概率动图才是官方 Jev 的真实调用。
+“jev-embodied”是工作台名称，画面另列实际调用模型。两段相机演示是 GPT 视觉实验，单列的分层概率动图才是官方 Jev 的真实调用。
 
 第二段中，托盘在第 20 步后沿 X 平移 6 cm，这是启用的外部扰动。第 19 步后双指接触丢失则是实际执行中出现的情况；第 25 步重新抓住。视频中分别标注，不把它们合成一次预设恢复动画。
 

@@ -1,17 +1,17 @@
 <div align="center">
 
-# 🤖 EmbodiedJev · 行知
+# 🤖 jev-embodied
 
-## 🌐 [点击进入在线实验展示 →](https://fbddcz.github.io/embodied-jev/)
+## 🌐 [点击进入在线实验展示 →](https://zyh3699.github.io/jev-embodied/)
 
 **🎬 直接看真实录像 · 🆚 对比模型决策 · ⚡ 看速度 · 💰 看费用**
 
-[![在线实验展示](https://img.shields.io/badge/🌐_LIVE_DEMO-打开行知实验室-237b55?style=for-the-badge)](https://fbddcz.github.io/embodied-jev/)
-[![社区复现投稿](https://img.shields.io/badge/🤝_COMMUNITY-上传你的复现-7358b8?style=for-the-badge)](https://github.com/FBddcz/embodied-jev/issues/new?template=community-reproduction.yml)
+[![在线实验展示](https://img.shields.io/badge/🌐_LIVE_DEMO-打开 jev-embodied 实验室-237b55?style=for-the-badge)](https://zyh3699.github.io/jev-embodied/)
+[![社区复现投稿](https://img.shields.io/badge/🤝_COMMUNITY-上传你的复现-7358b8?style=for-the-badge)](https://github.com/zyh3699/jev-embodied/issues/new?template=community-reproduction.yml)
 
 **无需安装，打开就能看。** 🤝 欢迎分享你的复现，展示 **名字 · GitHub 账号 · 日期 · 任务 · 方法 · 结果**！
 
-[🎥 浏览实验](https://fbddcz.github.io/embodied-jev/#experiments) · [🧑‍🔬 社区作品](https://fbddcz.github.io/embodied-jev/#community) · [📖 投稿与复现指南](docs/COMMUNITY.md)
+[🎥 浏览实验](https://zyh3699.github.io/jev-embodied/#experiments) · [🧑‍🔬 社区作品](https://zyh3699.github.io/jev-embodied/#community) · [📖 投稿与复现指南](docs/COMMUNITY.md)
 
 ### 把具身 AI 实验，搬到你的浏览器里。
 
@@ -19,15 +19,13 @@
 
 无需机械臂，无需先训练模型。跟着步骤启动，在自己的电脑上体验「观察 → 决策 → 执行 → 反馈」。
 
-[![Checks](https://github.com/FBddcz/embodied-jev/actions/workflows/ci.yml/badge.svg)](https://github.com/FBddcz/embodied-jev/actions)
-[![Stars](https://img.shields.io/github/stars/FBddcz/embodied-jev?style=flat&color=f4b942)](https://github.com/FBddcz/embodied-jev/stargazers)
+[![Checks](https://github.com/zyh3699/jev-embodied/actions/workflows/ci.yml/badge.svg)](https://github.com/zyh3699/jev-embodied/actions)
+[![Stars](https://img.shields.io/github/stars/zyh3699/jev-embodied?style=flat&color=f4b942)](https://github.com/zyh3699/jev-embodied/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-5c7cfa.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![MuJoCo](https://img.shields.io/badge/Physics-MuJoCo-08a88a)](https://mujoco.org/)
 
-[🚀 快速上手](#-零机器人基础快速上手) · [🧠 接入模型](#-给机械臂接上模型) · [📊 实测结果](#-有结果也有边界) · [🤝 一起维护](#-一起把行知做得更好)
-
-![行知具身决策工作台](docs/workbench-desktop.png)
+[🚀 快速上手](#-零机器人基础快速上手) · [🧠 接入模型](#-给机械臂接上模型) · [📊 实测结果](#-有结果也有边界) · [🤝 一起维护](#-一起把-jev-embodied-做得更好)
 
 **行而有据，知而能行。**
 
@@ -35,7 +33,7 @@
 
 </div>
 
-## ✨ 打开行知，你能做什么？
+## ✨ 打开 jev-embodied，你能做什么？
 
 - 📦 **先玩起来，再接模型**：内置规则基线，无需 API Key、GPU 或模型权重，即可运行三个任务。首次安装依赖需要联网。
 - 🦾 **真实物理交互**：MuJoCo + Franka Panda，夹爪接触、抓取、搬运和放置都有物理反馈。
@@ -88,8 +86,8 @@ flowchart LR
 ### 1️⃣ 下载项目
 
 ```bash
-git clone https://github.com/FBddcz/embodied-jev.git
-cd embodied-jev
+git clone https://github.com/zyh3699/jev-embodied.git
+cd jev-embodied
 ```
 
 ### 2️⃣ 安装并启动
@@ -102,7 +100,7 @@ source .venv/bin/activate
 python -m pip install -e .
 npm ci
 npm run build
-embodied-jev serve --port 8090
+jev-embodied serve --port 8090
 ```
 
 <details>
@@ -114,7 +112,7 @@ py -3.11 -m venv .venv
 python -m pip install -e .
 npm ci
 npm run build
-embodied-jev serve --port 8090
+jev-embodied serve --port 8090
 ```
 
 Windows 提供上述启动方式；当前已验证的环境为 macOS 与 Linux CI。
@@ -132,10 +130,6 @@ Windows 提供上述启动方式；当前已验证的环境为 macOS 与 Linux C
 ## 🆚 一屏对比：同一任务，不同决策
 
 打开顶部 **模型对比**，选择 2–3 个模型，统一任务、种子和动作预算，再开始实验。没有 Key？可以先用两路规则基线体验完整操作。
-
-![模型对比界面：双规则基线示例](docs/comparison-desktop.png)
-
-*图中为双规则基线的界面示例，非云端模型对比成绩。*
 
 - 🎛️ **自己选模型**：MiniCPM、Jev、GPT、Claude 等已配置入口；同一 API 也能填写不同模型 ID。
 - 🍎 **依次 / 并行可选**：默认依次运行；并行最多两路，本地 MiniCPM 推理仍共用模型锁。
@@ -160,8 +154,6 @@ Windows 提供上述启动方式；当前已验证的环境为 macOS 与 Linux C
 
 点击 **决策模型** 旁边的插头图标 → 选择接口类型 → 填入 **Base URL、模型 ID、API Key** → 保存 → 测试调用。
 
-![模型连接界面](docs/model-connection.png)
-
 - OpenAI 兼容接口通常填写以 `/v1` 结尾的 Base URL，程序补上 `/chat/completions`。
 - 模型 ID 以你的服务商实际提供的名称为准。聊天兼容不代表支持 Jev 专用决策接口。
 - Key 由系统钥匙串保存，连接信息放在仓库外的应用目录；刷新页面和重启服务后可恢复。系统存储不可用时，页面会显示“仅本次会话”，不会改存明文 Key。
@@ -174,7 +166,7 @@ Windows 提供上述启动方式；当前已验证的环境为 macOS 与 Linux C
 
 ### ⚡ 官方 Jev：获准访问后，填 Key 就能连接
 
-TypeSafe 当前采用邀请制。先到 [TypeSafe 官网](https://typesafe.ai) 点击 **Join Waitlist**，填写邮箱申请访问；收到邀请后，用获批邮箱登录 [官方控制台](https://console.typesafe.ai) 创建 API Key。已有访问权限的用户可直接进入控制台。然后回到行知的模型连接窗口：
+TypeSafe 当前采用邀请制。先到 [TypeSafe 官网](https://typesafe.ai) 点击 **Join Waitlist**，填写邮箱申请访问；收到邀请后，用获批邮箱登录 [官方控制台](https://console.typesafe.ai) 创建 API Key。已有访问权限的用户可直接进入控制台。然后回到 jev-embodied 的模型连接窗口：
 
 1. 选择 **TypeSafe Jev**，官方地址已自动填好。
 2. 模型默认 **`jev-latest`**；做固定版本对比时可改为账号有权限的版本，例如 `jev-1.13.0`。
@@ -201,8 +193,8 @@ TypeSafe 当前采用邀请制。先到 [TypeSafe 官网](https://typesafe.ai) �
 python -m pip install -e '.[minicpm]'
 export EMBODIED_MINICPM=1
 export EMBODIED_DEVICE=auto
-embodied-jev warmup
-embodied-jev serve --port 8090
+jev-embodied warmup
+jev-embodied serve --port 8090
 ```
 
 在界面选择 **MiniCPM5-2B**。首次加载会下载约 **5 GB** 权重；运行还需额外内存。Apple Silicon 可用 `EMBODIED_DEVICE=mps` 明确指定 Apple GPU。当前适配器在 MPS/CUDA 使用 FP16，在 CPU 使用 FP32。
@@ -223,7 +215,7 @@ embodied-jev serve --port 8090
 
 👁️ **相机画面会更新！** 外部相机观察桌面，腕部相机随手移动。可选其中一种、两种或关闭全部；直接视觉至少需要一种。画面在决策与动作边界采集，属于逐步采样，当前没有连续视频控制。视觉页可查看画面，下载观测 ZIP 核对模型输入 → **[逐步规划说明](docs/PLANNING.md)** · **[视觉模式说明](docs/VISION.md)**。
 
-⚡ **Jev 为什么能快速选择？** 同一状态下合并独立问题、直接输出有限候选概率，可以减少重复输入和文字生成。行知也压缩了几何状态与近期反馈，并复用 HTTP 连接；本地 MiniCPM 直接读取候选 logits。不同路线的速度不能直接等同，详见 [快速推理原理与开源参考](docs/FAST_INFERENCE.md)。
+⚡ **Jev 为什么能快速选择？** 同一状态下合并独立问题、直接输出有限候选概率，可以减少重复输入和文字生成。jev-embodied 也压缩了几何状态与近期反馈，并复用 HTTP 连接；本地 MiniCPM 直接读取候选 logits。不同路线的速度不能直接等同，详见 [快速推理原理与开源参考](docs/FAST_INFERENCE.md)。
 
 ## 📊 有结果，也有边界
 
@@ -249,9 +241,9 @@ embodied-jev serve --port 8090
 
 [🎬 关抽屉 MP4](docs/media/libero-drawer-comparison.mp4) · [🎬 关微波炉 MP4](docs/media/libero-microwave-comparison.mp4) · [结果与全部费用](docs/results/libero-vision/RESULTS.md) · [安装与复现](docs/LIBERO_VISION.md)
 
-**[🌐 在线实验展示页](https://fbddcz.github.io/embodied-jev/)** 按 LIBERO、Meta-World 和 Panda 分类，展示真实录像、决策时间轴与结果。运行 `python scripts/build_site.py`、`python scripts/serve_site.py --port 8123`，打开 [本地实验展示页](http://127.0.0.1:8123)。[GitHub Pages 部署方式](site/README.md)使用静态回放，实时仿真在本地运行。
+**[🌐 在线实验展示页](https://zyh3699.github.io/jev-embodied/)** 按 LIBERO、Meta-World 和 Panda 分类，展示真实录像、决策时间轴与结果。运行 `python scripts/build_site.py`、`python scripts/serve_site.py --port 8123`，打开 [本地实验展示页](http://127.0.0.1:8123)。[GitHub Pages 部署方式](site/README.md)使用静态回放，实时仿真在本地运行。
 
-**🤝 你的复现，也可以出现在这里。** [填写投稿表并上传录像](https://github.com/FBddcz/embodied-jev/issues/new?template=community-reproduction.yml)，或按[投稿指南](docs/COMMUNITY.md)提交结果 JSON 的 PR；收录后自动展示作者、账号、日期、任务、方法和结果。成功与失败都欢迎，社区记录注明「作者报告」。
+**🤝 你的复现，也可以出现在这里。** [填写投稿表并上传录像](https://github.com/zyh3699/jev-embodied/issues/new?template=community-reproduction.yml)，或按[投稿指南](docs/COMMUNITY.md)提交结果 JSON 的 PR；收录后自动展示作者、账号、日期、任务、方法和结果。成功与失败都欢迎，社区记录注明「作者报告」。
 
 **🦾 下一步：双臂 Piper 真机实验。** [部署方案](docs/PIPER_DEPLOYMENT.md)已整理共同感知、GPT-6／Jev 候选选择对照、坐标标定和分阶段验收。目前为方案阶段，尚未部署或执行真机动作。
 
@@ -290,7 +282,7 @@ GPT-6 Astra 使用**仿真状态＋预设技能**，在三个任务的种子 0�
 
 ![Jev 分层 XYZ：88 步真实动作、子目标与四通道概率，8 倍速](docs/media/jev-hierarchical.gif)
 
-[⬇ 下载高清 MP4](https://github.com/FBddcz/embodied-jev/raw/refs/heads/main/docs/media/jev-hierarchical.mp4) · [实验结果与限制](docs/JEV_RESULTS.md) · [媒体来源与文件哈希](docs/media/jev-hierarchical.json)
+[⬇ 下载高清 MP4](https://github.com/zyh3699/jev-embodied/raw/refs/heads/main/docs/media/jev-hierarchical.mp4) · [实验结果与限制](docs/JEV_RESULTS.md) · [媒体来源与文件哈希](docs/media/jev-hierarchical.json)
 
 **两局下放途中都失抓，方块落入托盘后才张爪、撤离，没有选择主动松爪的 `release` 子目标。** 因此当前场景的搬运终态已跑通，尚不能称为稳定精确放置，也不能据此推算通用成功率。此前平铺 21 个候选的 40 步试跑未抓起方块；预算和动作接口不同，不能直接推算改进幅度或通用成功率。Jev 这两局未接收图像，左侧三维画面只是轨迹回放。完整输入、概率与物理记录见 [Jev 实测](docs/JEV_EVALUATION.md)。
 
@@ -306,13 +298,13 @@ GPT-6 Astra 使用**仿真状态＋预设技能**，在三个任务的种子 0�
 
 ![双相机视觉搬运：动作回放与模型原始输入](docs/media/vision-transfer.gif)
 
-[⬇ 下载高清 MP4](https://github.com/FBddcz/embodied-jev/raw/refs/heads/main/docs/media/vision-transfer.mp4) · [查看原始记录](docs/PLANNING_RESULTS.md#看图完成一次搬运)
+[⬇ 下载高清 MP4](https://github.com/zyh3699/jev-embodied/raw/refs/heads/main/docs/media/vision-transfer.mp4) · [查看原始记录](docs/PLANNING_RESULTS.md#看图完成一次搬运)
 
 **🔄 托盘移动与重新抓取：43 步完成，原始实验用时 342.21 秒。** 第 19 步后双指接触丢失；第 20 步后测试程序将托盘沿 X 移动 6 cm。模型随后重新对齐、闭爪并向新的目标位置调整，最终完成放置和撤离。
 
 ![托盘扰动与重新抓取：43 步真实视觉回合](docs/media/vision-recovery.gif)
 
-[⬇ 下载高清 MP4](https://github.com/FBddcz/embodied-jev/raw/refs/heads/main/docs/media/vision-recovery.mp4) · [查看动作与相机记录](docs/PLANNING_RESULTS.md#托盘移动后重新抓取并调整路线)
+[⬇ 下载高清 MP4](https://github.com/zyh3699/jev-embodied/raw/refs/heads/main/docs/media/vision-recovery.mp4) · [查看动作与相机记录](docs/PLANNING_RESULTS.md#托盘移动后重新抓取并调整路线)
 
 > 💡 蓝色托盘移动是主动开启的**外部扰动测试**，默认关闭。双指接触丢失是执行中出现的情况，重新抓取由模型选择动作完成，没有调用预设恢复技能。设置方法见[逐步规划指南](docs/PLANNING.md#托盘为什么会自己移动)。
 
@@ -335,10 +327,10 @@ RGB-D 路线由本地检测器估计坐标，不能与原始图像规划混成�
 
 ```bash
 # 规则基线
-embodied-jev benchmark --output runs/baseline.json
+jev-embodied benchmark --output runs/baseline.json
 
 # MiniCPM 本地模型：先配置并下载模型
-EMBODIED_MINICPM=1 embodied-jev benchmark --provider minicpm \
+EMBODIED_MINICPM=1 jev-embodied benchmark --provider minicpm \
   --seeds 0 1 2 --threshold 0.55 --output runs/minicpm.json
 ```
 
@@ -384,19 +376,19 @@ npm run test:ui
 
 以上未勾选项是路线图，欢迎一起实现。🚀
 
-## 🤝 一起把行知做得更好
+## 🤝 一起把 jev-embodied 做得更好
 
 **喜欢这个方向？欢迎 ⭐ Star、🍴 Fork，也欢迎留下第一条 Issue 或 PR！**
 
 你可以帮忙补充新手文档、复现失败案例、接入模型、优化界面，或者设计新的仿真任务。第一次贡献也非常欢迎，不必等到“全部学会”才开始。
 
-[🐛 报告问题 / 提建议](https://github.com/FBddcz/embodied-jev/issues) · [🛠️ 提交 PR](https://github.com/FBddcz/embodied-jev/pulls) · [📖 贡献指南](CONTRIBUTING.md)
+[🐛 报告问题 / 提建议](https://github.com/zyh3699/jev-embodied/issues) · [🛠️ 提交 PR](https://github.com/zyh3699/jev-embodied/pulls) · [📖 贡献指南](CONTRIBUTING.md)
 
 提交实验结果时，请附上模型、任务、种子和配置；成功与失败都值得记录。让每一个改进都能被别人复现。
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=FBddcz/embodied-jev&type=Date)](https://star-history.com/#FBddcz/embodied-jev&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=zyh3699/jev-embodied&type=Date)](https://star-history.com/#zyh3699/jev-embodied&Date)
 
 每一颗 Star，都是对这个小项目的一份鼓励。欢迎共同维护，让具身决策实验更容易开始、更容易理解。💙
 
@@ -406,4 +398,4 @@ npm run test:ui
 
 项目原创代码采用 **MIT**；Panda 资产保留上游 **Apache-2.0** 许可，见 [第三方声明](THIRD_PARTY_NOTICES.md)。模型权重不随仓库分发，其许可单独适用。
 
-行知是独立实验项目，与 TypeSafe、OpenBMB、SemIf 没有隶属关系。Jev 是 TypeSafe 的模型；本地 MiniCPM 模式借鉴有限候选决策思路，使用的是 MiniCPM 权重。
+jev-embodied 是独立实验项目，与 TypeSafe、OpenBMB、SemIf 没有隶属关系。Jev 是 TypeSafe 的模型；本地 MiniCPM 模式借鉴有限候选决策思路，使用的是 MiniCPM 权重。

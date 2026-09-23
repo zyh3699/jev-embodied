@@ -1,6 +1,6 @@
-# 行知实验室
+# jev-embodied 实验室
 
-在线地址：**https://fbddcz.github.io/embodied-jev/**。
+在线地址：**https://zyh3699.github.io/jev-embodied/**。
 
 GitHub Pages 静态实验展示：按 LIBERO、Meta-World、Panda 分类，提供录像、倍速、决策时间轴、概率、末端轨迹、结果和数据链接。页面只播放已发布的真实记录；实时仿真与 API 调用仍由本地工作台完成。
 

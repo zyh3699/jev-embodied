@@ -124,7 +124,7 @@ def render(pair, output, speed=8., fps=15):
             elapsed = min(end, frame_id / fps * speed)
             image = Image.new("RGB", (WIDTH, HEIGHT), BG)
             draw = ImageDraw.Draw(image)
-            draw.text((26, 16), "行知 · LIBERO " + ("v2 候选选择" if episodes[0].supervisor else "真实观测对照"), font=FONTS[28], fill=TEXT)
+            draw.text((26, 16), "jev-embodied · LIBERO " + ("v2 候选选择" if episodes[0].supervisor else "真实观测对照"), font=FONTS[28], fill=TEXT)
             draw.text((26, 59), f"共同墙钟时间 · {speed:g}× 播放，保留模型等待 · {elapsed:.1f} / {end:.1f} s",
                       font=FONTS[17], fill=MUTED)
             for side, episode in enumerate(episodes):

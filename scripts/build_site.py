@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 
 ROOT = Path(__file__).resolve().parents[1]
-REPO = "https://github.com/FBddcz/embodied-jev"
+REPO = "https://github.com/zyh3699/jev-embodied"
 
 # Resolve beside this script so CLI and import-based build checks use the same validator.
 _community_spec = importlib.util.spec_from_file_location("community_entries", Path(__file__).with_name("community_entries.py"))

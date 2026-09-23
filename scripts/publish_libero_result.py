@@ -350,7 +350,7 @@ def publish(run, media, exclude=(), result_slug="libero-vision"):
             "playback": f"{provenance['speed']:g}× 共同墙钟时间，保留模型等待；初始化不在录像中。播放速度可继续调整。",
             "metrics": metrics, "decisions": [], "decision_tracks": [track(e, provenance["speed"]) for e in pair],
             "note": f"LIBERO 开发子集 · 初态 {case.get('init_index', 0)} / seed {case['seed']}。" + "；".join(LABELS[e["mode"]] + "：" + result_label(e) + f"，{e['steps']} 步" for e in pair) + "。两层全部调用按公开单价估算，≥ 表示含未返回用量的请求。" + ("候选概率不是成功率，轴方向由代码伺服计算。" if supervisor else ""),
-            "links": [{"label": label, "url": "https://github.com/FBddcz/embodied-jev/blob/main/" + prefix + "/" + name}
+            "links": [{"label": label, "url": "https://github.com/zyh3699/jev-embodied/blob/main/" + prefix + "/" + name}
                       for label, name in (("实验结果", "RESULTS.md"), ("统计与费用", "summary.json"), ("决策记录", "episodes.json.gz"))],
         })
     write(target / "index.json", {"experiments": experiments})

@@ -33,21 +33,21 @@
 
 ```bash
 # MiniCPM：关闭尚未校准的概率门槛
-embodied-jev benchmark --provider minicpm --threshold 0 \
+jev-embodied benchmark --provider minicpm --threshold 0 \
   --tasks transfer stack barrier --seeds 0 1 2 --max-cycles 30 \
   --output runs/minicpm.json
 
 # 云端模型：先配置 API，并留意批量调用费用
-embodied-jev benchmark --provider chat --threshold 0 \
+jev-embodied benchmark --provider chat --threshold 0 \
   --tasks transfer stack barrier --seeds 0 1 2 --max-cycles 30 \
   --output runs/chat.json
 
-embodied-jev benchmark --provider claude --threshold 0 \
+jev-embodied benchmark --provider claude --threshold 0 \
   --tasks transfer stack barrier --seeds 0 1 2 --max-cycles 30 \
   --output runs/claude.json
 
 # Jev：固定为账号已开放的版本
-TYPESAFE_MODEL=jev-1.13.0 embodied-jev benchmark --provider jev --threshold 0 \
+TYPESAFE_MODEL=jev-1.13.0 jev-embodied benchmark --provider jev --threshold 0 \
   --tasks transfer stack barrier --seeds 0 1 2 --max-cycles 30 \
   --output runs/jev.json
 ```

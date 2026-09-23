@@ -22,7 +22,7 @@
 
 | 项目 | 实验设置 |
 | --- | --- |
-| 代码提交 | [`7461356`](https://github.com/FBddcz/embodied-jev/tree/746135693c94a4f87e5d4632e16aec5bef487d21) |
+| 代码提交 | [`7461356`](https://github.com/zyh3699/jev-embodied/tree/746135693c94a4f87e5d4632e16aec5bef487d21) |
 | 请求模型 / 服务返回模型 | `gpt-6-astra` / `gpt-6-astra-2026-09-03` |
 | 接口与输出 | OpenAI 兼容 Chat Completions，JSON 候选选择 |
 | 提示版本 | `compact-effects-v4` |
@@ -51,7 +51,7 @@ python scripts/benchmark_server.py --model gpt-6-astra --output runs/gpt6-server
 也可设置相应环境变量后使用原有 CLI：
 
 ```bash
-embodied-jev benchmark --provider chat --threshold 0 \
+jev-embodied benchmark --provider chat --threshold 0 \
   --tasks transfer stack barrier --seeds 0 1 2 --max-cycles 12 \
   --timeout 600 --output runs/gpt6-astra.json
 ```

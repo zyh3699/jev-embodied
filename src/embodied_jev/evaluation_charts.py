@@ -199,7 +199,7 @@ def compare_reports(reports, *, allow_baseline=False):
     cases = manifests[0]["cases"]
     for report, config in zip(reports, configurations):
         if report.get("format") != "embodied-jev-evaluation-v1" or report.get("synthetic"):
-            raise ValueError("Only recorded embodied-jev evaluation reports are supported")
+            raise ValueError("Only recorded jev-embodied evaluation reports are supported")
         fingerprint = _hash(report)
         if fingerprint in fingerprints:
             raise ValueError("Duplicate report supplied")

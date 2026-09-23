@@ -6,7 +6,7 @@
 
 `任务清单 → 独立仿真进程 → 观测 → 策略 → 原生动作接口 → 官方成功条件 → 逐步轨迹与汇总`
 
-新增命令是 `embodied-jev evaluate`。已有 `serve`、`benchmark`、工作台和三个控制模式保持原有入口。外部模拟器使用单独 Python 进程；主项目仍使用 MuJoCo 3.13.0，Meta-World 3.1.1 使用其要求的 MuJoCo 3.3.0。
+新增命令是 `jev-embodied evaluate`。已有 `serve`、`benchmark`、工作台和三个控制模式保持原有入口。外部模拟器使用单独 Python 进程；主项目仍使用 MuJoCo 3.13.0，Meta-World 3.1.1 使用其要求的 MuJoCo 3.3.0。
 
 | 路线 | 适合测试什么 | 当前范围 |
 | --- | --- | --- |
@@ -22,7 +22,7 @@
 在项目环境运行内置回归：
 
 ```bash
-embodied-jev evaluate --manifest benchmarks/builtin-dev.json \
+jev-embodied evaluate --manifest benchmarks/builtin-dev.json \
   --policy baseline --max-steps 30 --output runs/builtin-dev-baseline
 ```
 
@@ -32,7 +32,7 @@ embodied-jev evaluate --manifest benchmarks/builtin-dev.json \
 python3.11 -m venv .venv-metaworld
 .venv-metaworld/bin/python -m pip install -r benchmarks/requirements-metaworld.txt
 
-embodied-jev evaluate --manifest benchmarks/metaworld-smoke.json \
+jev-embodied evaluate --manifest benchmarks/metaworld-smoke.json \
   --worker-python .venv-metaworld/bin/python --policy scripted \
   --max-steps 500 --output runs/metaworld-scripted
 ```
@@ -43,7 +43,7 @@ embodied-jev evaluate --manifest benchmarks/metaworld-smoke.json \
 
 ```bash
 # 先在终端环境配置 TYPESAFE_API_KEY；不需要把 Key 放进命令或清单。
-embodied-jev evaluate --manifest benchmarks/metaworld-smoke.json \
+jev-embodied evaluate --manifest benchmarks/metaworld-smoke.json \
   --worker-python .venv-metaworld/bin/python --policy jev \
   --max-steps 200 --max-calls 100 --timeout 300 \
   --output runs/metaworld-jev
@@ -58,12 +58,12 @@ embodied-jev evaluate --manifest benchmarks/metaworld-smoke.json \
 `metaworld-compare.json` 固定 reach、push、pick-place 三个任务与种子 0、1，共每模型 6 局。这是开发子集，不能代表完整 Meta-World 成绩。以下协议在运行前固定：200 环境步、40 次模型请求、300 秒、新决策最多重复 5 步、动作幅度 0.5、概率门槛 0。每局重置模型连接与动作历史。两组均使用同样的结构化状态，不加视觉或规则纠偏。
 
 ```bash
-embodied-jev evaluate --manifest benchmarks/metaworld-compare.json \
+jev-embodied evaluate --manifest benchmarks/metaworld-compare.json \
   --worker-python .venv-metaworld/bin/python --policy jev --connection-source saved \
   --max-steps 200 --max-calls 40 --timeout 300 --action-repeat 5 \
   --action-scale 0.5 --threshold 0 --output runs/metaworld-compare-jev
 
-embodied-jev evaluate --manifest benchmarks/metaworld-compare.json \
+jev-embodied evaluate --manifest benchmarks/metaworld-compare.json \
   --worker-python .venv-metaworld/bin/python --policy chat --connection-source saved \
   --max-steps 200 --max-calls 40 --timeout 300 --action-repeat 5 \
   --action-scale 0.5 --threshold 0 --output runs/metaworld-compare-chat
@@ -93,7 +93,7 @@ python -m embodied_jev.evaluation_charts \
 准备好独立的官方 LIBERO 环境和任务资产后，用其 Python 做安装检查：
 
 ```bash
-embodied-jev evaluate --manifest benchmarks/libero-spatial-smoke.json \
+jev-embodied evaluate --manifest benchmarks/libero-spatial-smoke.json \
   --worker-python /path/to/libero-env/bin/python --policy noop \
   --max-steps 10 --output runs/libero-install-check
 ```

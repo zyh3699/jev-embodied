@@ -1479,7 +1479,8 @@ a {
     gap: 5px;
   }
   .brand strong {
-    font-size: 18px;
+    font-size: 14px;
+    letter-spacing: -0.35px;
   }
   .brand span {
     font-size: 10px;
@@ -1685,6 +1686,12 @@ a {
   }
 }
 @media (max-width: 380px) {
+  .brand-mark {
+    display: none;
+  }
+  .brand strong {
+    font-size: 12px;
+  }
   .controls .run-budget {
     display: none;
   }

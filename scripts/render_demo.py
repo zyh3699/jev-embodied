@@ -123,7 +123,7 @@ class Demo:
         image = Image.new("RGB", SIZE, BG)
         draw = ImageDraw.Draw(image)
         draw.rectangle((0, 0, 1280, 84), fill=INK)
-        draw.text((24, 13), "行知 · EmbodiedJev", font=self.fonts[28], fill="white")
+        draw.text((24, 13), "jev-embodied", font=self.fonts[28], fill="white")
         draw.text((335, 17), self.title, font=self.fonts[23], fill="white")
         subtitle = f"{self.model_label} · 双相机原始图像 · {len(self.episode['history'])} 步 · 实验原始耗时 {self.episode['wall_seconds']:.0f} 秒"
         draw.text((26, 57), subtitle, font=self.fonts[17], fill="#d2e5db")

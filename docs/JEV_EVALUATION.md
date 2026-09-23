@@ -22,7 +22,7 @@
 
 同日又在页面运行了一局相同 seed、输入与控制模式，执行动画速度设为 4×：**88 步、176 次请求、79.71 秒**，请求中位延迟 326 ms，最终也满足物理判定。第 80 步下放时失抓、方块落入托盘，随后张爪和撤离，仍没有选择 `release` 子目标。[第二局完整记录](results/jev-hierarchical-live-2026-09-20.json.gz)。两局重复出现相同缺陷；这些开发回合不足以报告可靠成功率。
 
-第二局已制成[带真实分层概率的 8 倍速动图](media/jev-hierarchical.gif)和[完整 MP4](https://github.com/FBddcz/embodied-jev/raw/refs/heads/main/docs/media/jev-hierarchical.mp4)，默认展示在首页实验部分。制作过程只重绘已记录姿态，没有再次调用模型；来源与文件哈希见[媒体清单](media/jev-hierarchical.json)。
+第二局已制成[带真实分层概率的 8 倍速动图](media/jev-hierarchical.gif)和[完整 MP4](https://github.com/zyh3699/jev-embodied/raw/refs/heads/main/docs/media/jev-hierarchical.mp4)，默认展示在首页实验部分。制作过程只重绘已记录姿态，没有再次调用模型；来源与文件哈希见[媒体清单](media/jev-hierarchical.json)。
 
 ## 哪部分由模型决定？
 

@@ -21,7 +21,7 @@ Jev 这次能够抓起方块、搬到托盘并完成撤离。两局都满足现�
 
 ## 动图显示什么
 
-[8 倍速 GIF](media/jev-hierarchical.gif)与[MP4](https://github.com/FBddcz/embodied-jev/raw/refs/heads/main/docs/media/jev-hierarchical.mp4)来自第二局保存的 88 步记录。左侧按记录姿态重绘，右侧显示实际子目标及四通道概率，绿色表示选中。各组概率单独显示，不合成任务成功率。
+[8 倍速 GIF](media/jev-hierarchical.gif)与[MP4](https://github.com/zyh3699/jev-embodied/raw/refs/heads/main/docs/media/jev-hierarchical.mp4)来自第二局保存的 88 步记录。左侧按记录姿态重绘，右侧显示实际子目标及四通道概率，绿色表示选中。各组概率单独显示，不合成任务成功率。
 
 MP4 为 110.6 秒，每步展示 1.2 秒；GIF 约 13.8 秒。它们省略 API 等待，制作时没有重新运行模型或物理实验。原始模型输入是坐标和接触状态，画面不是发送给 Jev 的相机图像。[媒体哈希与来源](media/jev-hierarchical.json)
 

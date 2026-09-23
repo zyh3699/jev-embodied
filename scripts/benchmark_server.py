@@ -1,4 +1,4 @@
-"""Run nine real API trials through an already running local EmbodiedJev server.
+"""Run nine real API trials through an already running local jev-embodied server.
 
 Start the server from this checkout, save an OpenAI-compatible connection in
 the UI, then run this script. It reuses that connection without reading its Key,

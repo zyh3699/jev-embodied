@@ -2,14 +2,14 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#101d25"><meta name="description" content="EmbodiedJev 行知实验室：探索 Jev 与 GPT-6 在 LIBERO、Meta-World 与 Panda 仿真中的真实决策、轨迹、速度和费用。">
-<title>行知实验室 · EmbodiedJev</title><link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#101d25"><meta name="description" content="jev-embodied 实验室：探索 Jev 与 GPT-6 在 LIBERO、Meta-World 与 Panda 仿真中的真实决策、轨迹、速度和费用。">
+<title>jev-embodied 实验室</title><link rel="icon" href="./favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="./style.css"><script type="module" src="./app.js"></script>
 </head><body>
 <a class="skip" href="#experiments">跳到实验回放</a>
 <header class="masthead wrap">
-<a class="brand" href="./"><span class="brand-symbol" aria-hidden="true">行</span><span>EmbodiedJev <small>行知实验室</small></span></a>
-<nav aria-label="主导航"><a href="#experiments">🎬 实验</a><a href="#method">控制方式</a><a href="#community">🤝 社区</a><a class="repo-link" href="https://github.com/FBddcz/embodied-jev" target="_blank" rel="noreferrer">GitHub ↗</a></nav></header>
+<a class="brand" href="./"><span class="brand-symbol" aria-hidden="true">J</span><span>jev-embodied <small>Embodied Decision Lab</small></span></a>
+<nav aria-label="主导航"><a href="#experiments">🎬 实验</a><a href="#method">控制方式</a><a href="#community">🤝 社区</a><a class="repo-link" href="https://github.com/zyh3699/jev-embodied" target="_blank" rel="noreferrer">GitHub ↗</a></nav></header>
 <main class="wrap">
 <section class="hero"><div><p class="eyebrow"><span class="live-dot"></span> THE EMBODIED DECISION LAB <span class="edition">/ 01</span></p>
 <h1>看见决策，<br><span>比较协作。</span></h1><p class="hero-copy">从一帧观测，到一次真实交互。<br>🎬 看回放，⚡ 比速度，💰 算费用。<br>🤝 复现实验，留下你的名字。</p><div class="hero-actions"><a class="primary-link" href="#experiments">🎬 浏览实验 <span>↓</span></a><a class="secondary-link" href="#community">🤝 分享你的复现 ↗</a></div></div>
@@ -38,19 +38,19 @@
 <div class="section-line"><div><p class="eyebrow">BUILT TOGETHER · REPRODUCE & SHARE</p><h2 id="community-title">🤝 下一条实验，署上你的名字。</h2></div><span id="community-count" class="mono"></span></div>
 <p class="community-copy">复现已有任务，或带来新的方法。每份作品都展示 <strong>名字、GitHub 账号、实验日期、任务、方法与结果</strong>，并链接到你的代码。成功、失败、部分完成，都值得分享。</p>
 <div class="community-steps"><article><span>01 / 🧪 复现</span><p>按实验说明运行，保留版本、初态、预算和真实结果。</p></article><article><span>02 / 📤 投稿</span><p>填写 GitHub 投稿表，拖入录像；也可以提交 JSON 的 PR。</p></article><article><span>03 / 🎉 展示</span><p>收录合并后自动上线，保留你的署名与复现链接。</p></article></div>
-<div class="community-actions"><a class="primary-link" href="https://github.com/FBddcz/embodied-jev/issues/new?template=community-reproduction.yml" target="_blank" rel="noreferrer">📤 投稿 / 上传录像 <span>↗</span></a><a class="secondary-link" href="https://github.com/FBddcz/embodied-jev/blob/main/docs/COMMUNITY.md" target="_blank" rel="noreferrer">📖 复现与投稿指南 ↗</a></div>
+<div class="community-actions"><a class="primary-link" href="https://github.com/zyh3699/jev-embodied/issues/new?template=community-reproduction.yml" target="_blank" rel="noreferrer">📤 投稿 / 上传录像 <span>↗</span></a><a class="secondary-link" href="https://github.com/zyh3699/jev-embodied/blob/main/docs/COMMUNITY.md" target="_blank" rel="noreferrer">📖 复现与投稿指南 ↗</a></div>
 <p class="community-note">社区结果注明「作者报告」，独立于项目实验统计。投稿提交后，经过收录合并才会显示在这里。</p>
 <div id="community-cards" class="experiment-cards"></div><p id="community-empty" class="community-empty">🌱 社区作品席位已开放，期待第一份真实复现。</p></section>
-<section id="method" class="method-section"><div class="section-line"><div><p class="eyebrow">HOW THE COMPARISON WORKS</p><h2>让分工成为可测量的变量。</h2></div><a href="https://github.com/FBddcz/embodied-jev/blob/main/docs/LIBERO_VISION.md">方法与复现 ↗</a></div>
+<section id="method" class="method-section"><div class="section-line"><div><p class="eyebrow">HOW THE COMPARISON WORKS</p><h2>让分工成为可测量的变量。</h2></div><a href="https://github.com/zyh3699/jev-embodied/blob/main/docs/LIBERO_VISION.md">方法与复现 ↗</a></div>
 <div class="method-grid">
 <article><span class="method-number">01 / OBSERVE</span><h3>共同的真实观测</h3><p>LIBERO 双相机 RGB-D 与机器人本体反馈。GPT-6 从图像选择目标，深度与标定把目标像素转换为三维航点。</p><span class="method-tag">RGB-D + PROPRIOCEPTION</span></article>
 <article><span class="method-number">02 / COLLABORATE</span><h3>纯 GPT-6，或 GPT-6 + Jev</h3><p>两组共用视觉规划与阶段检查。纯 GPT-6 组由 GPT-6 选择局部动作；混合组由 Jev 根据目标误差与实时反馈选择。</p><span class="method-tag">SAME WAYPOINT CONTRACT</span></article>
 <article><span class="method-number">03 / MEASURE</span><h3>动作、等待与费用都算</h3><p>相同初态、预算和官方成功条件。两层调用一起统计；回放注明时间口径，成功与失败都由实际轨迹说明。</p><span class="method-tag">OUTCOME · LATENCY · COST</span></article>
 </div><p class="scope-note">不同实验分别展示：Meta-World 使用结构化状态，Panda 包含自建技能与视觉演示，LIBERO 使用相机观测。当前没有接入训练好的 VLA，也不把开发子集当作完整 benchmark 排名。</p></section>
-<section class="start-section"><div><p class="eyebrow">FROM REPLAY TO YOUR OWN RUN</p><h2>在你的电脑上，<br>开始下一次实验。</h2><p>这里是公开的静态回放。实时仿真与模型调用在本地工作台运行。</p></div><div><pre><code>git clone https://github.com/FBddcz/embodied-jev.git
-cd embodied-jev
+<section class="start-section"><div><p class="eyebrow">FROM REPLAY TO YOUR OWN RUN</p><h2>在你的电脑上，<br>开始下一次实验。</h2><p>这里是公开的静态回放。实时仿真与模型调用在本地工作台运行。</p></div><div><pre><code>git clone https://github.com/zyh3699/jev-embodied.git
+cd jev-embodied
 # 按 README 安装，启动本地工作台
-embodied-jev serve --port 8090</code></pre><a class="primary-link" href="https://github.com/FBddcz/embodied-jev#-零机器人基础快速上手">安装与源代码 <span>↗</span></a></div></section></main>
-<footer class="wrap"><span>行而有据，知而能行。</span><span>EmbodiedJev · Open-source robotics experiments</span></footer>
-<noscript><p class="wrap">请启用 JavaScript 查看交互回放，或在 <a href="https://github.com/FBddcz/embodied-jev">GitHub</a> 查看视频与数据。</p></noscript>
+jev-embodied serve --port 8090</code></pre><a class="primary-link" href="https://github.com/zyh3699/jev-embodied#-零机器人基础快速上手">安装与源代码 <span>↗</span></a></div></section></main>
+<footer class="wrap"><span>行而有据，知而能行。</span><span>jev-embodied · Open-source robotics experiments</span></footer>
+<noscript><p class="wrap">请启用 JavaScript 查看交互回放，或在 <a href="https://github.com/zyh3699/jev-embodied">GitHub</a> 查看视频与数据。</p></noscript>
 </body></html>

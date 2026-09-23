@@ -114,7 +114,7 @@ let config,
 $("#app").innerHTML = `
 <div class="app-shell">
  <header class="header">
-  <div class="brand"><div class="brand-mark">${icon("scan-line")}</div><div><strong>行知</strong><span>EmbodiedJev</span></div></div>
+  <div class="brand"><div class="brand-mark">${icon("scan-line")}</div><div><strong>jev-embodied</strong><span>Embodied Decision Lab</span></div></div>
   <div class="header-divider"></div><div class="header-context">具身决策实验室</div>
   <nav class="view-switch" aria-label="工作模式"><button class="active" id="workbench-view" type="button">实验台</button><button id="comparison-open" type="button">模型对比</button><button id="extensions-open" type="button">扩展</button></nav>
   <div class="header-right"><span class="engine-label"><span class="dot"></span>MUJOCO / PANDA</span><span class="version">v0.1</span><button class="icon-button mobile-settings" id="settings-open" title="实验参数" aria-label="实验参数">${icon("sliders-horizontal")}</button><button class="icon-button" id="export" title="导出实验记录" aria-label="导出实验记录">${icon("download")}</button></div>

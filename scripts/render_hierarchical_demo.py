@@ -76,7 +76,7 @@ class HierarchicalDemo(Demo):
         image = Image.new("RGB", SIZE, BG)
         draw = ImageDraw.Draw(image)
         draw.rectangle((0, 0, 1280, 84), fill=INK)
-        draw.text((24, 13), "行知 · EmbodiedJev", font=self.fonts[28], fill="white")
+        draw.text((24, 13), "jev-embodied", font=self.fonts[28], fill="white")
         draw.text((335, 17), self.title, font=self.fonts[23], fill="white")
         source = "仿真坐标 + 接触反馈" if episode["observation_mode"] == "privileged" else "RGB-D 检测坐标 + 接触反馈"
         subtitle = f"{self.model_label} · {source} · {episode['model_calls']} 次请求 · 实际 {episode['wall_seconds']:.2f} 秒"

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "EmbodiedJev community reproduction entry",
+  "title": "jev-embodied community reproduction entry",
   "description": "Community self-reported recording. Run scripts/community_entries.py --validate for additional URL, date, filename, and filesystem checks.",
   "type": "object",
   "additionalProperties": false,

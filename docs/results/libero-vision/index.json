@@ -8640,15 +8640,15 @@
       "links": [
         {
           "label": "实验结果",
-          "url": "https://github.com/FBddcz/embodied-jev/blob/main/docs/results/libero-vision/RESULTS.md"
+          "url": "https://github.com/zyh3699/jev-embodied/blob/main/docs/results/libero-vision/RESULTS.md"
         },
         {
           "label": "统计与费用",
-          "url": "https://github.com/FBddcz/embodied-jev/blob/main/docs/results/libero-vision/summary.json"
+          "url": "https://github.com/zyh3699/jev-embodied/blob/main/docs/results/libero-vision/summary.json"
         },
         {
           "label": "决策记录",
-          "url": "https://github.com/FBddcz/embodied-jev/blob/main/docs/results/libero-vision/episodes.json.gz"
+          "url": "https://github.com/zyh3699/jev-embodied/blob/main/docs/results/libero-vision/episodes.json.gz"
         }
       ]
     },
@@ -12738,15 +12738,15 @@
       "links": [
         {
           "label": "实验结果",
-          "url": "https://github.com/FBddcz/embodied-jev/blob/main/docs/results/libero-vision/RESULTS.md"
+          "url": "https://github.com/zyh3699/jev-embodied/blob/main/docs/results/libero-vision/RESULTS.md"
         },
         {
           "label": "统计与费用",
-          "url": "https://github.com/FBddcz/embodied-jev/blob/main/docs/results/libero-vision/summary.json"
+          "url": "https://github.com/zyh3699/jev-embodied/blob/main/docs/results/libero-vision/summary.json"
         },
         {
           "label": "决策记录",
-          "url": "https://github.com/FBddcz/embodied-jev/blob/main/docs/results/libero-vision/episodes.json.gz"
+          "url": "https://github.com/zyh3699/jev-embodied/blob/main/docs/results/libero-vision/episodes.json.gz"
         }
       ]
     }

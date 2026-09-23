@@ -15,7 +15,7 @@ import uuid
 
 from filelock import FileLock
 
-SERVICE = "EmbodiedJev"
+SERVICE = "jev-embodied"
 FORMAT = "embodied-jev-connections-v1"
 PROVIDERS = {"jev", "chat", "local", "claude"}
 _AUTO = object()
@@ -36,7 +36,7 @@ def default_config_dir(platform=None, environ=None, home=None):
         configured = Path(environ.get("LOCALAPPDATA", home / "AppData" / "Local"))
         return (configured if configured.is_absolute() else home / "AppData" / "Local") / SERVICE
     configured = Path(environ.get("XDG_CONFIG_HOME", home / ".config"))
-    return (configured if configured.is_absolute() else home / ".config") / "embodied-jev"
+    return (configured if configured.is_absolute() else home / ".config") / "jev-embodied"
 
 
 def _system_backend():

@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def main():
-    parser = argparse.ArgumentParser(description="EmbodiedJev / Xingzhi")
+    parser = argparse.ArgumentParser(description="jev-embodied")
     sub = parser.add_subparsers(dest="command", required=True)
     serve = sub.add_parser("serve")
     serve.add_argument("--port", type=int, default=8090)

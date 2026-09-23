@@ -75,7 +75,7 @@ python scripts/planning_trial.py --saved-connection --cameras both \
 
 输出包括设置与源文件哈希、实验 JSON、相机 ZIP。超时和失败照常保存，不自动重试，也不切换成规则策略。
 
-`--cameras` 可选 `external`、`wrist`、`both`、`none`；使用 `none` 时加 `--observation privileged`。另一个批量入口 `embodied-jev benchmark` 使用环境变量连接，详见[技术说明](TECHNICAL_GUIDE.md#models)。
+`--cameras` 可选 `external`、`wrist`、`both`、`none`；使用 `none` 时加 `--observation privileged`。另一个批量入口 `jev-embodied benchmark` 使用环境变量连接，详见[技术说明](TECHNICAL_GUIDE.md#models)。
 
 ## 怎样判断模型确实会调整？
 

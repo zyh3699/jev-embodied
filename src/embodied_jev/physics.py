@@ -25,7 +25,7 @@ TASKS = {
 def build_scene(task="transfer", seed=0, scene_config=None):
     scene_config = validate_scene_config(task, scene_config)
     root = ET.parse(ASSETS / "panda.xml").getroot()
-    root.set("model", "EmbodiedJev - Xingzhi")
+    root.set("model", "jev-embodied")
     root.find("compiler").set("meshdir", str(ASSETS / "assets"))
     root.find("option").set("timestep", str(DT))
     root.remove(root.find("keyframe"))
