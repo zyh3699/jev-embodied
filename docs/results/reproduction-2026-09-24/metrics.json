@@ -1,0 +1,66 @@
+{
+  "date": "2026-09-24",
+  "question": "Does Jev improve embodied decision making under the current adapters?",
+  "pricing_note": "Estimates use the prices configured by the project; proxy invoices may differ.",
+  "experiments": [
+    {
+      "environment": "Panda / MuJoCo",
+      "method": "Jev high-level skills",
+      "coverage": "9/9",
+      "successes": 9,
+      "wall_seconds": 63.98,
+      "api_calls": 117,
+      "estimated_usd": 0.004853
+    },
+    {
+      "environment": "Panda / MuJoCo",
+      "method": "GPT-6 Astra high-level skills",
+      "coverage": "1/1 smoke",
+      "successes": 0,
+      "wall_seconds": 214.12,
+      "api_calls": 10,
+      "estimated_usd": 0.21689,
+      "status": "ReadTimeout before release"
+    },
+    {
+      "environment": "Meta-World",
+      "method": "Jev hierarchical control",
+      "coverage": "6/6",
+      "successes": 5,
+      "wall_seconds": 128.133,
+      "api_calls": 312,
+      "estimated_usd": 0.018266
+    },
+    {
+      "environment": "Meta-World",
+      "method": "GPT-6 Astra hierarchical control",
+      "coverage": "2/6 attempted",
+      "successes": 0,
+      "wall_seconds": 330.753,
+      "api_calls": 28,
+      "estimated_usd": 1.7624,
+      "status": "both attempts ended on invalid structured action output"
+    },
+    {
+      "environment": "LIBERO drawer",
+      "method": "GPT-6 Astra",
+      "coverage": "1/1",
+      "successes": 0,
+      "wall_seconds": 22.376,
+      "api_calls": 1,
+      "estimated_usd": 0.09718,
+      "status": "visual waypoint outside workspace; zero robot steps"
+    },
+    {
+      "environment": "LIBERO drawer",
+      "method": "GPT-6 Astra + Jev",
+      "coverage": "1/1",
+      "successes": 0,
+      "wall_seconds": 20.092,
+      "api_calls": 1,
+      "jev_calls": 0,
+      "estimated_usd": 0.09808,
+      "status": "shared GPT visual waypoint outside workspace; Jev was never reached"
+    }
+  ]
+}

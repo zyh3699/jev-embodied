@@ -1,0 +1,22 @@
+{
+  "speed": 8.0,
+  "fps": 15,
+  "duration_seconds": 4.2,
+  "wall_seconds": 17.30116712511517,
+  "timeline": "shared rollout wall time including all model waits; setup excluded",
+  "video_sha256": "4f6fd3eb3997c007be5927f7fe4e8aa31b565cb9d532db426606b20b7852c8ff",
+  "episodes": [
+    {
+      "path": "runs/reproduction-2026-09-24/libero-drawer-paired/gpt6/drawer-init0/episode.json",
+      "sha256": "2aba4caeb8b8aa7f525280f7559d53de698ceab4689d66b6528c65542695cd65",
+      "mode": "gpt6",
+      "success": false
+    },
+    {
+      "path": "runs/reproduction-2026-09-24/libero-drawer-hybrid/gpt6-jev/drawer-init0/episode.json",
+      "sha256": "29254b41f2ae43e9322cbd4908f9746dcf265bef80fcd9fb99b3b43f2ad08d25",
+      "mode": "gpt6-jev",
+      "success": false
+    }
+  ]
+}

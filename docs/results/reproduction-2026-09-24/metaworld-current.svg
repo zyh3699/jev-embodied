@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" role="img" aria-labelledby="title desc">
+  <title id="title">Meta-World current reproduction</title>
+  <desc id="desc">Jev completed five of six tasks. GPT-6 Astra attempted two of six and both ended because of invalid structured actions.</desc>
+  <rect width="1200" height="600" rx="28" fill="#f4f6f3"/>
+  <text x="64" y="72" font-family="Arial,sans-serif" font-size="34" font-weight="700" fill="#162a2b">Meta-World · current reproduction</text>
+  <text x="64" y="110" font-family="Arial,sans-serif" font-size="18" fill="#607071">Same tasks, seeds and 200-step / 80-call budget · 2026-09-24</text>
+  <rect x="64" y="154" width="520" height="316" rx="20" fill="#ffffff"/>
+  <text x="98" y="204" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#167d6b">Jev 1.13.0</text>
+  <rect x="98" y="244" width="420" height="52" rx="9" fill="#d8ece5"/>
+  <rect x="98" y="244" width="350" height="52" rx="9" fill="#167d6b"/>
+  <text x="112" y="279" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#ffffff">5 / 6 success</text>
+  <text x="98" y="344" font-family="Arial,sans-serif" font-size="20" fill="#26393a">128.1 s wall time</text>
+  <text x="98" y="382" font-family="Arial,sans-serif" font-size="20" fill="#26393a">312 API calls</text>
+  <text x="98" y="420" font-family="Arial,sans-serif" font-size="20" fill="#26393a">estimated $0.0183</text>
+  <rect x="616" y="154" width="520" height="316" rx="20" fill="#ffffff"/>
+  <text x="650" y="204" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#4867a9">GPT-6 Astra</text>
+  <rect x="650" y="244" width="420" height="52" rx="9" fill="#e5e9f2"/>
+  <text x="666" y="279" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#4867a9">0 / 2 attempted · 4 not run</text>
+  <text x="650" y="344" font-family="Arial,sans-serif" font-size="20" fill="#26393a">330.8 s wall time</text>
+  <text x="650" y="382" font-family="Arial,sans-serif" font-size="20" fill="#26393a">28 API calls</text>
+  <text x="650" y="420" font-family="Arial,sans-serif" font-size="20" fill="#26393a">estimated $1.7624</text>
+  <rect x="64" y="504" width="1072" height="50" rx="12" fill="#fff1db"/>
+  <text x="86" y="536" font-family="Arial,sans-serif" font-size="18" fill="#77521d">GPT coverage is incomplete: both runs returned HTTP 200, then produced invalid structured actions. Do not read this as 0/6.</text>
+</svg>
