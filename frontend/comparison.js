@@ -91,7 +91,7 @@ export async function createComparison(container, { api, toast }) {
   const scenes = new Map(),
     completed = new Map();
   container.innerHTML = `
-    <div class="comparison-heading"><div><p class="eyebrow">同一任务 · 独立决策</p><h1>模型对比</h1><p>相同起点，观察不同模型如何选择和执行。实时画面各自推进，回放按仿真时间对齐。</p></div><span class="comparison-status" id="cmp-status">尚未开始</span></div>
+    <div class="comparison-heading"><div><p class="eyebrow">COMPARE / CONTROLLED RUN</p><h1>模型对比</h1><p>固定任务与起点，比较 2–3 个模型的决策路径和物理结果。</p></div><span class="comparison-status" id="cmp-status">尚未开始</span></div>
     <details class="comparison-setup" id="cmp-setup" open><summary>对比设置 <span id="cmp-setup-summary">选择 2–3 个模型</span></summary><div class="comparison-settings">
       <label>共同任务<select id="cmp-task"><option value="transfer">搬运入盘</option><option value="stack">方块堆叠</option><option value="barrier">越障搬运</option></select></label>
       <label>运行方式<select id="cmp-mode"><option value="sequential">依次运行 · 更省资源</option><option value="parallel">并行运行 · 最多 2 路</option></select></label>
@@ -107,7 +107,7 @@ export async function createComparison(container, { api, toast }) {
       <label>共同启用相机<select id="cmp-camera-mode"><option value="none">无相机</option><option value="external">仅外部相机</option><option value="wrist">仅腕部相机</option><option value="both">双相机</option></select></label>
       <label class="comparison-checkbox"><input id="cmp-preview" type="checkbox" checked> 动作预演</label>
     </div><p id="cmp-observation-help">门槛仅用于原生候选概率。RGB-D 模式发送检测坐标；直接图像模式发送所选相机的 RGB 及机器人自身状态，不提供物体/目标坐标，需要逐步 XYZ 和支持图像的 Chat / Claude 模型。各路独立采集观测。</p><p id="cmp-camera-help">无相机 · 模型使用仿真真值，非视觉输入。</p></details>
-    <p id="cmp-preset-label" class="comparison-hint" hidden></p><p class="comparison-hint">API 地址和 Key 继承默认连接或「扩展 → 模型配置」。这里可覆盖模型 ID；填写名称不代表账号已获使用权限。未配置 API 时可先用两个规则基线体验。</p></details>
+    <p id="cmp-preset-label" class="comparison-hint" hidden></p><p class="comparison-hint">连接信息继承「配置 → 模型配置」。未连接 API 时，可先选择规则基线验证对比流程。</p></details>
     <div class="comparison-toolbar"><button class="primary" id="cmp-start" disabled>开始对比</button><button class="secondary" id="cmp-pause" disabled>暂停</button><button class="secondary" id="cmp-stop" disabled>停止</button><button class="secondary" id="cmp-export" disabled>导出记录</button></div>
     <p id="cmp-message" class="comparison-message" role="status"></p>
     <div class="comparison-replay" id="cmp-replay" hidden><div><strong id="cmp-time-mode">实时 · 各路独立推进</strong><span id="cmp-time-range"></span></div><div class="comparison-replay-controls"><button class="secondary" id="cmp-replay-play">播放回放</button><input id="cmp-timeline" type="range" min="0" max="0" step="any" value="0" aria-label="对比统一仿真时间轴"><output id="cmp-time">0.00 s</output><button class="text-button" id="cmp-live">返回实时</button></div></div>

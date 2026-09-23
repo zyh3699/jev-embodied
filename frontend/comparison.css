@@ -469,3 +469,122 @@
     padding: 14px;
   }
 }
+
+/* Controlled-run comparison surface. */
+#comparison-view {
+  padding: 34px clamp(18px, 4vw, 64px) 56px;
+  background:
+    linear-gradient(90deg, #cbd2cc33 1px, transparent 1px) 0 0 / 40px 40px,
+    #e9ece7;
+}
+.comparison-heading {
+  max-width: 1320px;
+  margin: 0 auto 26px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid #c9cfca;
+}
+.comparison-heading h1 {
+  margin: 7px 0 8px;
+  color: #192522;
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 620;
+  letter-spacing: -0.045em;
+}
+.comparison-heading p {
+  max-width: 650px;
+  color: #65726d;
+}
+.comparison-status {
+  border-radius: 1px;
+  border-color: #9db8b0;
+  background: #e3eee9;
+  color: #005d54;
+  font: 10px var(--mono);
+  letter-spacing: 0.05em;
+}
+.comparison-setup,
+.comparison-toolbar,
+.comparison-message,
+.comparison-replay,
+.comparison-cards,
+.comparison-notes {
+  max-width: 1320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.comparison-setup,
+.comparison-card,
+.comparison-replay {
+  border-color: #cbd1cc;
+  border-radius: 2px;
+  background: #fbfaf5;
+  box-shadow: 0 2px 0 #bdc5bf;
+}
+.comparison-setup > summary {
+  padding: 18px 20px;
+  color: #273833;
+  font-weight: 650;
+}
+.comparison-setup[open] > summary {
+  border-bottom: 1px solid #d6dad5;
+}
+.comparison-settings,
+.comparison-lane-setup {
+  padding-top: 18px;
+}
+.comparison-settings input:not([type="checkbox"]),
+.comparison-settings select,
+.comparison-lane-setup input,
+.comparison-lane-setup select {
+  border-color: #cbd1cb;
+  border-radius: 2px;
+  background: #fffefa;
+}
+.comparison-lane-setup fieldset {
+  border-radius: 1px;
+  border-color: #cdd4ce;
+  background: #f4f4ee;
+}
+.comparison-advanced {
+  border-color: #d4d9d4;
+}
+.comparison-toolbar {
+  padding-top: 16px;
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  background: linear-gradient(transparent, #e9ece7 16px);
+}
+.comparison-cards {
+  gap: 18px;
+}
+.comparison-card > header {
+  background: #202b28;
+  color: #ecf1ee;
+}
+.comparison-card h2 {
+  color: #f4f4ed;
+}
+.comparison-lane-label,
+.lane-status {
+  color: #9caca7;
+}
+.comparison-scene {
+  background:
+    linear-gradient(90deg, #bdc5bf33 1px, transparent 1px) 0 0 / 32px 32px,
+    linear-gradient(#bdc5bf33 1px, transparent 1px) 0 0 / 32px 32px,
+    #e6e9e5;
+}
+.comparison-empty {
+  border-color: #aebcb5;
+  border-radius: 2px;
+  background: #f5f5efaa;
+}
+@media (max-width: 700px) {
+  #comparison-view {
+    padding: 24px 12px 40px;
+  }
+  .comparison-toolbar {
+    padding-bottom: 8px;
+  }
+}
