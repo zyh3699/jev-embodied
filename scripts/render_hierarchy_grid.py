@@ -138,12 +138,18 @@ class Grid:
             raise ValueError(f"Label does not fit ({width}px): {value}")
         draw.text(xy, value, font=self.fonts[size], fill=color)
 
-    def panel(self, image, record, x, y, step, color):
+    def panel(self, image, record, x, y, step, color, timing_state=None, elapsed=None):
         d = ImageDraw.Draw(image)
         ep, rows = record["episode"], record["rows"]
         n = min(step, len(rows))
         terminal = n == len(rows)
         status, status_color = "执行中", color
+        if timing_state == "queued":
+            status, status_color = "等待开始", MUTED
+        elif timing_state in {"setup", "waiting"}:
+            status, status_color = ("环境初始化" if timing_state == "setup" else "等待模型"), AMBER
+        elif timing_state == "acting":
+            status, status_color = "执行动作", color
         if terminal:
             if ep["success"]:
                 status, status_color = "成功", GREEN
@@ -192,6 +198,41 @@ class Grid:
         if n:
             d.rectangle((x + 10, y + 372, x + 10 + 216 * n / HORIZON, y + 374), fill=status_color)
 
+    @staticmethod
+    def wall_state(record, elapsed):
+        """Map recorded wall time to a trace step without inventing model speed."""
+        ep, rows = record["episode"], record["rows"]
+        wall = float(ep["wall_seconds"])
+        if elapsed < 0:
+            return 0, "queued"
+        if elapsed >= wall:
+            return len(rows), "done"
+        setup = float(ep.get("setup_seconds", 0))
+        if elapsed < setup:
+            return 0, "setup"
+        unique = []
+        for row in rows:
+            if row.get("decisions"):
+                unique.append(row)
+        api_time = sum((row["subgoal"]["latency_ms"] + row["decisions"]["x"]["latency_ms"]) / 1000
+                       for row in unique)
+        execution_step = max(0., wall - setup - api_time) / max(1, len(rows))
+        cursor, completed = setup, 0
+        for i, row in enumerate(unique):
+            wait = (row["subgoal"]["latency_ms"] + row["decisions"]["x"]["latency_ms"]) / 1000
+            if elapsed < cursor + wait:
+                return completed, "waiting"
+            cursor += wait
+            next_index = unique[i + 1]["step"] if i + 1 < len(unique) else len(rows)
+            count = next_index - row["step"]
+            action_time = count * execution_step
+            if execution_step and elapsed < cursor + action_time:
+                progressed = min(count, int((elapsed - cursor) / execution_step) + 1)
+                return completed + progressed, "acting"
+            cursor += action_time
+            completed += count
+        return min(completed, len(rows)), "acting"
+
     def frame(self, step):
         image = Image.new("RGB", SIZE, BG)
         d = ImageDraw.Draw(image)
@@ -210,6 +251,30 @@ class Grid:
                            MARGIN + column * (PANEL_W + GAP), yy, step, color)
         return image
 
+    def wall_frame(self, wall_time, speed):
+        image = Image.new("RGB", SIZE, BG)
+        d = ImageDraw.Draw(image)
+        self.text(d, (20, 13), "Meta-World · 同一墙钟时间轴", 24)
+        self.text(d, (SIZE[0] - 430, 23), f"实验时间 {wall_time:06.1f}s · {speed:g}× 播放", 15, MUTED)
+        self.text(d, (20, 43), "每排六局依次运行 · 黄色表示真实 API 等待 · 动作来自逐步核验的原始轨迹", 12, MUTED)
+        for column, (task, seed) in enumerate(TASKS):
+            xx = MARGIN + column * (PANEL_W + GAP)
+            self.text(d, (xx + 6, 60), f"{LABELS[task]} · seed {seed}", 15)
+        totals = []
+        for row_index, yy, color, name in ((0, 111, GREEN, "Jev"), (1, 528, BLUE, "GPT-6 Astra")):
+            row_records = self.episodes[row_index * 6:(row_index + 1) * 6]
+            total = sum(float(r["episode"]["wall_seconds"]) for r in row_records)
+            totals.append(total)
+            self.text(d, (20, yy - 24), f"{name} · 实测完成 {total:.2f}s", 14, color)
+            start = 0.
+            for column, record in enumerate(row_records):
+                local = wall_time - start
+                step, state = self.wall_state(record, local)
+                self.panel(image, record, MARGIN + column * (PANEL_W + GAP), yy, step, color,
+                           timing_state=state, elapsed=local)
+                start += float(record["episode"]["wall_seconds"])
+        return image
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -218,6 +283,9 @@ def main():
     parser.add_argument("--ffmpeg", required=True)
     parser.add_argument("--font", default="/System/Library/Fonts/STHeiti Medium.ttc")
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--timing", choices=("environment-step", "wall-clock"), default="environment-step")
+    parser.add_argument("--speed", type=float, default=40,
+                        help="Wall-clock acceleration; only used with --timing wall-clock")
     args = parser.parse_args()
     outputs = {ext: args.output.with_suffix(ext) for ext in (".mp4", ".gif", ".png", ".json")}
     if not args.overwrite and any(p.exists() for p in outputs.values()):
@@ -233,29 +301,40 @@ def main():
         if episodes[i]["metadata"]["initial_observation_sha256"] != episodes[i + 6]["metadata"]["initial_observation_sha256"]:
             raise ValueError("Paired models have different initial states")
     grid = Grid(episodes, args.font)
-    frame_steps = [0] * FPS + list(range(1, HORIZON + 1)) + [HORIZON] * (FPS * 3)
+    if args.timing == "wall-clock":
+        if not 1 <= args.speed <= 100:
+            parser.error("--speed must be 1..100")
+        maximum = max(sum(float(e["episode"]["wall_seconds"])
+                          for e in episodes[offset:offset + 6]) for offset in (0, 6))
+        frame_values = [n / FPS for n in range(round(maximum / args.speed * FPS) + FPS * 2)]
+        make_frame = lambda value: grid.wall_frame(min(value * args.speed, maximum), args.speed)
+    else:
+        frame_values = [0] * FPS + list(range(1, HORIZON + 1)) + [HORIZON] * (FPS * 3)
+        make_frame = grid.frame
     command = [args.ffmpeg, "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
                "-s", f"{SIZE[0]}x{SIZE[1]}", "-r", str(FPS), "-i", "-", "-an",
                "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(outputs[".mp4"])]
     process = subprocess.Popen(command, stdin=subprocess.PIPE)
     try:
-        for step in frame_steps:
-            frame = grid.frame(step)
+        for value in frame_values:
+            frame = make_frame(value)
             process.stdin.write(frame.tobytes())
     finally:
         process.stdin.close()
     if process.wait() != 0:
         raise RuntimeError("MP4 encoder failed")
-    grid.frame(HORIZON).save(outputs[".png"])
+    make_frame(frame_values[-1]).save(outputs[".png"])
     subprocess.run([args.ffmpeg, "-v", "error", "-y", "-i", str(outputs[".mp4"]),
                     "-filter_complex", "split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3",
                     "-loop", "0", str(outputs[".gif"])], check=True)
     metadata = {"layout": "2 rows x 6 columns; Jev then GPT-6 Astra", "source_batch": args.batch.name,
                 "columns": [f"{task}-{seed}" for task, seed in TASKS], "size": SIZE,
-                "frames_before_gif_optimization": len(frame_steps), "fps": FPS,
-                "duration_seconds": len(frame_steps) / FPS, "model_calls_during_render": 0,
+                "frames_before_gif_optimization": len(frame_values), "fps": FPS,
+                "duration_seconds": len(frame_values) / FPS, "model_calls_during_render": 0,
                 "replay": "Original seeds and recorded actions; every observation and evaluation verified. No inferred continuation after termination.",
-                "timing": "10 environment steps per playback second; API waiting omitted, terminal scenes held. Not a model-speed comparison.",
+                "timing": (f"Shared recorded wall-clock timeline at {args.speed:g}x; API waits retained; episodes run sequentially."
+                           if args.timing == "wall-clock" else
+                           "10 environment steps per playback second; API waiting omitted, terminal scenes held. Not a model-speed comparison."),
                 "camera": CAMERA,
                 "probabilities": "Jev: actual API probabilities. GPT: choices only; no invented probabilities.",
                 "worker_sha256": digest(worker_path), "renderer_sha256": digest(Path(__file__)),

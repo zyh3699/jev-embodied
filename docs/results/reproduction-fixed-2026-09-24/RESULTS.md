@@ -39,7 +39,9 @@ LIBERO 混合组共有 52 次 GPT 请求和 51 次 Jev 请求，用量完整。�
 - 观测：仿真状态，不使用相机。
 - 配对依据：同一 `scene_hash`、任务和 seed。
 
-[Jev 动图](panda/jev-transfer.gif) · [GPT 动图](panda/gpt-transfer.gif) · [Jev 视频](panda/jev-transfer.mp4) · [GPT 视频](panda/gpt-transfer.mp4)
+[同一墙钟时间轴动图](panda/wallclock-comparison.gif) · [墙钟对照视频](panda/wallclock-comparison.mp4) · [Jev 单独轨迹](panda/jev-transfer.mp4) · [GPT 单独轨迹](panda/gpt-transfer.mp4)
+
+墙钟对照按记录的逐次 API 延迟显示等待，以总墙钟时间与模型延迟之差分配真实 qpos 帧；两侧统一 4× 播放。Jev 在 7.39 秒完成，GPT-6 Astra 在 47.55 秒完成。
 
 额外的 Jev 九局开发集结果为 9/9、63.98 秒、估算 $0.004853；由于 GPT 本轮只运行一局，它不进入主配对图。
 
@@ -51,9 +53,10 @@ LIBERO 混合组共有 52 次 GPT 请求和 51 次 Jev 请求，用量完整。�
 - 配对依据：六组 `initial_observation_sha256` 全部一致。
 - 回放验证：12 条轨迹的全部保存观测、官方成功标记和初始哈希重新执行后完全一致，最大数值误差为 0。
 
-[并排视频](metaworld/paired-grid.mp4) · [动态 GIF](metaworld/paired-grid.gif) · [统计图](metaworld/comparison/comparison.png) · [逐局数据](metaworld/comparison/episodes.csv) · [图表说明](metaworld/comparison/FIGURE_NOTES.md)
+[墙钟对照 GIF](metaworld/paired-wallclock.gif) · [墙钟对照视频](metaworld/paired-wallclock.mp4) · [按环境步核对的原回放](metaworld/paired-grid.mp4) · [统计图](metaworld/comparison/comparison.png) · [逐局数据](metaworld/comparison/episodes.csv) · [图表说明](metaworld/comparison/FIGURE_NOTES.md)
 
 两组产生了相同的 765 个环境步和 5/6 成功数；差异主要来自接口效率。Jev 请求延迟中位数为 365 ms，GPT 为 3019 ms。
+墙钟动图让每排六局按实际顺序运行，在统一时间轴上 40× 播放；每次模型等待由记录的两层调用延迟重建，动作仍来自逐步验证过的原始轨迹。
 
 ## LIBERO
 

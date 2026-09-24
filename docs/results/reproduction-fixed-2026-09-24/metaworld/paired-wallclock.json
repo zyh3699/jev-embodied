@@ -1,0 +1,219 @@
+{
+  "layout": "2 rows x 6 columns; Jev then GPT-6 Astra",
+  "source_batch": "metaworld-paired",
+  "columns": [
+    "reach-v3-0",
+    "reach-v3-1",
+    "push-v3-0",
+    "push-v3-1",
+    "pick-place-v3-0",
+    "pick-place-v3-1"
+  ],
+  "size": [
+    1506,
+    916
+  ],
+  "frames_before_gif_optimization": 289,
+  "fps": 10,
+  "duration_seconds": 28.9,
+  "model_calls_during_render": 0,
+  "replay": "Original seeds and recorded actions; every observation and evaluation verified. No inferred continuation after termination.",
+  "timing": "Shared recorded wall-clock timeline at 40x; API waits retained; episodes run sequentially.",
+  "camera": {
+    "lookat": [
+      0.0,
+      0.73,
+      0.15
+    ],
+    "distance": 0.95,
+    "azimuth": 160.0,
+    "elevation": -40.0
+  },
+  "probabilities": "Jev: actual API probabilities. GPT: choices only; no invented probabilities.",
+  "worker_sha256": "ad7237c0cbe4e97b687f0a9b74882ea590853716984a386ba262dff6bebb235f",
+  "renderer_sha256": "46e3d39ff62d843654d2cd03794d6edc892d9ee0e04f5bd84b24b4a03839a8e4",
+  "episodes": [
+    {
+      "policy": "jev",
+      "case": "reach-v3-0",
+      "model": "jev-1.13.0",
+      "steps": 71,
+      "status": "success",
+      "error_type": null,
+      "trace": "jev/reach-v3-0-trace.jsonl",
+      "trace_sha256": "1f365d3f02bfd792ccf24cae90dbdb713c96ded74005eba0560cc4de20624af5",
+      "summary_sha256": "00c3ded584623cc231ba34cb334311b669d23aaff3905f3e48bf1abc5d8c1b13",
+      "initial_observation_sha256": "b9d3fc94a13e081cccd7cde14efa7ac33e28344eba2dadbc37ee97f8a3126099",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "jev",
+      "case": "reach-v3-1",
+      "model": "jev-1.13.0",
+      "steps": 56,
+      "status": "success",
+      "error_type": null,
+      "trace": "jev/reach-v3-1-trace.jsonl",
+      "trace_sha256": "1533dcbccc4a0af49a28569dfe5badc5ce4c7fe7e78b9a2c4315fa9521406b2e",
+      "summary_sha256": "00c3ded584623cc231ba34cb334311b669d23aaff3905f3e48bf1abc5d8c1b13",
+      "initial_observation_sha256": "479116ed6d7fd38f235612a84cc67c3821e704aaa4abb2f7dac447e0897b5578",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "jev",
+      "case": "push-v3-0",
+      "model": "jev-1.13.0",
+      "steps": 200,
+      "status": "step_limit",
+      "error_type": null,
+      "trace": "jev/push-v3-0-trace.jsonl",
+      "trace_sha256": "f9be29f4dab922285e1e209d36227319cef8270252cc037ac9f07db1f2482890",
+      "summary_sha256": "00c3ded584623cc231ba34cb334311b669d23aaff3905f3e48bf1abc5d8c1b13",
+      "initial_observation_sha256": "50d858312ad601c359cdd11dcb648c57b6869a1899aa773751f7070fd8c6a182",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "jev",
+      "case": "push-v3-1",
+      "model": "jev-1.13.0",
+      "steps": 78,
+      "status": "success",
+      "error_type": null,
+      "trace": "jev/push-v3-1-trace.jsonl",
+      "trace_sha256": "234eda193f10b6e388aa1f6b20e2ad1b4b2ad6a12c3dfa57238e2212cbc71cfe",
+      "summary_sha256": "00c3ded584623cc231ba34cb334311b669d23aaff3905f3e48bf1abc5d8c1b13",
+      "initial_observation_sha256": "73192156034ba7327f2a186588d381fcab769d54995c94d8582cb5c2313f1fb0",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "jev",
+      "case": "pick-place-v3-0",
+      "model": "jev-1.13.0",
+      "steps": 191,
+      "status": "success",
+      "error_type": null,
+      "trace": "jev/pick-place-v3-0-trace.jsonl",
+      "trace_sha256": "38ee9475d13a2d98f66a9c83aef9e6e7206b138b62eac54b80b3f38c5274f85c",
+      "summary_sha256": "00c3ded584623cc231ba34cb334311b669d23aaff3905f3e48bf1abc5d8c1b13",
+      "initial_observation_sha256": "6a4b31964aa2dae926073434f0eaf8c404146710a142fdf18fb0f3b046502bae",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "jev",
+      "case": "pick-place-v3-1",
+      "model": "jev-1.13.0",
+      "steps": 169,
+      "status": "success",
+      "error_type": null,
+      "trace": "jev/pick-place-v3-1-trace.jsonl",
+      "trace_sha256": "bf617777548e13d821796d5b70c60ed243867d35eddb765eea5b129ff6e51322",
+      "summary_sha256": "00c3ded584623cc231ba34cb334311b669d23aaff3905f3e48bf1abc5d8c1b13",
+      "initial_observation_sha256": "9b9034cab0796bd0e6f2c1f0eed39ad5b6f537a753d1e1928b4515859d2dbc2d",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "chat",
+      "case": "reach-v3-0",
+      "model": "gpt-6-astra",
+      "steps": 71,
+      "status": "success",
+      "error_type": null,
+      "trace": "chat/reach-v3-0-trace.jsonl",
+      "trace_sha256": "c1658ac449628577ac9300f567e37599d60ef9c671b8f6bb1508d6015589328f",
+      "summary_sha256": "4b0cfcda779efc78998a014549d1078c3442759a84c131ea6068534b2e86de89",
+      "initial_observation_sha256": "b9d3fc94a13e081cccd7cde14efa7ac33e28344eba2dadbc37ee97f8a3126099",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "chat",
+      "case": "reach-v3-1",
+      "model": "gpt-6-astra",
+      "steps": 56,
+      "status": "success",
+      "error_type": null,
+      "trace": "chat/reach-v3-1-trace.jsonl",
+      "trace_sha256": "695d444b2da4675ae7465a0018cd9a8d15f4c5f22b8df539cfbf19ea273b9660",
+      "summary_sha256": "4b0cfcda779efc78998a014549d1078c3442759a84c131ea6068534b2e86de89",
+      "initial_observation_sha256": "479116ed6d7fd38f235612a84cc67c3821e704aaa4abb2f7dac447e0897b5578",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "chat",
+      "case": "push-v3-0",
+      "model": "gpt-6-astra",
+      "steps": 200,
+      "status": "step_limit",
+      "error_type": null,
+      "trace": "chat/push-v3-0-trace.jsonl",
+      "trace_sha256": "b7c910d0ec07ccb32d5864c9c4626cea965e7ae8a0b5d411f6e9502d7b9ab7ec",
+      "summary_sha256": "4b0cfcda779efc78998a014549d1078c3442759a84c131ea6068534b2e86de89",
+      "initial_observation_sha256": "50d858312ad601c359cdd11dcb648c57b6869a1899aa773751f7070fd8c6a182",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "chat",
+      "case": "push-v3-1",
+      "model": "gpt-6-astra",
+      "steps": 78,
+      "status": "success",
+      "error_type": null,
+      "trace": "chat/push-v3-1-trace.jsonl",
+      "trace_sha256": "b74f42936eab592279b3b58148752c9090742af208866e58f4387f3303d0c985",
+      "summary_sha256": "4b0cfcda779efc78998a014549d1078c3442759a84c131ea6068534b2e86de89",
+      "initial_observation_sha256": "73192156034ba7327f2a186588d381fcab769d54995c94d8582cb5c2313f1fb0",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "chat",
+      "case": "pick-place-v3-0",
+      "model": "gpt-6-astra",
+      "steps": 191,
+      "status": "success",
+      "error_type": null,
+      "trace": "chat/pick-place-v3-0-trace.jsonl",
+      "trace_sha256": "c552a85c130d8a296126d7b7361cdffa9531a98f7e425244ac8e3244dbc91239",
+      "summary_sha256": "4b0cfcda779efc78998a014549d1078c3442759a84c131ea6068534b2e86de89",
+      "initial_observation_sha256": "6a4b31964aa2dae926073434f0eaf8c404146710a142fdf18fb0f3b046502bae",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "chat",
+      "case": "pick-place-v3-1",
+      "model": "gpt-6-astra",
+      "steps": 169,
+      "status": "success",
+      "error_type": null,
+      "trace": "chat/pick-place-v3-1-trace.jsonl",
+      "trace_sha256": "2fc5cc05f951eb1e8194b71b43978155e525aad612dfb94335f735339de3433e",
+      "summary_sha256": "4b0cfcda779efc78998a014549d1078c3442759a84c131ea6068534b2e86de89",
+      "initial_observation_sha256": "9b9034cab0796bd0e6f2c1f0eed39ad5b6f537a753d1e1928b4515859d2dbc2d",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    }
+  ],
+  "artifacts": {
+    "paired-wallclock.mp4": {
+      "sha256": "e45d7bbef96dc52ed5cf01860d2e66e4c3d7553b438380fc3930144ef70ba5fb",
+      "bytes": 1220322
+    },
+    "paired-wallclock.gif": {
+      "sha256": "40cf2a0dcdbe96b25447a4aa19e5ee7924d06835fd84844d939646469c10f33c",
+      "bytes": 3078521
+    },
+    "paired-wallclock.png": {
+      "sha256": "6f973abf3dd41381825797e84336f05e76f82bbcd7a060a9a6f1c8692b1a9a2b",
+      "bytes": 310634
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "timing": "Shared recorded wall-clock timeline; output uniformly accelerated.",
+  "playback_speed": 4.0,
+  "fps": 10,
+  "duration_seconds": 13.9,
+  "model_calls_during_render": 0,
+  "physics_steps_during_render": 0,
+  "episodes": [
+    {
+      "label": "Jev",
+      "path": "runs/revalidation-2026-09-24/jev-skills-dev/transfer-0-episode.json",
+      "sha256": "8dd554be6ed4dbb7d454fc42f068e0f9cbdfa3ac2ed52ac101b872dfa4fc0a64",
+      "wall_seconds": 7.39
+    },
+    {
+      "label": "GPT-6 Astra",
+      "path": "runs/reproduction-fixed-2026-09-24/panda-gpt/transfer-0-episode.json",
+      "sha256": "ccc7959896b0e7d0d3f9bf8203ca3e0c00abad5e1f1c40ff453318d1bfe97f57",
+      "wall_seconds": 47.55
+    }
+  ],
+  "artifacts": {
+    "wallclock-comparison.mp4": {
+      "sha256": "28fc9dae8103b954bf4ef5800dea28937ac407943fb6ffd98896232190c51338",
+      "bytes": 293112
+    },
+    "wallclock-comparison.gif": {
+      "sha256": "36b94de2b4334372b105a2ce442e325763e483338027499c22ab2899434bec21",
+      "bytes": 682308
+    },
+    "wallclock-comparison.png": {
+      "sha256": "335cc3d6f44188c205a5957d021ab8bf168ff164e09b088259f3211a1316b664",
+      "bytes": 146363
+    }
+  }
+}

@@ -24,23 +24,21 @@
 
 两组使用相同 MuJoCo 场景和 seed 0，模型选择离散技能，代码控制器执行连续运动。两组都成功；另一次 Jev 开发集运行为 3 个任务 × 3 seeds、9/9 成功，但不与 GPT 单局混算。
 
-| Jev | GPT-6 Astra |
-|---|---|
-| ![Panda Jev 动态回放](docs/results/reproduction-fixed-2026-09-24/panda/jev-transfer.gif) | ![Panda GPT 动态回放](docs/results/reproduction-fixed-2026-09-24/panda/gpt-transfer.gif) |
+![Panda Jev 与 GPT 同一墙钟时间轴对照](docs/results/reproduction-fixed-2026-09-24/panda/wallclock-comparison.gif)
 
-[Jev MP4](docs/results/reproduction-fixed-2026-09-24/panda/jev-transfer.mp4) · [GPT MP4](docs/results/reproduction-fixed-2026-09-24/panda/gpt-transfer.mp4)
+[墙钟对照 MP4](docs/results/reproduction-fixed-2026-09-24/panda/wallclock-comparison.mp4) · [Jev 单独轨迹](docs/results/reproduction-fixed-2026-09-24/panda/jev-transfer.mp4) · [GPT 单独轨迹](docs/results/reproduction-fixed-2026-09-24/panda/gpt-transfer.mp4)
 
-动图约 4× 加速；两段都由各自保存的真实 qpos 离线重绘。
+动图用同一个实验时钟做 4× 播放：黄色表示等待 API，绿色/蓝色表示执行保存的真实 qpos。Jev 在 7.39 秒完成并保持末帧，GPT-6 Astra 到 47.55 秒完成，因此 6.4× 的端到端差异直接体现在画面中。
 
 ### 2. Meta-World：结构化分层控制
 
 固定 `reach-v3`、`push-v3`、`pick-place-v3`，每项两个 seeds。两组共享六个初始状态、200 步与 80 次调用上限；两者都在 `push-v3` seed 0 达到步数上限，其余 5 局成功。回放由保存动作重新执行，12 条轨迹的每一步观测与成功标记误差均为 0。
 
-![Meta-World 十二局动态对照](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-grid.gif)
+![Meta-World 十二局墙钟时间动态对照](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-wallclock.gif)
 
-[观看 12 局并排 MP4](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-grid.mp4) · [详细统计图](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/comparison.png) · [逐局 CSV](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/episodes.csv)
+[墙钟对照 MP4](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-wallclock.mp4) · [按环境步核对的原回放](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-grid.mp4) · [详细统计图](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/comparison.png) · [逐局 CSV](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/episodes.csv)
 
-动图按环境步同步，结束后保持末帧；API 等待未计入播放速度，因此不能用视频长度比较推理速度。
+动图让每排六局依次运行，并在同一实验时钟上做 40× 播放；黄色明确显示保存记录中的 API 等待。Jev 六局在 126.36 秒完成，GPT-6 Astra 用时 1075.66 秒，8.5× 的端到端差异没有被轨迹同步抹掉。
 
 ### 3. LIBERO：视觉规划 + 局部控制
 
