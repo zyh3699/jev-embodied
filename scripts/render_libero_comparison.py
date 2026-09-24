@@ -198,14 +198,20 @@ def render(pair, output, speed=8., fps=15):
         encoder.stdin.close()
     if encoder.wait():
         raise RuntimeError("Video encoder failed")
-    digest = hashlib.sha256(video.read_bytes()).hexdigest()
+    gif = output / "comparison.gif"
+    subprocess.run([imageio_ffmpeg.get_ffmpeg_exe(), "-v", "error", "-y", "-i", str(video),
+        "-filter_complex", ("setpts=PTS/4,fps=8,scale=800:-1:flags=lanczos,split[a][b];"
+                            "[a]palettegen=max_colors=64:stats_mode=diff[p];"
+                            "[b][p]paletteuse=dither=bayer:bayer_scale=5"),
+        "-loop", "0", str(gif)], check=True)
     metadata = {"speed": speed, "fps": fps, "duration_seconds": count/fps,
                 "wall_seconds": end, "timeline": "shared rollout wall time including all model waits; setup excluded",
-                "video_sha256": digest,
+                "video_sha256": hashlib.sha256(video.read_bytes()).hexdigest(),
+                "gif_speedup_over_mp4": 4, "gif_sha256": hashlib.sha256(gif.read_bytes()).hexdigest(),
                 "episodes": [{"path": str(e.root / "episode.json"), "sha256": hashlib.sha256((e.root/"episode.json").read_bytes()).hexdigest(),
                               "mode":e.row["mode"],"success":e.row["success"]} for e in episodes]}
     (output / "media.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2)+"\n")
-    print(json.dumps({"video":str(video),"seconds":count/fps,"wall_seconds":end}, ensure_ascii=False))
+    print(json.dumps({"video":str(video),"gif":str(gif),"seconds":count/fps,"wall_seconds":end}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

@@ -39,7 +39,7 @@ LIBERO 混合组共有 52 次 GPT 请求和 51 次 Jev 请求，用量完整。�
 - 观测：仿真状态，不使用相机。
 - 配对依据：同一 `scene_hash`、任务和 seed。
 
-[Jev 视频](panda/jev-transfer.mp4) · [GPT 视频](panda/gpt-transfer.mp4) · [Jev 末帧](panda/jev-transfer.png) · [GPT 末帧](panda/gpt-transfer.png)
+[Jev 动图](panda/jev-transfer.gif) · [GPT 动图](panda/gpt-transfer.gif) · [Jev 视频](panda/jev-transfer.mp4) · [GPT 视频](panda/gpt-transfer.mp4)
 
 额外的 Jev 九局开发集结果为 9/9、63.98 秒、估算 $0.004853；由于 GPT 本轮只运行一局，它不进入主配对图。
 
@@ -64,7 +64,7 @@ LIBERO 混合组共有 52 次 GPT 请求和 51 次 Jev 请求，用量完整。�
 - 配对依据：初始状态、settled 状态、相机变换、控制器和仿真版本哈希一致。
 - 保护：1200 秒墙钟上限、每局 $5 费用 admission guard；费用可能略超阈值，因为先完成当前请求再检查。
 
-[包含真实等待的配对视频](libero/drawer-supervisor-v2/comparison.mp4) · [初始帧](libero/drawer-supervisor-v2/poster.png) · [末帧](libero/drawer-supervisor-v2/final.png)
+[README 加速动图](libero/drawer-supervisor-v2/comparison.gif) · [包含真实等待的配对视频](libero/drawer-supervisor-v2/comparison.mp4) · [末帧](libero/drawer-supervisor-v2/final.png)
 
 视觉越界与瞬时网络错误已有动作前重试，两组都真实执行了机械臂。纯 GPT 在 310 步、混合组在 505 步达到约 `$5` 费用保护；抽屉都未达到官方关闭阈值。逐检查点记录长期为 `visual_progress=unchanged`，主要瓶颈是共享 GPT 视觉候选没有稳定形成有效接触几何，而不是接口完全不可用。
 

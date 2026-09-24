@@ -26,17 +26,21 @@
 
 | Jev | GPT-6 Astra |
 |---|---|
-| ![Panda Jev 末帧](docs/results/reproduction-fixed-2026-09-24/panda/jev-transfer.png) | ![Panda GPT 末帧](docs/results/reproduction-fixed-2026-09-24/panda/gpt-transfer.png) |
+| ![Panda Jev 动态回放](docs/results/reproduction-fixed-2026-09-24/panda/jev-transfer.gif) | ![Panda GPT 动态回放](docs/results/reproduction-fixed-2026-09-24/panda/gpt-transfer.gif) |
 
 [Jev MP4](docs/results/reproduction-fixed-2026-09-24/panda/jev-transfer.mp4) · [GPT MP4](docs/results/reproduction-fixed-2026-09-24/panda/gpt-transfer.mp4)
+
+动图约 4× 加速；两段都由各自保存的真实 qpos 离线重绘。
 
 ### 2. Meta-World：结构化分层控制
 
 固定 `reach-v3`、`push-v3`、`pick-place-v3`，每项两个 seeds。两组共享六个初始状态、200 步与 80 次调用上限；两者都在 `push-v3` seed 0 达到步数上限，其余 5 局成功。回放由保存动作重新执行，12 条轨迹的每一步观测与成功标记误差均为 0。
 
-![Meta-World 六局末帧](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-grid.png)
+![Meta-World 十二局动态对照](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-grid.gif)
 
 [观看 12 局并排 MP4](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-grid.mp4) · [详细统计图](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/comparison.png) · [逐局 CSV](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/episodes.csv)
+
+动图按环境步同步，结束后保持末帧；API 等待未计入播放速度，因此不能用视频长度比较推理速度。
 
 ### 3. LIBERO：视觉规划 + 局部控制
 
@@ -44,9 +48,11 @@
 
 纯 GPT 在 310 步达到 `$5` 费用保护；GPT + Jev 在近似费用下执行了 505 步，也达到费用保护。两条轨迹都没有通过 LIBERO 官方成功判定，因此这项实验只说明混合路线单位预算推进更多，不能说明 Jev 提高成功率。
 
-![LIBERO 配对实验末帧](docs/results/reproduction-fixed-2026-09-24/libero/drawer-supervisor-v2/final.png)
+![LIBERO 配对实验动态回放](docs/results/reproduction-fixed-2026-09-24/libero/drawer-supervisor-v2/comparison.gif)
 
 [观看包含模型等待的配对 MP4](docs/results/reproduction-fixed-2026-09-24/libero/drawer-supervisor-v2/comparison.mp4)
+
+README 动图为约 32× 墙钟时间回放；MP4 为 8×，两者都保留模型等待区间，未补造中间轨迹。
 
 ## 安装与启动
 
