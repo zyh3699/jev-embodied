@@ -82,10 +82,19 @@ class MetaWorld:
                 "note": "Object slots may be zero-padded. Goal is from the official goal-visible observation."}
         if getattr(self, "control_mode", "skills") == "hierarchical":
             env = self.env.unwrapped
+            # Meta-World 3.1.1's drawer task still calls the removed
+            # ``model.geom_name2id`` API, and the door task uses ``handle``
+            # instead of the default ``objGeom``. Resolve both through the
+            # supported named-data API so an observation never crashes.
+            try:
+                bilateral_contact = bool(env.touching_main_object)
+            except (AttributeError, KeyError):
+                geom_name = "handle" if self.case["task"].startswith("door-") else "objGeom"
+                bilateral_contact = bool(env.touching_object(env.data.geom(geom_name).id))
             result["manipulation"] = {
                 "hand_position_m": v[:3].tolist(),
                 "finger_center_m": np.asarray(env.tcp_center, dtype=float).tolist(),
-                "bilateral_contact": bool(env.touching_main_object),
+                "bilateral_contact": bilateral_contact,
                 "translation_metres_per_unit": float(env.action_scale),
                 "note": "Legacy tcp is the hand reference, not the finger center. Contact is measured on both pads; closed fingers alone do not prove a grasp.",
             }

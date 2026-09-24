@@ -95,7 +95,50 @@ def test_invalid_subgoal_and_unknown_task_fail_explicitly():
     with pytest.raises(ValueError, match="Unknown"):
         h.motor_input(state, options, "invented", obs, .5, 5)
     with pytest.raises(ValueError, match="No validated"):
-        h.prepare(observation("door-open-v3"), obs, [])
+        h.prepare(observation("unvalidated-v3"), obs, [])
+
+
+@pytest.mark.parametrize("task, expected, gripper", [
+    ("drawer-open-v3", {"approach_handle", "engage_handle", "pull_drawer", "finish"}, "open"),
+    ("door-open-v3", {"approach_handle", "engage_handle", "swing_door", "finish"}, "close"),
+])
+def test_fixture_tasks_expose_measured_handle_geometry(task, expected, gripper):
+    obs = observation(task)
+    obs["object_slots"][0]["position"] = [.2, .7, .15]
+    obs["goal"] = [-.2, .5, .15]
+    state, options = h.prepare(obs, obs, [])
+    assert set(options) == expected
+    assert state["handle_goal_distance_mm"] > 400
+    assert state["handle_stage_error_mm"] > 0
+    assert not state["handle_stage_reached"]
+    assert not state["handle_approach_completed"]
+    assert not state["handle_actuation_started"]
+    action = "pull_drawer" if task.startswith("drawer") else "swing_door"
+    assert options[action]["finger_intent"] == gripper
+    assert "success" not in state and "reward" not in state
+
+
+def test_fixture_progress_latches_prevent_approach_engage_oscillation():
+    obs = observation("drawer-open-v3")
+    obs["object_slots"][0]["position"], obs["goal"] = ([.1, .7, .1], [.1, .5, .1])
+    state, _ = h.prepare(obs, obs, [{"subgoal": "engage_handle"}])
+    assert state["handle_approach_completed"] and not state["handle_actuation_started"]
+    state, _ = h.prepare(obs, obs, [{"subgoal": "pull_drawer"}])
+    assert state["handle_approach_completed"] and state["handle_actuation_started"]
+
+
+def test_drawer_and_door_use_distinct_hand_frame_waypoints():
+    drawer = observation("drawer-open-v3")
+    drawer["object_slots"][0]["position"], drawer["goal"] = ([.1, .7, .1], [.1, .5, .1])
+    _, drawer_options = h.prepare(drawer, drawer, [])
+    assert drawer_options["approach_handle"]["target_hand_m"] == pytest.approx([.1, .7, .3])
+    assert drawer_options["pull_drawer"]["target_hand_m"] == pytest.approx([.1, .5, .083])
+
+    door = observation("door-open-v3")
+    door["object_slots"][0]["position"], door["goal"] = ([.2, .7, .15], [-.2, .45, .15])
+    _, door_options = h.prepare(door, door, [])
+    assert door_options["approach_handle"]["target_hand_m"] == pytest.approx([.2, .73, .21])
+    assert door_options["swing_door"]["target_hand_m"] == pytest.approx([-.17, .43, .15])
 
 
 def test_adaptive_amplitudes_are_bounded_and_all_motor_options_remain_available():

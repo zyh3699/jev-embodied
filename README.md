@@ -4,7 +4,7 @@
 
 ## 当前结论
 
-**现有小样本没有证明 Jev 能提高任务成功率，但明确显示它适合替代昂贵、缓慢的结构化局部决策。** Panda 配对单局和 Meta-World 六局中，两种方法成功数相同，Jev 分别快 6.4 倍和 8.5 倍；LIBERO 两种方法都未完成，不能作成功率结论。
+**现有小样本还不足以证明 Jev 能普遍提高任务成功率，但明确显示它适合替代昂贵、缓慢的结构化局部决策。** Panda 配对单局和 Meta-World 原六局中，两种方法成功数相同；新增开抽屉/开门四局中 Jev 为 4/4，GPT 为 3/4（一次接口超时后的格式错误）。Jev 在三组已完成的 MuJoCo / Meta-World 对照中分别快 6.4、8.5 和 12.1 倍。
 
 ![三组配对实验总览](docs/results/reproduction-fixed-2026-09-24/final-overview-v2/overview.png)
 
@@ -12,6 +12,7 @@
 |---|---:|---:|---|
 | Panda `transfer` seed 0 | 1/1；7.39 s；$0.000538 | 1/1；47.55 s；$0.5941 | 成功相同；Jev 快 6.4×，估算费用低约 1104× |
 | Meta-World 3 任务 × 2 seeds | 5/6；126.36 s；$0.0183 | 5/6；1075.66 s；$15.9184 | 成功相同；Jev 快 8.5×，估算费用低约 872× |
+| Meta-World 开抽屉/开门 × 2 seeds | 4/4；115.64 s；≥$0.0143 | 3/4；1403.73 s；≥$10.4788 | Jev 快 12.1×；GPT 一局运行中断，样本仍很小 |
 | LIBERO 关闭抽屉 init 0 | GPT 候选 + Jev：0/1；1068.40 s；$5.0931；505 步 | 0/1；998.84 s；$5.0562；310 步 | 两组都失败；相近预算下混合组推进更多，但没有效果提升证据 |
 
 费用按 Jev 输入 `$0.042 / 1M`、GPT-6 Astra 输入/输出 `$10 / $50 / 1M` 估算，不代表中转平台账单。
@@ -39,6 +40,14 @@
 [墙钟对照 MP4](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-wallclock.mp4) · [按环境步核对的原回放](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-grid.mp4) · [详细统计图](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/comparison.png) · [逐局 CSV](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/episodes.csv)
 
 动图让每排六局依次运行，并在同一实验时钟上做 40× 播放；黄色明确显示保存记录中的 API 等待。Jev 六局在 126.36 秒完成，GPT-6 Astra 用时 1075.66 秒，8.5× 的端到端差异没有被轨迹同步抹掉。
+
+新增的 `drawer-open-v3` 与 `door-open-v3` 各跑两个相同 seeds。适配器加入把手接近、贴合、拉抽屉和转动门的阶段状态；成功仍只取 Meta-World 官方判定。Jev 四局全部成功并用时 115.64 秒；GPT 三局成功，一局在 120 秒读取超时后的规划格式重试中断，整批用时 1403.73 秒。
+
+![Meta-World 开抽屉与开门墙钟动态对照](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/paired-wallclock.gif)
+
+![新增任务成功、时间与价格](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/summary.png)
+
+[墙钟对照 MP4](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/paired-wallclock.mp4) · [简洁图 SVG](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/summary.svg) · [统计审计数据](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/summary.json) · [完整统计图](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/comparison/comparison.png)
 
 ### 3. LIBERO：视觉规划 + 局部控制
 
@@ -94,6 +103,12 @@ python scripts/run_metaworld_hierarchical_comparison.py \
   --worker-python .venv-metaworld/bin/python \
   --plot-python "$(which python)" \
   --validation-retries 1 --request-retries 1
+```
+
+新增开抽屉/开门任务使用同一命令，额外指定：
+
+```bash
+--manifest benchmarks/metaworld-fixtures-compare.json
 ```
 
 ### LIBERO

@@ -41,6 +41,7 @@ def source_hashes():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--manifest", type=Path, default=MANIFEST)
     parser.add_argument("--worker-python", type=Path, default=REPO / ".venv-metaworld/bin/python")
     parser.add_argument("--plot-python", type=Path, default=Path(sys.executable))
     parser.add_argument("--validation-retries", type=int, default=1)
@@ -51,7 +52,8 @@ def main():
     output = args.output.resolve()
     if output.exists():
         parser.error("Output already exists; previous trials must not be overwritten")
-    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+    manifest_path = args.manifest.resolve()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     protocol = {
         "name": "metaworld-hierarchical-compare",
         "status": "prepared_not_run",
@@ -75,7 +77,7 @@ def main():
             "request_retries": args.request_retries,
             "continue_on_error": True,
         },
-        "hierarchy_version": "metaworld-subgoal-v3",
+        "hierarchy_version": "metaworld-subgoal-v5",
         "request_contract": "one subgoal request followed by one XYZ/gripper request per decision round",
     }
     sys.path.insert(0, str(REPO / "src"))
@@ -97,7 +99,7 @@ def main():
     reports = []
     for provider in protocol["providers"]:
         namespace = SimpleNamespace(
-            manifest=str(MANIFEST),
+            manifest=str(manifest_path),
             output=str(output / provider),
             worker_python=str(args.worker_python),
             policy=provider,

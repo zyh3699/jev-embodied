@@ -1,0 +1,3657 @@
+{
+  "format": "embodied-jev-comparison-v1",
+  "manifest": {
+    "format": "embodied-jev-suite-v1",
+    "name": "metaworld-fixtures-compare",
+    "backend": "metaworld",
+    "split": "development",
+    "cases": [
+      {
+        "id": "drawer-open-v3-0",
+        "task": "drawer-open-v3",
+        "seed": 0
+      },
+      {
+        "id": "drawer-open-v3-1",
+        "task": "drawer-open-v3",
+        "seed": 1
+      },
+      {
+        "id": "door-open-v3-0",
+        "task": "door-open-v3",
+        "seed": 0
+      },
+      {
+        "id": "door-open-v3-1",
+        "task": "door-open-v3",
+        "seed": 1
+      }
+    ]
+  },
+  "manifest_sha256": "2376f290d67f4464a3c15697c43123376242b365ce39e419f8091d02bee74be6",
+  "source_sha256": {
+    "evaluation.py": "cd3f9f903f0eae97b2b52be2bfe34d4235f9ea7a6e284360a91a12bca219cc90",
+    "evaluation_meter.py": "0037a65084462e9aedfee6f89e78c6cecea16a2923ad8b1b4d588902d9082eeb",
+    "benchmark_worker.py": "83adbf214006591d1a3a507863332c40ec46a65eacdec676f256a3987e45c82e",
+    "benchmark_hierarchy.py": "a25affa0f89713913f67dce02aaf70b17e2c98bcb3894149eac19ead707340a2",
+    "policies.py": "20179042ba3c1aeb9e155854a41236de5f04d286dac7cf05f61008f1fafc6377",
+    "hierarchical.py": "07a21d38479d73cb6f704c4031f17d5f28cfb12760674486fa7a0b65b253898e",
+    "physics.py": "2a8383c3a07b5cef72050b41b3a55cb638556f47e0265be443e8351fdc1c2ebc"
+  },
+  "renderer_sha256": "c23d7bb56c801c18bdc3aa5a520863abe69e6821ba9145e166ed280020c318a6",
+  "protocol": {
+    "max_steps": 200,
+    "max_calls": 80,
+    "timeout": 600.0,
+    "threshold": 0.0,
+    "action_scale": 0.5,
+    "control_mode": "hierarchical_xyz_gripper",
+    "observation_mode": "privileged",
+    "action_repeat": 5
+  },
+  "complete": false,
+  "paired_initial_states": 4,
+  "planned_pairs": 4,
+  "scope": "Frozen paired subset; not a full official benchmark leaderboard score",
+  "token_source": "Provider-reported usage; missing usage is unavailable, not zero or estimated billing",
+  "latency_source": "Client wall time around each HTTP request, including failed requests; not server compute time",
+  "methods": [
+    {
+      "label": "Jev",
+      "policy": "jev",
+      "configured_model": "jev-latest",
+      "resolved_models": [
+        "jev-1.13.0"
+      ],
+      "report_sha256": "585a790fe8e9e828bd4f659ad1b52db6742bf04a67aeae086fc84b406a77a2e7",
+      "planned": 4,
+      "recorded": 4,
+      "scored": 4,
+      "missing": 0,
+      "unscored": 0,
+      "successes": 4,
+      "complete": true,
+      "success_rate": 1.0,
+      "verified_success_fraction": 1.0,
+      "observed_success_rate": 1.0,
+      "wilson_95": [
+        0.5101091635454027,
+        1.0
+      ],
+      "http_requests": 225,
+      "model_calls": 225,
+      "latency_n": 225,
+      "latency_p50_ms": 461.361,
+      "latency_p95_ms": 704.6327999999996,
+      "failures": {},
+      "token_usage": {
+        "input": {
+          "reported_calls": 224,
+          "reported_tokens": 341295,
+          "complete_episodes": 3
+        },
+        "output": {
+          "reported_calls": 224,
+          "reported_tokens": 22359,
+          "complete_episodes": 3
+        }
+      },
+      "per_task": {
+        "drawer-open-v3": {
+          "planned": 2,
+          "recorded": 2,
+          "scored": 2,
+          "missing": 0,
+          "unscored": 0,
+          "successes": 2,
+          "complete": true,
+          "success_rate": 1.0,
+          "verified_success_fraction": 1.0,
+          "observed_success_rate": 1.0,
+          "wilson_95": [
+            0.34238022750665303,
+            1.0
+          ]
+        },
+        "door-open-v3": {
+          "planned": 2,
+          "recorded": 2,
+          "scored": 2,
+          "missing": 0,
+          "unscored": 0,
+          "successes": 2,
+          "complete": true,
+          "success_rate": 1.0,
+          "verified_success_fraction": 1.0,
+          "observed_success_rate": 1.0,
+          "wilson_95": [
+            0.34238022750665303,
+            1.0
+          ]
+        }
+      }
+    },
+    {
+      "label": "Chat",
+      "policy": "chat",
+      "configured_model": "gpt-6-astra",
+      "resolved_models": [
+        "gpt-6-astra"
+      ],
+      "report_sha256": "75b1a53ad24aa30d9519cbe4bc967507b2caf0971f4c72cbe282b6706cd31561",
+      "planned": 4,
+      "recorded": 4,
+      "scored": 4,
+      "missing": 0,
+      "unscored": 0,
+      "successes": 3,
+      "complete": false,
+      "success_rate": null,
+      "verified_success_fraction": 0.75,
+      "observed_success_rate": 0.75,
+      "wilson_95": null,
+      "http_requests": 208,
+      "model_calls": 208,
+      "latency_n": 208,
+      "latency_p50_ms": 3347.0514999999996,
+      "latency_p95_ms": 18599.616749999837,
+      "failures": {
+        "runtime_error": 1
+      },
+      "token_usage": {
+        "input": {
+          "reported_calls": 206,
+          "reported_tokens": 999879,
+          "complete_episodes": 2
+        },
+        "output": {
+          "reported_calls": 206,
+          "reported_tokens": 9601,
+          "complete_episodes": 2
+        }
+      },
+      "per_task": {
+        "drawer-open-v3": {
+          "planned": 2,
+          "recorded": 2,
+          "scored": 2,
+          "missing": 0,
+          "unscored": 0,
+          "successes": 1,
+          "complete": false,
+          "success_rate": null,
+          "verified_success_fraction": 0.5,
+          "observed_success_rate": 0.5,
+          "wilson_95": null
+        },
+        "door-open-v3": {
+          "planned": 2,
+          "recorded": 2,
+          "scored": 2,
+          "missing": 0,
+          "unscored": 0,
+          "successes": 2,
+          "complete": true,
+          "success_rate": 1.0,
+          "verified_success_fraction": 1.0,
+          "observed_success_rate": 1.0,
+          "wilson_95": [
+            0.34238022750665303,
+            1.0
+          ]
+        }
+      }
+    }
+  ],
+  "episodes": [
+    {
+      "label": "Jev",
+      "policy": "jev",
+      "id": "drawer-open-v3-0",
+      "task": "drawer-open-v3",
+      "seed": 0,
+      "init_index": null,
+      "recorded": true,
+      "success": true,
+      "status": "success",
+      "steps": 115,
+      "model_calls": 47,
+      "http_requests": 47,
+      "wall_seconds": 24.413,
+      "simulated_seconds": 1.4375,
+      "input_tokens": null,
+      "output_tokens": null,
+      "api_calls": [
+        {
+          "latency_ms": 1436.541,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1014,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 353.237,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1607,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 443.416,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1055,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 937.685,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1648,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 409.517,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1095,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 487.821,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1687,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 622.681,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1133,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 607.884,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1741,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 620.25,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1188,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 715.473,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1794,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 449.0,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1204,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 474.899,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1825,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 401.208,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1234,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 414.994,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1849,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 400.568,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1248,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 649.612,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1866,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 352.183,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1247,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 428.538,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1879,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 402.03,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1266,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 493.283,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1882,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 457.347,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1251,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 514.128,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1851,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 474.631,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1235,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 505.992,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1850,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 342.358,
+          "http_status": 529,
+          "model": null,
+          "input_tokens": null,
+          "output_tokens": null
+        },
+        {
+          "latency_ms": 506.996,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1234,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 438.085,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1861,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 461.875,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1214,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 465.263,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1812,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 461.361,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1198,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 415.373,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1795,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 382.915,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1197,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 524.103,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1790,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 501.518,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1198,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 396.432,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1774,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 414.126,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1188,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 446.457,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1782,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 408.615,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1202,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 519.449,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1795,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 448.353,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1222,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 478.097,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1798,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 391.036,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1200,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 430.835,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1805,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 402.839,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1220,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 414.919,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1825,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 496.033,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1219,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 411.563,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1809,
+          "output_tokens": 144
+        }
+      ],
+      "initial_observation_sha256": "246863db93162501f59fa41e7b313de4201189731d805e6c9f2a849f019198b5",
+      "metadata": {
+        "benchmark": "Meta-World",
+        "version": "3.1.1",
+        "mujoco": "3.3.0",
+        "action_size": 4,
+        "protocol": "individual MT1 goal-visible task; custom evaluation subset, not MT10/ML10",
+        "success_source": "official info.success",
+        "reset_seed": 0,
+        "hierarchy_observation": "hand-and-finger-center-plus-bilateral-contact-v1",
+        "observation_mode": "privileged",
+        "camera_names": {},
+        "action_spec": {
+          "space": "metaworld_xyz",
+          "size": 4,
+          "normalized": true,
+          "frame": "world",
+          "gripper": {
+            "open": -1.0,
+            "close": 1.0
+          },
+          "control_hz": 80.0
+        }
+      },
+      "setup_seconds": 0.933,
+      "rollout_seconds": 23.393,
+      "input_reported_calls": 46,
+      "input_reported_tokens": 68787,
+      "input_complete": false,
+      "output_reported_calls": 46,
+      "output_reported_tokens": 4591,
+      "output_complete": false
+    },
+    {
+      "label": "Jev",
+      "policy": "jev",
+      "id": "drawer-open-v3-1",
+      "task": "drawer-open-v3",
+      "seed": 1,
+      "init_index": null,
+      "recorded": true,
+      "success": true,
+      "status": "success",
+      "steps": 115,
+      "model_calls": 46,
+      "http_requests": 46,
+      "wall_seconds": 23.265,
+      "simulated_seconds": 1.4375,
+      "input_tokens": 68777,
+      "output_tokens": 4591,
+      "api_calls": [
+        {
+          "latency_ms": 1343.378,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1015,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 408.901,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1606,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 460.084,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1055,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 529.511,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1646,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 445.287,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1096,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 423.015,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1686,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 477.529,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1134,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 468.994,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1740,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 506.604,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1189,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 439.146,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1808,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 679.68,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1220,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 479.73,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1840,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 460.212,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1248,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 708.627,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1860,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 456.039,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1249,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 549.87,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1879,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 453.386,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1249,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 476.646,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1881,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 456.62,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1249,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 487.602,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1864,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 396.947,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1235,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 435.084,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1833,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 494.341,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1234,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 477.218,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1861,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 480.975,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1234,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 435.148,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1860,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 430.055,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1214,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 487.007,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1810,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 524.671,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1198,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 544.966,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1794,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 462.696,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1197,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 402.776,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1789,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 351.556,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1198,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 448.307,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1771,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 402.537,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1188,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 466.299,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1777,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 408.936,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1203,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 540.01,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1793,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 394.062,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1220,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 434.765,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1794,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 401.038,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1198,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 434.841,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1801,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 482.079,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1217,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 452.201,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1820,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 444.561,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1218,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 404.802,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1806,
+          "output_tokens": 144
+        }
+      ],
+      "initial_observation_sha256": "b2c737cbff9ace379b8f3f10295b11d09a2bdbedf80922ce7b027ea1af2e43b8",
+      "metadata": {
+        "benchmark": "Meta-World",
+        "version": "3.1.1",
+        "mujoco": "3.3.0",
+        "action_size": 4,
+        "protocol": "individual MT1 goal-visible task; custom evaluation subset, not MT10/ML10",
+        "success_source": "official info.success",
+        "reset_seed": 1,
+        "hierarchy_observation": "hand-and-finger-center-plus-bilateral-contact-v1",
+        "observation_mode": "privileged",
+        "camera_names": {},
+        "action_spec": {
+          "space": "metaworld_xyz",
+          "size": 4,
+          "normalized": true,
+          "frame": "world",
+          "gripper": {
+            "open": -1.0,
+            "close": 1.0
+          },
+          "control_hz": 80.0
+        }
+      },
+      "setup_seconds": 0.7,
+      "rollout_seconds": 22.519,
+      "input_reported_calls": 46,
+      "input_reported_tokens": 68777,
+      "input_complete": true,
+      "output_reported_calls": 46,
+      "output_reported_tokens": 4591,
+      "output_complete": true
+    },
+    {
+      "label": "Jev",
+      "policy": "jev",
+      "id": "door-open-v3-0",
+      "task": "door-open-v3",
+      "seed": 0,
+      "init_index": null,
+      "recorded": true,
+      "success": true,
+      "status": "success",
+      "steps": 156,
+      "model_calls": 64,
+      "http_requests": 64,
+      "wall_seconds": 31.981,
+      "simulated_seconds": 1.95,
+      "input_tokens": 98750,
+      "output_tokens": 6380,
+      "api_calls": [
+        {
+          "latency_ms": 1333.708,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1033,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 572.443,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1638,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 461.45,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1085,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 476.424,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1689,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 346.661,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1142,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 451.163,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1731,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 399.778,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1181,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 466.136,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1784,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 385.844,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1235,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 418.871,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1838,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 378.71,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1236,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 391.337,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1823,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 410.559,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1215,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 448.132,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1817,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 453.481,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1231,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 389.0,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1831,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 454.394,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1230,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 419.837,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1845,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 416.262,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1231,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 558.475,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1833,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 450.298,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1245,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 485.068,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1847,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 824.453,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1233,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 368.881,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1851,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 443.028,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1252,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 471.009,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1876,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 351.032,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1285,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 450.248,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1893,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 478.13,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1281,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 527.493,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1889,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 418.359,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1299,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 435.257,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1924,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 466.341,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1296,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 465.755,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1889,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 376.738,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1267,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 581.777,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1860,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 446.741,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1248,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 441.607,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1841,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 359.951,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1233,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 471.315,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1825,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 429.352,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1199,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 416.604,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1790,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 468.351,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1202,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 360.275,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1794,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 516.988,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1200,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 682.434,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1823,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 400.167,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1230,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 457.335,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1837,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 423.487,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1245,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 636.464,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1867,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 461.488,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1280,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 666.909,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1886,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 435.795,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1296,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 465.837,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1920,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 532.016,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1294,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 455.094,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1918,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 544.399,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1311,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 512.482,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1937,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 714.931,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1312,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 419.138,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1939,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 489.034,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1327,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 453.741,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1937,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 466.667,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1307,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 452.995,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1917,
+          "output_tokens": 144
+        }
+      ],
+      "initial_observation_sha256": "ae0c722d4367d708fd703752a089c711f4881ad4e22249657d6508217185181a",
+      "metadata": {
+        "benchmark": "Meta-World",
+        "version": "3.1.1",
+        "mujoco": "3.3.0",
+        "action_size": 4,
+        "protocol": "individual MT1 goal-visible task; custom evaluation subset, not MT10/ML10",
+        "success_source": "official info.success",
+        "reset_seed": 0,
+        "hierarchy_observation": "hand-and-finger-center-plus-bilateral-contact-v1",
+        "observation_mode": "privileged",
+        "camera_names": {},
+        "action_spec": {
+          "space": "metaworld_xyz",
+          "size": 4,
+          "normalized": true,
+          "frame": "world",
+          "gripper": {
+            "open": -1.0,
+            "close": 1.0
+          },
+          "control_hz": 80.0
+        }
+      },
+      "setup_seconds": 0.796,
+      "rollout_seconds": 31.103,
+      "input_reported_calls": 64,
+      "input_reported_tokens": 98750,
+      "input_complete": true,
+      "output_reported_calls": 64,
+      "output_reported_tokens": 6380,
+      "output_complete": true
+    },
+    {
+      "label": "Jev",
+      "policy": "jev",
+      "id": "door-open-v3-1",
+      "task": "door-open-v3",
+      "seed": 1,
+      "init_index": null,
+      "recorded": true,
+      "success": true,
+      "status": "success",
+      "steps": 167,
+      "model_calls": 68,
+      "http_requests": 68,
+      "wall_seconds": 35.98,
+      "simulated_seconds": 2.0875,
+      "input_tokens": 104981,
+      "output_tokens": 6797,
+      "api_calls": [
+        {
+          "latency_ms": 1368.551,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1033,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 374.261,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1636,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 496.412,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1085,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 408.915,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1687,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 411.961,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1141,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 500.904,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1730,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 459.452,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1180,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 522.169,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1783,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 432.835,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1235,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 573.602,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1837,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 491.82,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1235,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 453.222,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1839,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 383.599,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1235,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 437.13,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1839,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 725.273,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1251,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 583.553,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1855,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 481.41,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1252,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 506.711,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1855,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 538.779,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1253,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 515.683,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1856,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 576.527,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1235,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 591.908,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1823,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 374.396,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1220,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 376.266,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1839,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 445.841,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1217,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 1145.538,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1819,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 441.572,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1214,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 509.926,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1815,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 625.123,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1233,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 479.638,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1838,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 487.171,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1246,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 489.86,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1846,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 482.477,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1254,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 427.155,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1860,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 380.901,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1267,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 480.106,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1889,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 488.368,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1282,
+          "output_tokens": 55
+        },
+        {
+          "latency_ms": 414.436,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1904,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 386.493,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1298,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 823.553,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1896,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 517.95,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1278,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 456.913,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1889,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 514.786,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1280,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 467.303,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1891,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 456.952,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1265,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 430.799,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1877,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 426.911,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1249,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 521.627,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1862,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 599.439,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1266,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 438.304,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1879,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 477.107,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1262,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 688.656,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1873,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 473.956,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1264,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 483.407,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1870,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 446.664,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1265,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 478.201,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1858,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 419.22,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1251,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 573.76,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1859,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 410.233,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1254,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 511.087,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1865,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 367.949,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1257,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 467.529,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1883,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 546.74,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1273,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 474.56,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1897,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 514.117,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1307,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 535.119,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1932,
+          "output_tokens": 144
+        },
+        {
+          "latency_ms": 551.132,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1320,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 442.928,
+          "http_status": 200,
+          "model": "jev-1.13.0",
+          "input_tokens": 1943,
+          "output_tokens": 144
+        }
+      ],
+      "initial_observation_sha256": "c3ea5acf2f3791c6dec40ebe0a1a55cf54806b0e63319c950df44f20d8855857",
+      "metadata": {
+        "benchmark": "Meta-World",
+        "version": "3.1.1",
+        "mujoco": "3.3.0",
+        "action_size": 4,
+        "protocol": "individual MT1 goal-visible task; custom evaluation subset, not MT10/ML10",
+        "success_source": "official info.success",
+        "reset_seed": 1,
+        "hierarchy_observation": "hand-and-finger-center-plus-bilateral-contact-v1",
+        "observation_mode": "privileged",
+        "camera_names": {},
+        "action_spec": {
+          "space": "metaworld_xyz",
+          "size": 4,
+          "normalized": true,
+          "frame": "world",
+          "gripper": {
+            "open": -1.0,
+            "close": 1.0
+          },
+          "control_hz": 80.0
+        }
+      },
+      "setup_seconds": 0.783,
+      "rollout_seconds": 35.114,
+      "input_reported_calls": 68,
+      "input_reported_tokens": 104981,
+      "input_complete": true,
+      "output_reported_calls": 68,
+      "output_reported_tokens": 6797,
+      "output_complete": true
+    },
+    {
+      "label": "Chat",
+      "policy": "chat",
+      "id": "drawer-open-v3-0",
+      "task": "drawer-open-v3",
+      "seed": 0,
+      "init_index": null,
+      "recorded": true,
+      "success": true,
+      "status": "success",
+      "steps": 115,
+      "model_calls": 47,
+      "http_requests": 47,
+      "wall_seconds": 375.76,
+      "simulated_seconds": 1.4375,
+      "input_tokens": 187982,
+      "output_tokens": 2608,
+      "api_calls": [
+        {
+          "latency_ms": 8561.257,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 837,
+          "output_tokens": 142
+        },
+        {
+          "latency_ms": 4272.965,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1203,
+          "output_tokens": 53
+        },
+        {
+          "latency_ms": 3515.845,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 869,
+          "output_tokens": 84
+        },
+        {
+          "latency_ms": 4627.794,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1235,
+          "output_tokens": 51
+        },
+        {
+          "latency_ms": 10236.806,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 901,
+          "output_tokens": 85
+        },
+        {
+          "latency_ms": 5136.725,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1267,
+          "output_tokens": 51
+        },
+        {
+          "latency_ms": 5369.372,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 933,
+          "output_tokens": 56
+        },
+        {
+          "latency_ms": 5367.306,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1304,
+          "output_tokens": 59
+        },
+        {
+          "latency_ms": 6502.414,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 970,
+          "output_tokens": 108
+        },
+        {
+          "latency_ms": 3603.487,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1295,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 104390.673,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5045,
+          "output_tokens": 500
+        },
+        {
+          "latency_ms": 62528.815,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5043,
+          "output_tokens": 86
+        },
+        {
+          "latency_ms": 3136.364,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5421,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3264.178,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5055,
+          "output_tokens": 33
+        },
+        {
+          "latency_ms": 1971.259,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1319,
+          "output_tokens": 24
+        },
+        {
+          "latency_ms": 2549.233,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 944,
+          "output_tokens": 36
+        },
+        {
+          "latency_ms": 3265.17,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5440,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3870.845,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5060,
+          "output_tokens": 28
+        },
+        {
+          "latency_ms": 1942.338,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1329,
+          "output_tokens": 24
+        },
+        {
+          "latency_ms": 3270.305,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5065,
+          "output_tokens": 31
+        },
+        {
+          "latency_ms": 3282.58,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5445,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3476.29,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5060,
+          "output_tokens": 33
+        },
+        {
+          "latency_ms": 3965.383,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5435,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3517.041,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5055,
+          "output_tokens": 29
+        },
+        {
+          "latency_ms": 2928.177,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5435,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3684.801,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5055,
+          "output_tokens": 33
+        },
+        {
+          "latency_ms": 2940.049,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5440,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4569.409,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5050,
+          "output_tokens": 33
+        },
+        {
+          "latency_ms": 3077.453,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5425,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 9408.685,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5045,
+          "output_tokens": 206
+        },
+        {
+          "latency_ms": 3040.58,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5420,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3880.602,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5045,
+          "output_tokens": 32
+        },
+        {
+          "latency_ms": 2598.116,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5415,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4505.019,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5045,
+          "output_tokens": 36
+        },
+        {
+          "latency_ms": 3338.872,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5410,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3749.211,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5040,
+          "output_tokens": 43
+        },
+        {
+          "latency_ms": 3544.07,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5410,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 31817.854,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5043,
+          "output_tokens": 109
+        },
+        {
+          "latency_ms": 3362.44,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5415,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3432.124,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5050,
+          "output_tokens": 44
+        },
+        {
+          "latency_ms": 2906.891,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5415,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3788.944,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5045,
+          "output_tokens": 43
+        },
+        {
+          "latency_ms": 3216.575,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5420,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3342.077,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5050,
+          "output_tokens": 35
+        },
+        {
+          "latency_ms": 3160.079,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5425,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4424.95,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5050,
+          "output_tokens": 57
+        },
+        {
+          "latency_ms": 2472.188,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1304,
+          "output_tokens": 24
+        }
+      ],
+      "initial_observation_sha256": "246863db93162501f59fa41e7b313de4201189731d805e6c9f2a849f019198b5",
+      "metadata": {
+        "benchmark": "Meta-World",
+        "version": "3.1.1",
+        "mujoco": "3.3.0",
+        "action_size": 4,
+        "protocol": "individual MT1 goal-visible task; custom evaluation subset, not MT10/ML10",
+        "success_source": "official info.success",
+        "reset_seed": 0,
+        "hierarchy_observation": "hand-and-finger-center-plus-bilateral-contact-v1",
+        "observation_mode": "privileged",
+        "camera_names": {},
+        "action_spec": {
+          "space": "metaworld_xyz",
+          "size": 4,
+          "normalized": true,
+          "frame": "world",
+          "gripper": {
+            "open": -1.0,
+            "close": 1.0
+          },
+          "control_hz": 80.0
+        }
+      },
+      "setup_seconds": 0.697,
+      "rollout_seconds": 374.988,
+      "input_reported_calls": 47,
+      "input_reported_tokens": 187982,
+      "input_complete": true,
+      "output_reported_calls": 47,
+      "output_reported_tokens": 2608,
+      "output_complete": true
+    },
+    {
+      "label": "Chat",
+      "policy": "chat",
+      "id": "drawer-open-v3-1",
+      "task": "drawer-open-v3",
+      "seed": 1,
+      "init_index": null,
+      "recorded": true,
+      "success": false,
+      "status": "runtime_error",
+      "steps": 60,
+      "model_calls": 27,
+      "http_requests": 27,
+      "wall_seconds": 320.164,
+      "simulated_seconds": 0.75,
+      "input_tokens": null,
+      "output_tokens": null,
+      "api_calls": [
+        {
+          "latency_ms": 4327.82,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 4907,
+          "output_tokens": 30
+        },
+        {
+          "latency_ms": 120002.673,
+          "http_status": null,
+          "model": null,
+          "input_tokens": null,
+          "output_tokens": null,
+          "error_type": "ReadTimeout"
+        },
+        {
+          "latency_ms": 4505.805,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5272,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4919.011,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 4939,
+          "output_tokens": 31
+        },
+        {
+          "latency_ms": 1846.214,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1188,
+          "output_tokens": 24
+        },
+        {
+          "latency_ms": 3573.409,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 4971,
+          "output_tokens": 32
+        },
+        {
+          "latency_ms": 3164.176,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5336,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3288.089,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5003,
+          "output_tokens": 30
+        },
+        {
+          "latency_ms": 4256.451,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5373,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 61815.434,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5038,
+          "output_tokens": 178
+        },
+        {
+          "latency_ms": 3134.829,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5415,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3409.54,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5050,
+          "output_tokens": 34
+        },
+        {
+          "latency_ms": 6905.436,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5425,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3727.756,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5060,
+          "output_tokens": 39
+        },
+        {
+          "latency_ms": 3076.084,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5439,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4119.732,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5060,
+          "output_tokens": 36
+        },
+        {
+          "latency_ms": 4380.331,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5444,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3720.274,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5060,
+          "output_tokens": 30
+        },
+        {
+          "latency_ms": 4844.195,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5444,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4545.469,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5060,
+          "output_tokens": 29
+        },
+        {
+          "latency_ms": 2924.03,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5439,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2996.105,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5055,
+          "output_tokens": 33
+        },
+        {
+          "latency_ms": 2834.23,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5429,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3336.917,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5055,
+          "output_tokens": 37
+        },
+        {
+          "latency_ms": 2810.488,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5439,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 21110.977,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5055,
+          "output_tokens": 346
+        },
+        {
+          "latency_ms": 29743.342,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5055,
+          "output_tokens": 512
+        }
+      ],
+      "initial_observation_sha256": "b2c737cbff9ace379b8f3f10295b11d09a2bdbedf80922ce7b027ea1af2e43b8",
+      "metadata": {
+        "benchmark": "Meta-World",
+        "version": "3.1.1",
+        "mujoco": "3.3.0",
+        "action_size": 4,
+        "protocol": "individual MT1 goal-visible task; custom evaluation subset, not MT10/ML10",
+        "success_source": "official info.success",
+        "reset_seed": 1,
+        "hierarchy_observation": "hand-and-finger-center-plus-bilateral-contact-v1",
+        "observation_mode": "privileged",
+        "camera_names": {},
+        "action_spec": {
+          "space": "metaworld_xyz",
+          "size": 4,
+          "normalized": true,
+          "frame": "world",
+          "gripper": {
+            "open": -1.0,
+            "close": 1.0
+          },
+          "control_hz": 80.0
+        }
+      },
+      "setup_seconds": 0.679,
+      "rollout_seconds": 319.414,
+      "input_reported_calls": 26,
+      "input_reported_tokens": 131011,
+      "input_complete": false,
+      "output_reported_calls": 26,
+      "output_reported_tokens": 1696,
+      "output_complete": false
+    },
+    {
+      "label": "Chat",
+      "policy": "chat",
+      "id": "door-open-v3-0",
+      "task": "door-open-v3",
+      "seed": 0,
+      "init_index": null,
+      "recorded": true,
+      "success": true,
+      "status": "success",
+      "steps": 156,
+      "model_calls": 66,
+      "http_requests": 66,
+      "wall_seconds": 476.627,
+      "simulated_seconds": 1.95,
+      "input_tokens": null,
+      "output_tokens": null,
+      "api_calls": [
+        {
+          "latency_ms": 3470.445,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 802,
+          "output_tokens": 30
+        },
+        {
+          "latency_ms": 3202.217,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5284,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 5188.509,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 4955,
+          "output_tokens": 32
+        },
+        {
+          "latency_ms": 3353.224,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5321,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3533.969,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 4992,
+          "output_tokens": 42
+        },
+        {
+          "latency_ms": 2979.719,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5353,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3200.694,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5024,
+          "output_tokens": 33
+        },
+        {
+          "latency_ms": 3165.482,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5390,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3130.658,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5061,
+          "output_tokens": 32
+        },
+        {
+          "latency_ms": 6390.416,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5425,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2943.82,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5059,
+          "output_tokens": 39
+        },
+        {
+          "latency_ms": 8942.9,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5420,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2724.988,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5054,
+          "output_tokens": 33
+        },
+        {
+          "latency_ms": 2833.666,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5420,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2858.523,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5059,
+          "output_tokens": 34
+        },
+        {
+          "latency_ms": 2975.459,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5423,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 8793.731,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5058,
+          "output_tokens": 39
+        },
+        {
+          "latency_ms": 55493.298,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5429,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3619.965,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5058,
+          "output_tokens": 39
+        },
+        {
+          "latency_ms": 2343.34,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5424,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3167.355,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5063,
+          "output_tokens": 34
+        },
+        {
+          "latency_ms": 2697.258,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5428,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3777.537,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5058,
+          "output_tokens": 35
+        },
+        {
+          "latency_ms": 3343.548,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5429,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2964.829,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5064,
+          "output_tokens": 35
+        },
+        {
+          "latency_ms": 2737.898,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5438,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3217.764,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5074,
+          "output_tokens": 36
+        },
+        {
+          "latency_ms": 2507.605,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5442,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3698.61,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5074,
+          "output_tokens": 38
+        },
+        {
+          "latency_ms": 3350.555,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5445,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3257.252,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5081,
+          "output_tokens": 31
+        },
+        {
+          "latency_ms": 120002.292,
+          "http_status": null,
+          "model": null,
+          "input_tokens": null,
+          "output_tokens": null,
+          "error_type": "ReadTimeout"
+        },
+        {
+          "latency_ms": 4633.724,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5453,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4217.908,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5079,
+          "output_tokens": 36
+        },
+        {
+          "latency_ms": 4070.503,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5443,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3123.301,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5069,
+          "output_tokens": 34
+        },
+        {
+          "latency_ms": 2812.457,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5433,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2847.269,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5064,
+          "output_tokens": 29
+        },
+        {
+          "latency_ms": 3745.431,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5428,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2694.662,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5059,
+          "output_tokens": 34
+        },
+        {
+          "latency_ms": 3690.603,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5423,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4293.752,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5049,
+          "output_tokens": 35
+        },
+        {
+          "latency_ms": 3056.217,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5413,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 39745.022,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5317,
+          "output_tokens": 842
+        },
+        {
+          "latency_ms": 2753.105,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5413,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2733.109,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5049,
+          "output_tokens": 33
+        },
+        {
+          "latency_ms": 2425.287,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5423,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3151.981,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5059,
+          "output_tokens": 37
+        },
+        {
+          "latency_ms": 2956.269,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5428,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4266.898,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5064,
+          "output_tokens": 32
+        },
+        {
+          "latency_ms": 2389.063,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1325,
+          "output_tokens": 24
+        },
+        {
+          "latency_ms": 2814.123,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5074,
+          "output_tokens": 37
+        },
+        {
+          "latency_ms": 2678.096,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5443,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 28961.641,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 965,
+          "output_tokens": 401
+        },
+        {
+          "latency_ms": 3023.748,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5079,
+          "output_tokens": 32
+        },
+        {
+          "latency_ms": 4258.488,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5453,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4014.989,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5079,
+          "output_tokens": 37
+        },
+        {
+          "latency_ms": 4544.378,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5453,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2996.377,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5084,
+          "output_tokens": 37
+        },
+        {
+          "latency_ms": 3773.316,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5458,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4191.295,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5084,
+          "output_tokens": 38
+        },
+        {
+          "latency_ms": 3419.448,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5458,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3154.995,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5089,
+          "output_tokens": 32
+        },
+        {
+          "latency_ms": 2791.744,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5458,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 13935.662,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5084,
+          "output_tokens": 29
+        },
+        {
+          "latency_ms": 5504.531,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5453,
+          "output_tokens": 25
+        }
+      ],
+      "initial_observation_sha256": "ae0c722d4367d708fd703752a089c711f4881ad4e22249657d6508217185181a",
+      "metadata": {
+        "benchmark": "Meta-World",
+        "version": "3.1.1",
+        "mujoco": "3.3.0",
+        "action_size": 4,
+        "protocol": "individual MT1 goal-visible task; custom evaluation subset, not MT10/ML10",
+        "success_source": "official info.success",
+        "reset_seed": 0,
+        "hierarchy_observation": "hand-and-finger-center-plus-bilateral-contact-v1",
+        "observation_mode": "privileged",
+        "camera_names": {},
+        "action_spec": {
+          "space": "metaworld_xyz",
+          "size": 4,
+          "normalized": true,
+          "frame": "world",
+          "gripper": {
+            "open": -1.0,
+            "close": 1.0
+          },
+          "control_hz": 80.0
+        }
+      },
+      "setup_seconds": 0.706,
+      "rollout_seconds": 475.833,
+      "input_reported_calls": 65,
+      "input_reported_tokens": 328312,
+      "input_complete": false,
+      "output_reported_calls": 65,
+      "output_reported_tokens": 3116,
+      "output_complete": false
+    },
+    {
+      "label": "Chat",
+      "policy": "chat",
+      "id": "door-open-v3-1",
+      "task": "door-open-v3",
+      "seed": 1,
+      "init_index": null,
+      "recorded": true,
+      "success": true,
+      "status": "success",
+      "steps": 167,
+      "model_calls": 68,
+      "http_requests": 68,
+      "wall_seconds": 231.183,
+      "simulated_seconds": 2.0875,
+      "input_tokens": 352574,
+      "output_tokens": 2181,
+      "api_calls": [
+        {
+          "latency_ms": 4331.325,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 4916,
+          "output_tokens": 39
+        },
+        {
+          "latency_ms": 4452.8,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5282,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3029.307,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 4953,
+          "output_tokens": 37
+        },
+        {
+          "latency_ms": 3359.225,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5319,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3093.785,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 4990,
+          "output_tokens": 33
+        },
+        {
+          "latency_ms": 2698.004,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 1237,
+          "output_tokens": 24
+        },
+        {
+          "latency_ms": 3605.726,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5022,
+          "output_tokens": 31
+        },
+        {
+          "latency_ms": 2942.709,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5388,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3407.029,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5059,
+          "output_tokens": 35
+        },
+        {
+          "latency_ms": 2244.678,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5425,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3065.528,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5059,
+          "output_tokens": 35
+        },
+        {
+          "latency_ms": 1819.769,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5425,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3391.482,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5059,
+          "output_tokens": 34
+        },
+        {
+          "latency_ms": 2671.562,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5425,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4794.023,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5064,
+          "output_tokens": 37
+        },
+        {
+          "latency_ms": 4403.625,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5430,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3884.202,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5064,
+          "output_tokens": 36
+        },
+        {
+          "latency_ms": 2892.454,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5430,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3469.918,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5064,
+          "output_tokens": 32
+        },
+        {
+          "latency_ms": 2420.955,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5430,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2748.284,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5059,
+          "output_tokens": 32
+        },
+        {
+          "latency_ms": 2567.529,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5420,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4350.385,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5054,
+          "output_tokens": 35
+        },
+        {
+          "latency_ms": 2524.901,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5425,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 5356.051,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5054,
+          "output_tokens": 31
+        },
+        {
+          "latency_ms": 4037.711,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5420,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2868.852,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5054,
+          "output_tokens": 35
+        },
+        {
+          "latency_ms": 3467.375,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5420,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3128.42,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5059,
+          "output_tokens": 34
+        },
+        {
+          "latency_ms": 2492.101,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5425,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3038.087,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5064,
+          "output_tokens": 34
+        },
+        {
+          "latency_ms": 4412.617,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5429,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3215.786,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5064,
+          "output_tokens": 36
+        },
+        {
+          "latency_ms": 2562.675,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5432,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3274.742,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5069,
+          "output_tokens": 39
+        },
+        {
+          "latency_ms": 3203.543,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5443,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3143.381,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5074,
+          "output_tokens": 40
+        },
+        {
+          "latency_ms": 2721.987,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5447,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 5085.219,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5078,
+          "output_tokens": 37
+        },
+        {
+          "latency_ms": 2588.551,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5449,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3343.145,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5074,
+          "output_tokens": 45
+        },
+        {
+          "latency_ms": 2786.406,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5450,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3064.403,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5075,
+          "output_tokens": 32
+        },
+        {
+          "latency_ms": 2868.237,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5450,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4906.708,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5070,
+          "output_tokens": 45
+        },
+        {
+          "latency_ms": 2247.208,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5446,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3292.881,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5335,
+          "output_tokens": 76
+        },
+        {
+          "latency_ms": 2930.843,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5443,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 5343.663,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5072,
+          "output_tokens": 44
+        },
+        {
+          "latency_ms": 4003.709,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5448,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 5200.294,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5072,
+          "output_tokens": 45
+        },
+        {
+          "latency_ms": 3662.332,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5448,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3370.871,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5073,
+          "output_tokens": 44
+        },
+        {
+          "latency_ms": 2769.204,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5449,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2917.826,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5073,
+          "output_tokens": 44
+        },
+        {
+          "latency_ms": 2614.63,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5444,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4175.11,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5068,
+          "output_tokens": 45
+        },
+        {
+          "latency_ms": 3867.914,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5444,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 5299.359,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5068,
+          "output_tokens": 39
+        },
+        {
+          "latency_ms": 2596.434,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5444,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3387.155,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5068,
+          "output_tokens": 46
+        },
+        {
+          "latency_ms": 2361.391,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5449,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 2748.464,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5073,
+          "output_tokens": 33
+        },
+        {
+          "latency_ms": 2981.369,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5454,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 3459.074,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5083,
+          "output_tokens": 46
+        },
+        {
+          "latency_ms": 2823.798,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5464,
+          "output_tokens": 25
+        },
+        {
+          "latency_ms": 4276.243,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5088,
+          "output_tokens": 46
+        },
+        {
+          "latency_ms": 3955.854,
+          "http_status": 200,
+          "model": "gpt-6-astra",
+          "input_tokens": 5469,
+          "output_tokens": 25
+        }
+      ],
+      "initial_observation_sha256": "c3ea5acf2f3791c6dec40ebe0a1a55cf54806b0e63319c950df44f20d8855857",
+      "metadata": {
+        "benchmark": "Meta-World",
+        "version": "3.1.1",
+        "mujoco": "3.3.0",
+        "action_size": 4,
+        "protocol": "individual MT1 goal-visible task; custom evaluation subset, not MT10/ML10",
+        "success_source": "official info.success",
+        "reset_seed": 1,
+        "hierarchy_observation": "hand-and-finger-center-plus-bilateral-contact-v1",
+        "observation_mode": "privileged",
+        "camera_names": {},
+        "action_spec": {
+          "space": "metaworld_xyz",
+          "size": 4,
+          "normalized": true,
+          "frame": "world",
+          "gripper": {
+            "open": -1.0,
+            "close": 1.0
+          },
+          "control_hz": 80.0
+        }
+      },
+      "setup_seconds": 0.754,
+      "rollout_seconds": 230.352,
+      "input_reported_calls": 68,
+      "input_reported_tokens": 352574,
+      "input_complete": true,
+      "output_reported_calls": 68,
+      "output_reported_tokens": 2181,
+      "output_complete": true
+    }
+  ]
+}

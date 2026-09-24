@@ -1,0 +1,9 @@
+label,policy,id,task,seed,init_index,recorded,success,status,steps,model_calls,http_requests,wall_seconds,simulated_seconds,input_tokens,output_tokens,initial_observation_sha256,setup_seconds,rollout_seconds,input_reported_calls,input_reported_tokens,input_complete,output_reported_calls,output_reported_tokens,output_complete
+Jev,jev,drawer-open-v3-0,drawer-open-v3,0,,True,True,success,115,47,47,24.413,1.4375,,,246863db93162501f59fa41e7b313de4201189731d805e6c9f2a849f019198b5,0.933,23.393,46,68787,False,46,4591,False
+Jev,jev,drawer-open-v3-1,drawer-open-v3,1,,True,True,success,115,46,46,23.265,1.4375,68777,4591,b2c737cbff9ace379b8f3f10295b11d09a2bdbedf80922ce7b027ea1af2e43b8,0.7,22.519,46,68777,True,46,4591,True
+Jev,jev,door-open-v3-0,door-open-v3,0,,True,True,success,156,64,64,31.981,1.95,98750,6380,ae0c722d4367d708fd703752a089c711f4881ad4e22249657d6508217185181a,0.796,31.103,64,98750,True,64,6380,True
+Jev,jev,door-open-v3-1,door-open-v3,1,,True,True,success,167,68,68,35.98,2.0875,104981,6797,c3ea5acf2f3791c6dec40ebe0a1a55cf54806b0e63319c950df44f20d8855857,0.783,35.114,68,104981,True,68,6797,True
+Chat,chat,drawer-open-v3-0,drawer-open-v3,0,,True,True,success,115,47,47,375.76,1.4375,187982,2608,246863db93162501f59fa41e7b313de4201189731d805e6c9f2a849f019198b5,0.697,374.988,47,187982,True,47,2608,True
+Chat,chat,drawer-open-v3-1,drawer-open-v3,1,,True,False,runtime_error,60,27,27,320.164,0.75,,,b2c737cbff9ace379b8f3f10295b11d09a2bdbedf80922ce7b027ea1af2e43b8,0.679,319.414,26,131011,False,26,1696,False
+Chat,chat,door-open-v3-0,door-open-v3,0,,True,True,success,156,66,66,476.627,1.95,,,ae0c722d4367d708fd703752a089c711f4881ad4e22249657d6508217185181a,0.706,475.833,65,328312,False,65,3116,False
+Chat,chat,door-open-v3-1,door-open-v3,1,,True,True,success,167,68,68,231.183,2.0875,352574,2181,c3ea5acf2f3791c6dec40ebe0a1a55cf54806b0e63319c950df44f20d8855857,0.754,230.352,68,352574,True,68,2181,True

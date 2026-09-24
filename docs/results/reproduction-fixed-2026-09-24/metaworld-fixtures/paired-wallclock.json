@@ -1,0 +1,162 @@
+{
+  "layout": "2 rows x 4 columns; Jev then GPT-6 Astra",
+  "source_batch": "metaworld-fixtures-paired-2026-09-24",
+  "columns": [
+    "drawer-open-v3-0",
+    "drawer-open-v3-1",
+    "door-open-v3-0",
+    "door-open-v3-1"
+  ],
+  "size": [
+    1014,
+    916
+  ],
+  "frames_before_gif_optimization": 301,
+  "fps": 10,
+  "duration_seconds": 30.1,
+  "model_calls_during_render": 0,
+  "replay": "Original seeds and recorded actions; every observation and evaluation verified. No inferred continuation after termination.",
+  "timing": "Shared recorded wall-clock timeline at 50x; API waits retained; episodes run sequentially.",
+  "camera": {
+    "lookat": [
+      0.0,
+      0.73,
+      0.15
+    ],
+    "distance": 0.95,
+    "azimuth": 160.0,
+    "elevation": -40.0
+  },
+  "probabilities": "Jev: actual API probabilities. GPT: choices only; no invented probabilities.",
+  "request_timeline": "All measured requests are aligned in call order. Retry/invalid waits precede the next validated decision; terminal failed attempts remain terminal waiting.",
+  "worker_sha256": "83adbf214006591d1a3a507863332c40ec46a65eacdec676f256a3987e45c82e",
+  "renderer_sha256": "ce2365e2de65fbe220ca7d016fb990655a0636a06f0ad94595553c894c3fc590",
+  "episodes": [
+    {
+      "policy": "jev",
+      "case": "drawer-open-v3-0",
+      "model": "jev-1.13.0",
+      "steps": 115,
+      "status": "success",
+      "error_type": null,
+      "trace": "jev/drawer-open-v3-0-trace.jsonl",
+      "trace_sha256": "f1adc72cbaa67b6614e32f9b5ddc12324e8ce1c00a463f6201cdb7fc9c833f7f",
+      "summary_sha256": "040b46f549e863300f27c7d90fc1b81dafa043d97379a33196e92ef834490de4",
+      "initial_observation_sha256": "246863db93162501f59fa41e7b313de4201189731d805e6c9f2a849f019198b5",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "jev",
+      "case": "drawer-open-v3-1",
+      "model": "jev-1.13.0",
+      "steps": 115,
+      "status": "success",
+      "error_type": null,
+      "trace": "jev/drawer-open-v3-1-trace.jsonl",
+      "trace_sha256": "48ebe5443769db54c6b6fd6136f17ac844a73b76a510cc1d1e9d5234144e2d2d",
+      "summary_sha256": "040b46f549e863300f27c7d90fc1b81dafa043d97379a33196e92ef834490de4",
+      "initial_observation_sha256": "b2c737cbff9ace379b8f3f10295b11d09a2bdbedf80922ce7b027ea1af2e43b8",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "jev",
+      "case": "door-open-v3-0",
+      "model": "jev-1.13.0",
+      "steps": 156,
+      "status": "success",
+      "error_type": null,
+      "trace": "jev/door-open-v3-0-trace.jsonl",
+      "trace_sha256": "1338cb958075cdd438f48729a98a7f71fc9791ba0dbff5429431239ccb359ef7",
+      "summary_sha256": "040b46f549e863300f27c7d90fc1b81dafa043d97379a33196e92ef834490de4",
+      "initial_observation_sha256": "ae0c722d4367d708fd703752a089c711f4881ad4e22249657d6508217185181a",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "jev",
+      "case": "door-open-v3-1",
+      "model": "jev-1.13.0",
+      "steps": 167,
+      "status": "success",
+      "error_type": null,
+      "trace": "jev/door-open-v3-1-trace.jsonl",
+      "trace_sha256": "93678305098babbd9209d16cc09cf18a7864b787b961ab9e7586310629e5ce12",
+      "summary_sha256": "040b46f549e863300f27c7d90fc1b81dafa043d97379a33196e92ef834490de4",
+      "initial_observation_sha256": "c3ea5acf2f3791c6dec40ebe0a1a55cf54806b0e63319c950df44f20d8855857",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "chat",
+      "case": "drawer-open-v3-0",
+      "model": "gpt-6-astra",
+      "steps": 115,
+      "status": "success",
+      "error_type": null,
+      "trace": "chat/drawer-open-v3-0-trace.jsonl",
+      "trace_sha256": "2c612deec566d8d5f9d3b4585b05c2d6b12b1d14a8d3d5ba96544cc1d35ab0d3",
+      "summary_sha256": "eacfedbe0987eaef10fc7378d1bb37d40ac51fa18125492df255e0d2ae68bf52",
+      "initial_observation_sha256": "246863db93162501f59fa41e7b313de4201189731d805e6c9f2a849f019198b5",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "chat",
+      "case": "drawer-open-v3-1",
+      "model": "gpt-6-astra",
+      "steps": 60,
+      "status": "runtime_error",
+      "error_type": "ValueError",
+      "trace": "chat/drawer-open-v3-1-trace.jsonl",
+      "trace_sha256": "17f7fb621c565b3e13b8c756232388176216c899858973af56a88564315c4b47",
+      "summary_sha256": "eacfedbe0987eaef10fc7378d1bb37d40ac51fa18125492df255e0d2ae68bf52",
+      "initial_observation_sha256": "b2c737cbff9ace379b8f3f10295b11d09a2bdbedf80922ce7b027ea1af2e43b8",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "chat",
+      "case": "door-open-v3-0",
+      "model": "gpt-6-astra",
+      "steps": 156,
+      "status": "success",
+      "error_type": null,
+      "trace": "chat/door-open-v3-0-trace.jsonl",
+      "trace_sha256": "a303b1d77a14a99b6b3676b8da109dd62344f1a2e0134ec47f4ff2fb27b87f1a",
+      "summary_sha256": "eacfedbe0987eaef10fc7378d1bb37d40ac51fa18125492df255e0d2ae68bf52",
+      "initial_observation_sha256": "ae0c722d4367d708fd703752a089c711f4881ad4e22249657d6508217185181a",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    },
+    {
+      "policy": "chat",
+      "case": "door-open-v3-1",
+      "model": "gpt-6-astra",
+      "steps": 167,
+      "status": "success",
+      "error_type": null,
+      "trace": "chat/door-open-v3-1-trace.jsonl",
+      "trace_sha256": "8124a7203f03c16df40c88fc4adc407487c173921cba634334e2f3bce9e17e63",
+      "summary_sha256": "eacfedbe0987eaef10fc7378d1bb37d40ac51fa18125492df255e0d2ae68bf52",
+      "initial_observation_sha256": "c3ea5acf2f3791c6dec40ebe0a1a55cf54806b0e63319c950df44f20d8855857",
+      "max_observation_numeric_error": 0.0,
+      "all_evaluations_match": true
+    }
+  ],
+  "artifacts": {
+    "paired-wallclock.mp4": {
+      "sha256": "37c3a33df7e8d2ad146718226f6ef8177fd3d44ef42815e5ee3ea62d1ce86b19",
+      "bytes": 829742
+    },
+    "paired-wallclock.gif": {
+      "sha256": "abfec6b1afe714ad669ae37e0f7bbe424881887e600047f69ecd6cad351db280",
+      "bytes": 2157474
+    },
+    "paired-wallclock.png": {
+      "sha256": "90e67318dfe871ddc01acba9efa11a1de565aff91d728dc5fb8b6d54cdcfd3b2",
+      "bytes": 262561
+    }
+  }
+}

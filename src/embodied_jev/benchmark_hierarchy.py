@@ -10,11 +10,13 @@ import math
 
 # Frozen for the matched Jev/GPT-6 rerun.  The version changes whenever the
 # task semantics, geometric conditions, or model-facing prompts change.
-VERSION = "metaworld-subgoal-v3"
+VERSION = "metaworld-subgoal-v5"
 TASKS = {
     "reach-v3": "Move the hand reference point to the target position.",
     "push-v3": "Push the movable object along the table to its target position.",
     "pick-place-v3": "Grasp and lift the movable object, then carry the object to its target position.",
+    "drawer-open-v3": "Reach the drawer handle and pull the drawer open to the target position.",
+    "door-open-v3": "Reach and secure the door handle, then swing the door open to the target position.",
 }
 QUESTION = (
     "Choose the next immediate subgoal from current measured geometry and contact. "
@@ -24,6 +26,9 @@ QUESTION = (
     "Closed fingers alone do not prove a grasp. A lost grasp requires recovery. "
     "For pick-place: without a measured grasp, choose approach until grasp_pose_reached is true, then grasp. "
     "With a measured grasp, lift until at_travel_height, then carry until object_goal_xy_aligned, then lower_goal. "
+    "For drawer/door tasks, the object position is the moving handle and the object target is its open position. "
+    "Approach before engaging the handle; actuate only after the measured hand-handle geometry is ready. "
+    "Once engagement has started, do not return to approach. Once actuation has started, continue it until the target is reached. "
     "Use each option's conditions; all subgoals remain available each cycle."
 )
 MOTOR_RULE = (
@@ -84,7 +89,7 @@ def prepare(observation, initial_observation, history):
         option("lower", "Outside pushing_contact_geometry and after behind XY alignment, lower to pushing height if push_height_error_mm > 8.", add(behind, offset), "close")
         option("push", "When pushing_contact_geometry is true, stay low and push toward the object goal with fingers closed. Continue pushing as the object moves.", add(push_to, offset), "close")
         option("finish", "Hold only if the object is already at its target.", hand, "close")
-    else:
+    elif task == "pick-place-v3":
         grasp = [obj[0], obj[1], obj[2] + .005]
         approach_target = [obj[0], obj[1], fingers[2] if xy > .012 else grasp[2]]
         carry = add(goal, difference(hand, obj)) if held else add(goal, offset)
@@ -96,6 +101,25 @@ def prepare(observation, initial_observation, history):
         option("carry", "With measured grasp at travel height, align the held object over the object goal.", carry, "close")
         option("lower_goal", "With measured grasp and object XY aligned over goal, lower the held object toward goal.", lower_goal, "close")
         option("finish", "Hold when the object is already at its target. Evaluation belongs to the environment.", hand, "close" if held else "open")
+    elif task == "drawer-open-v3":
+        # Meta-World exposes the moving handle as object slot 0. The Sawyer
+        # hand reference is above the finger center, so these are hand-frame
+        # waypoints measured against the official expert trajectory.
+        staging = [obj[0], obj[1], obj[2] + .20]
+        engage = [obj[0], obj[1] - .014, obj[2] - .015]
+        pull = [goal[0], goal[1], goal[2] - .017]
+        option("approach_handle", "Only before handle_approach_completed: move above the drawer handle with fingers open.", staging, "open")
+        option("engage_handle", "After handle_approach_completed and before handle_actuation_started: descend just in front of the handle while keeping fingers open.", engage, "open")
+        option("pull_drawer", "When handle_engagement_geometry or handle_actuation_started is true, keep pulling the handle toward its open target.", pull, "open")
+        option("finish", "Hold only when the handle is already within the official target tolerance.", hand, "open")
+    else:  # door-open-v3
+        staging = [obj[0], obj[1] + .03, obj[2] + .06]
+        engage = [obj[0], obj[1] + .025, obj[2] + .03]
+        swing = [goal[0] + .03, goal[1] - .02, goal[2]]
+        option("approach_handle", "Only before handle_approach_completed: move above and behind the door handle with fingers open.", staging, "open")
+        option("engage_handle", "After handle_approach_completed and before handle_actuation_started: align on the handle and close the fingers.", engage, "close")
+        option("swing_door", "When handle_actuation_started is true, or handle_engagement_geometry and fingers_closed are both true, keep following the handle toward the open-door target.", swing, "close")
+        option("finish", "Hold only when the handle is already within the official target tolerance.", hand, "close")
     state = {
         "version": VERSION, "task": TASKS[task], "task_id": task,
         "units": "millimetres; world XYZ",
@@ -122,6 +146,22 @@ def prepare(observation, initial_observation, history):
                      push_height_error_mm=round(abs(fingers[2] - behind[2]) * 1000, 2),
                      pushing_contact_geometry=(abs(fingers[2] - behind[2]) < .012 and xy < .09
                          and -.10 < sum((fingers[i] - obj[i]) * direction[i] for i in (0, 1)) < .025))
+    if task in {"drawer-open-v3", "door-open-v3"}:
+        stage = staging
+        past = {row.get("subgoal") for row in history}
+        actuation_name = "pull_drawer" if task == "drawer-open-v3" else "swing_door"
+        approach_completed = bool({"engage_handle", actuation_name} & past) or math.dist(hand, stage) <= .025
+        actuation_started = actuation_name in past
+        state.update(
+            handle_goal_distance_mm=round(obj_to_goal * 1000, 2),
+            hand_handle_distance_mm=round(math.dist(hand, obj) * 1000, 2),
+            handle_stage_error_mm=round(math.dist(hand, stage) * 1000, 2),
+            handle_stage_reached=math.dist(hand, stage) <= .025,
+            handle_approach_completed=approach_completed,
+            handle_engagement_geometry=math.dist(hand, engage) <= .045,
+            handle_actuation_started=actuation_started,
+            fingers_closed=observation["gripper_open_fraction"] <= .5,
+        )
     return state, subgoals
 
 

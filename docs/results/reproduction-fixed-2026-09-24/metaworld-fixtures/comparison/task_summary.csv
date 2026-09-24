@@ -1,0 +1,7 @@
+label,task,planned,recorded,scored,missing,unscored,successes,complete,success_rate,verified_success_fraction,observed_success_rate,wilson_95_low,wilson_95_high
+Jev,All tasks,4,4,4,0,0,4,True,1.0,1.0,1.0,0.5101091635454027,1.0
+Jev,drawer-open-v3,2,2,2,0,0,2,True,1.0,1.0,1.0,0.34238022750665303,1.0
+Jev,door-open-v3,2,2,2,0,0,2,True,1.0,1.0,1.0,0.34238022750665303,1.0
+Chat,All tasks,4,4,4,0,0,3,False,,0.75,0.75,,
+Chat,drawer-open-v3,2,2,2,0,0,1,False,,0.5,0.5,,
+Chat,door-open-v3,2,2,2,0,0,2,True,1.0,1.0,1.0,0.34238022750665303,1.0

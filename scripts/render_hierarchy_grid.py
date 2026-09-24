@@ -1,4 +1,4 @@
-"""Replay a recorded Meta-World comparison as a compact 2 x 6 GIF/MP4.
+"""Replay a recorded Meta-World comparison as a compact paired GIF/MP4.
 
 Run with the original Meta-World Python environment. Replays only saved actions,
 checks every observed state and success flag, and never imports a model client.
@@ -21,16 +21,19 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 TASKS = [(task, seed) for task in ("reach-v3", "push-v3", "pick-place-v3") for seed in (0, 1)]
-LABELS = {"reach-v3": "到达", "push-v3": "推物", "pick-place-v3": "抓放"}
+LABELS = {"reach-v3": "到达", "push-v3": "推物", "pick-place-v3": "抓放",
+          "drawer-open-v3": "开抽屉", "door-open-v3": "开门"}
 PHASES = {"reach": "接近目标", "hold": "保持", "approach": "对齐 / 接近",
           "grasp": "闭爪抓取", "lift": "抬升", "carry": "搬向目标",
           "lower_goal": "下放", "finish": "完成", "behind": "移到物体后方",
-          "push": "推动", "align": "重新对齐", "lower": "下降到接触高度"}
+          "push": "推动", "align": "重新对齐", "lower": "下降到接触高度",
+          "approach_handle": "接近把手", "engage_handle": "贴合把手",
+          "pull_drawer": "拉开抽屉", "swing_door": "转动开门"}
 CHOICES = {"positive": "+", "negative": "−", "hold": "保持", "open": "张开", "close": "闭合"}
 BG, INK, MUTED, LINE = "#f3f5f8", "#1c2a3b", "#617186", "#dce3eb"
 GREEN, BLUE, AMBER, RED = "#19765a", "#3c63a8", "#ac7112", "#b24a45"
 PANEL_W, PANEL_H, GAP, MARGIN = 236, 378, 10, 20
-SIZE = (MARGIN * 2 + PANEL_W * 6 + GAP * 5, 916)
+SIZE = (MARGIN * 2 + PANEL_W * len(TASKS) + GAP * (len(TASKS) - 1), 916)
 SCENE_SIZE = (220, 166)
 FPS, HORIZON = 10, 200
 CAMERA = {"lookat": [0., .73, .15], "distance": .95, "azimuth": 160., "elevation": -40.}
@@ -142,7 +145,7 @@ class Grid:
         d = ImageDraw.Draw(image)
         ep, rows = record["episode"], record["rows"]
         n = min(step, len(rows))
-        terminal = n == len(rows)
+        terminal = n == len(rows) and timing_state in {None, "done"}
         status, status_color = "执行中", color
         if timing_state == "queued":
             status, status_color = "等待开始", MUTED
@@ -199,6 +202,28 @@ class Grid:
             d.rectangle((x + 10, y + 372, x + 10 + 216 * n / HORIZON, y + 374), fill=status_color)
 
     @staticmethod
+    def request_timeline(record, unique):
+        """Assign every measured request, including retries, to its actual gap."""
+        calls = [float(call["latency_ms"]) for call in record["episode"].get("api_calls", [])
+                 if isinstance(call.get("latency_ms"), (int, float))]
+        cursor, waits = 0, []
+        for row in unique:
+            total = 0.
+            for expected in (row["subgoal"]["latency_ms"], row["decisions"]["x"]["latency_ms"]):
+                matched = False
+                while cursor < len(calls):
+                    actual = calls[cursor]
+                    cursor += 1
+                    total += actual / 1000
+                    if abs(actual - expected) <= 5:
+                        matched = True
+                        break
+                if not matched:
+                    raise ValueError("Could not align recorded API requests with validated decisions")
+            waits.append(total)
+        return waits, sum(calls[cursor:]) / 1000, sum(calls) / 1000
+
+    @staticmethod
     def wall_state(record, elapsed):
         """Map recorded wall time to a trace step without inventing model speed."""
         ep, rows = record["episode"], record["rows"]
@@ -214,12 +239,11 @@ class Grid:
         for row in rows:
             if row.get("decisions"):
                 unique.append(row)
-        api_time = sum((row["subgoal"]["latency_ms"] + row["decisions"]["x"]["latency_ms"]) / 1000
-                       for row in unique)
+        waits, terminal_wait, api_time = Grid.request_timeline(record, unique)
         execution_step = max(0., wall - setup - api_time) / max(1, len(rows))
         cursor, completed = setup, 0
         for i, row in enumerate(unique):
-            wait = (row["subgoal"]["latency_ms"] + row["decisions"]["x"]["latency_ms"]) / 1000
+            wait = waits[i]
             if elapsed < cursor + wait:
                 return completed, "waiting"
             cursor += wait
@@ -231,12 +255,14 @@ class Grid:
                 return completed + progressed, "acting"
             cursor += action_time
             completed += count
+        if elapsed < cursor + terminal_wait:
+            return len(rows), "waiting"
         return min(completed, len(rows)), "acting"
 
     def frame(self, step):
         image = Image.new("RGB", SIZE, BG)
         d = ImageDraw.Draw(image)
-        self.text(d, (20, 13), "Meta-World · 六局并排对照", 24)
+        self.text(d, (20, 13), f"Meta-World · {len(TASKS)} 局并排对照", 24)
         self.text(d, (SIZE[0] - 420, 23), "统一视角 · 真实选择 · 按环境步同步", 15, MUTED)
         self.text(d, (20, 43), "原始动作重放 · 省略 API 等待，播放速度不代表推理速度 · 成功或中断后保持末帧", 12, MUTED)
         for column, (task, seed) in enumerate(TASKS):
@@ -246,8 +272,8 @@ class Grid:
         self.text(d, (290, 88), "XYZ 概率顺序 − / 保持 / +；夹爪 张开 / 保持 / 闭合", 12, MUTED)
         self.text(d, (20, 504), "GPT-6 Astra  ·  记录选择（接口未返回候选概率）", 14, BLUE)
         for row_index, yy, color in ((0, 111, GREEN), (1, 528, BLUE)):
-            for column in range(6):
-                self.panel(image, self.episodes[row_index * 6 + column],
+            for column in range(len(TASKS)):
+                self.panel(image, self.episodes[row_index * len(TASKS) + column],
                            MARGIN + column * (PANEL_W + GAP), yy, step, color)
         return image
 
@@ -262,7 +288,7 @@ class Grid:
             self.text(d, (xx + 6, 60), f"{LABELS[task]} · seed {seed}", 15)
         totals = []
         for row_index, yy, color, name in ((0, 111, GREEN, "Jev"), (1, 528, BLUE, "GPT-6 Astra")):
-            row_records = self.episodes[row_index * 6:(row_index + 1) * 6]
+            row_records = self.episodes[row_index * len(TASKS):(row_index + 1) * len(TASKS)]
             total = sum(float(r["episode"]["wall_seconds"]) for r in row_records)
             totals.append(total)
             self.text(d, (20, yy - 24), f"{name} · 实测完成 {total:.2f}s", 14, color)
@@ -277,6 +303,7 @@ class Grid:
 
 
 def main():
+    global TASKS, SIZE
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("batch", type=Path)
     parser.add_argument("--output", type=Path, required=True, help="Output basename")
@@ -286,7 +313,24 @@ def main():
     parser.add_argument("--timing", choices=("environment-step", "wall-clock"), default="environment-step")
     parser.add_argument("--speed", type=float, default=40,
                         help="Wall-clock acceleration; only used with --timing wall-clock")
+    parser.add_argument("--tasks", nargs="+", metavar="TASK:SEED",
+                        help="Ordered task/seed columns; defaults to the original six-case subset")
     args = parser.parse_args()
+    if args.tasks:
+        parsed = []
+        for value in args.tasks:
+            try:
+                task, seed = value.rsplit(":", 1)
+                parsed.append((task, int(seed)))
+            except (ValueError, TypeError):
+                parser.error(f"Invalid --tasks entry {value!r}; expected TASK:SEED")
+        if not parsed or len(set(parsed)) != len(parsed):
+            parser.error("--tasks entries must be nonempty and unique")
+        unknown = [task for task, _ in parsed if task not in LABELS]
+        if unknown:
+            parser.error("Missing display labels for: " + ", ".join(sorted(set(unknown))))
+        TASKS = parsed
+        SIZE = (MARGIN * 2 + PANEL_W * len(TASKS) + GAP * (len(TASKS) - 1), 916)
     outputs = {ext: args.output.with_suffix(ext) for ext in (".mp4", ".gif", ".png", ".json")}
     if not args.overwrite and any(p.exists() for p in outputs.values()):
         parser.error("Output exists; pass --overwrite explicitly")
@@ -297,15 +341,16 @@ def main():
     spec.loader.exec_module(worker)
     episodes = [replay(args.batch, worker, policy, task, seed)
                 for policy in ("jev", "chat") for task, seed in TASKS]
-    for i in range(6):
-        if episodes[i]["metadata"]["initial_observation_sha256"] != episodes[i + 6]["metadata"]["initial_observation_sha256"]:
+    columns = len(TASKS)
+    for i in range(columns):
+        if episodes[i]["metadata"]["initial_observation_sha256"] != episodes[i + columns]["metadata"]["initial_observation_sha256"]:
             raise ValueError("Paired models have different initial states")
     grid = Grid(episodes, args.font)
     if args.timing == "wall-clock":
         if not 1 <= args.speed <= 100:
             parser.error("--speed must be 1..100")
         maximum = max(sum(float(e["episode"]["wall_seconds"])
-                          for e in episodes[offset:offset + 6]) for offset in (0, 6))
+                          for e in episodes[offset:offset + columns]) for offset in (0, columns))
         frame_values = [n / FPS for n in range(round(maximum / args.speed * FPS) + FPS * 2)]
         make_frame = lambda value: grid.wall_frame(min(value * args.speed, maximum), args.speed)
     else:
@@ -327,7 +372,7 @@ def main():
     subprocess.run([args.ffmpeg, "-v", "error", "-y", "-i", str(outputs[".mp4"]),
                     "-filter_complex", "split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3",
                     "-loop", "0", str(outputs[".gif"])], check=True)
-    metadata = {"layout": "2 rows x 6 columns; Jev then GPT-6 Astra", "source_batch": args.batch.name,
+    metadata = {"layout": f"2 rows x {columns} columns; Jev then GPT-6 Astra", "source_batch": args.batch.name,
                 "columns": [f"{task}-{seed}" for task, seed in TASKS], "size": SIZE,
                 "frames_before_gif_optimization": len(frame_values), "fps": FPS,
                 "duration_seconds": len(frame_values) / FPS, "model_calls_during_render": 0,
@@ -337,6 +382,7 @@ def main():
                            "10 environment steps per playback second; API waiting omitted, terminal scenes held. Not a model-speed comparison."),
                 "camera": CAMERA,
                 "probabilities": "Jev: actual API probabilities. GPT: choices only; no invented probabilities.",
+                "request_timeline": "All measured requests are aligned in call order. Retry/invalid waits precede the next validated decision; terminal failed attempts remain terminal waiting.",
                 "worker_sha256": digest(worker_path), "renderer_sha256": digest(Path(__file__)),
                 "episodes": [e["metadata"] for e in episodes],
                 "artifacts": {p.name: {"sha256": digest(p), "bytes": p.stat().st_size}

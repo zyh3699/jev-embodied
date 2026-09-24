@@ -1,0 +1,53 @@
+{
+  "format": "jev-embodied-fixture-summary-v1",
+  "manifest_sha256": "2376f290d67f4464a3c15697c43123376242b365ce39e419f8091d02bee74be6",
+  "source_sha256": {
+    "evaluation.py": "cd3f9f903f0eae97b2b52be2bfe34d4235f9ea7a6e284360a91a12bca219cc90",
+    "evaluation_meter.py": "0037a65084462e9aedfee6f89e78c6cecea16a2923ad8b1b4d588902d9082eeb",
+    "benchmark_worker.py": "83adbf214006591d1a3a507863332c40ec46a65eacdec676f256a3987e45c82e",
+    "benchmark_hierarchy.py": "a25affa0f89713913f67dce02aaf70b17e2c98bcb3894149eac19ead707340a2",
+    "policies.py": "20179042ba3c1aeb9e155854a41236de5f04d286dac7cf05f61008f1fafc6377",
+    "hierarchical.py": "07a21d38479d73cb6f704c4031f17d5f28cfb12760674486fa7a0b65b253898e",
+    "physics.py": "2a8383c3a07b5cef72050b41b3a55cb638556f47e0265be443e8351fdc1c2ebc"
+  },
+  "report_sha256": {
+    "summary.json-0": "040b46f549e863300f27c7d90fc1b81dafa043d97379a33196e92ef834490de4",
+    "summary.json-1": "eacfedbe0987eaef10fc7378d1bb37d40ac51fa18125492df255e0d2ae68bf52"
+  },
+  "pricing_usd_per_million": {
+    "jev_input": 0.042,
+    "jev_output": 0,
+    "gpt_input": 10,
+    "gpt_output": 50
+  },
+  "methods": [
+    {
+      "provider": "jev",
+      "label": "Jev",
+      "successes": 4,
+      "planned": 4,
+      "wall_seconds": 115.639,
+      "known_cost_usd": 0.01433439,
+      "cost_complete": false,
+      "requests": 225,
+      "statuses": {
+        "success": 4
+      }
+    },
+    {
+      "provider": "chat",
+      "label": "GPT-6 Astra",
+      "successes": 3,
+      "planned": 4,
+      "wall_seconds": 1403.734,
+      "known_cost_usd": 10.47884,
+      "cost_complete": false,
+      "requests": 208,
+      "statuses": {
+        "runtime_error": 1,
+        "success": 3
+      }
+    }
+  ],
+  "wall_time_ratio_gpt_over_jev": 12.138932367107982
+}

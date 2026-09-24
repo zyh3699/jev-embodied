@@ -1,0 +1,12 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "metaworld-fixtures-compare",
+  "backend": "metaworld",
+  "split": "development",
+  "cases": [
+    {"id": "drawer-open-v3-0", "task": "drawer-open-v3", "seed": 0},
+    {"id": "drawer-open-v3-1", "task": "drawer-open-v3", "seed": 1},
+    {"id": "door-open-v3-0", "task": "door-open-v3", "seed": 0},
+    {"id": "door-open-v3-1", "task": "door-open-v3", "seed": 1}
+  ]
+}
