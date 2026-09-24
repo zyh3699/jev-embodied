@@ -103,6 +103,20 @@ def test_setup_failure_keeps_coverage_incomplete(tmp_path, monkeypatch):
     assert not report["aggregate"]["complete"]
 
 
+def test_continue_on_error_preserves_later_planned_cases(tmp_path, monkeypatch):
+    cases = [{"id": "reach-0", "task": "reach-v3", "seed": 0},
+             {"id": "reach-1", "task": "reach-v3", "seed": 1}]
+    args = options(tmp_path, continue_on_error=True, validation_retries=1)
+    args.manifest = manifest(tmp_path, cases=cases)
+    rows = iter([{"id": "reach-0", "task": "reach-v3", "success": False, "status": "runtime_error"},
+                 {"id": "reach-1", "task": "reach-v3", "success": True, "status": "success"}])
+    monkeypatch.setattr(e, "external_episode", lambda *unused: next(rows))
+    report = e.run(args)
+    assert [row["id"] for row in report["episodes"]] == ["reach-0", "reach-1"]
+    assert report["configuration"]["continue_on_error"] is True
+    assert report["configuration"]["validation_retries"] == 1
+
+
 def test_model_choices_are_executed_without_goal_correction_and_budget_is_hard(tmp_path, monkeypatch):
     from embodied_jev import policies
     states = []

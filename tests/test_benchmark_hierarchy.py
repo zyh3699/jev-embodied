@@ -3,6 +3,7 @@ import copy
 import json
 from types import SimpleNamespace
 
+import httpx
 import pytest
 
 from embodied_jev import benchmark_hierarchy as h, evaluation as e, policies
@@ -177,6 +178,54 @@ def test_low_probability_subgoal_stops_before_motor_request(tmp_path, monkeypatc
     row = episode(tmp_path, arguments(tmp_path, threshold=.5))
     assert (row["steps"], row["model_calls"], row["status"]) == (0, 1, "uncertain")
     assert calls == ["subgoal"]
+
+
+def test_invalid_completed_response_retries_within_call_budget(tmp_path, monkeypatch):
+    calls = []
+    class Policy:
+        def __init__(self, provider):
+            self.calls, self.latencies, self.model, self.last_input = 0, [], "fixture", None
+        def choose_plan(self, state, question, options):
+            self.calls += 1; calls.append("subgoal")
+            if self.calls == 1:
+                raise ValueError("invalid structured choice")
+            return {"choice": "approach", "selected_probability": .9}
+        def choose_channels(self, state, questions):
+            self.calls += 1; calls.append("motor")
+            return {name: {"choice": value, "selected_probability": .9} for name, value in
+                    dict(x="hold", y="hold", z="hold", gripper="open").items()}
+        def close(self):
+            pass
+    monkeypatch.setattr(policies, "DecisionPolicy", Policy)
+    monkeypatch.setattr(e, "Worker", Worker)
+    row = episode(tmp_path, arguments(tmp_path, max_calls=4, validation_retries=1))
+    assert (row["steps"], row["model_calls"], row["status"]) == (5, 3, "call_budget")
+    assert calls == ["subgoal", "subgoal", "motor"]
+    assert row["validation_failures"] == [{"stage": "subgoal", "attempt": 1,
+                                            "error": "invalid structured choice"}]
+
+
+def test_transport_timeout_retries_before_action_and_is_reported(tmp_path, monkeypatch):
+    class Policy:
+        def __init__(self, provider):
+            self.calls, self.latencies, self.model, self.last_input = 0, [], "fixture", None
+        def choose_plan(self, state, question, options):
+            self.calls += 1
+            if self.calls == 1:
+                raise httpx.ReadTimeout("transient")
+            return {"choice": "approach", "selected_probability": .9}
+        def choose_channels(self, state, questions):
+            self.calls += 1
+            return {name: {"choice": value, "selected_probability": .9} for name, value in
+                    dict(x="hold", y="hold", z="hold", gripper="open").items()}
+        def close(self):
+            pass
+    monkeypatch.setattr(policies, "DecisionPolicy", Policy)
+    monkeypatch.setattr(e, "Worker", Worker)
+    row = episode(tmp_path, arguments(tmp_path, max_calls=4, request_retries=1))
+    assert (row["steps"], row["model_calls"], row["status"]) == (5, 3, "call_budget")
+    assert row["transport_failures"] == [{"stage": "subgoal", "attempt": 1,
+                                          "error_type": "ReadTimeout"}]
 
 
 @pytest.mark.parametrize("provider", ["jev", "chat"])

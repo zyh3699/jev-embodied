@@ -14,12 +14,11 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import shutil
 from types import SimpleNamespace
 
 
 REPO = Path(__file__).resolve().parents[1]
-WORKER = Path("/Users/a1/Documents/Codex/2026-09-20/users-a1-documents-codex-2026-09/work/metaworld-venv/bin/python")
-PLOT_PYTHON = Path("/Users/a1/Documents/Codex/2026-09-20/xian/work/.plot-venv/bin/python")
 MANIFEST = REPO / "benchmarks/metaworld-hierarchical-compare.json"
 SOURCE_FILES = (
     "evaluation.py",
@@ -42,8 +41,12 @@ def source_hashes():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--worker-python", type=Path, default=REPO / ".venv-metaworld/bin/python")
+    parser.add_argument("--plot-python", type=Path, default=Path(sys.executable))
+    parser.add_argument("--validation-retries", type=int, default=1)
+    parser.add_argument("--request-retries", type=int, default=1)
     args = parser.parse_args()
-    if not WORKER.is_file() or not PLOT_PYTHON.is_file():
+    if not args.worker_python.is_file() or not args.plot_python.is_file():
         parser.error("Prepared Meta-World or plotting environment is unavailable")
     output = args.output.resolve()
     if output.exists():
@@ -68,6 +71,9 @@ def main():
             "observation_mode": "privileged",
             "control_mode": "hierarchical",
             "connection_source": "saved",
+            "validation_retries": args.validation_retries,
+            "request_retries": args.request_retries,
+            "continue_on_error": True,
         },
         "hierarchy_version": "metaworld-subgoal-v3",
         "request_contract": "one subgoal request followed by one XYZ/gripper request per decision round",
@@ -82,6 +88,9 @@ def main():
             parser.error(f"Saved {provider} model differs from frozen protocol")
 
     output.mkdir(parents=True, exist_ok=False)
+    (output / "reproduction").mkdir()
+    for name in SOURCE_FILES:
+        shutil.copy2(REPO / "src/embodied_jev" / name, output / "reproduction" / name)
     (output / "protocol.json").write_text(
         json.dumps(protocol, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
@@ -90,7 +99,7 @@ def main():
         namespace = SimpleNamespace(
             manifest=str(MANIFEST),
             output=str(output / provider),
-            worker_python=str(WORKER),
+            worker_python=str(args.worker_python),
             policy=provider,
             **protocol["configuration"],
         )
@@ -107,7 +116,7 @@ def main():
     )
     return subprocess.call(
         [
-            str(PLOT_PYTHON),
+            str(args.plot_python),
             "-m",
             "embodied_jev.evaluation_charts",
             "--reports",

@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import re
 import subprocess
 
 from PIL import Image, ImageDraw, ImageFont
@@ -32,14 +33,16 @@ FONTS = {n: font(n) for n in (13, 15, 17, 19, 22, 28)}
 
 def wrap(draw, text, x, y, width, *, size=17, color=TEXT, lines=2):
     line, row = "", 0
-    for char in str(text):
-        if draw.textlength(line + char, font=FONTS[size]) > width:
+    value = str(text)
+    tokens = re.findall(r"\S+\s*", value) if " " in value else list(value)
+    for token in tokens:
+        if line and draw.textlength(line + token, font=FONTS[size]) > width:
             draw.text((x, y + row * (size+6)), line, font=FONTS[size], fill=color)
             row += 1
             line = ""
             if row >= lines:
                 return
-        line += char
+        line += token
     if line and row < lines:
         draw.text((x, y + row * (size+6)), line, font=FONTS[size], fill=color)
 
@@ -133,7 +136,10 @@ def render(pair, output, speed=8., fps=15):
                 current = episode.frames[index]
                 label = "纯 GPT-6" if episode.row["mode"] == "gpt6" else "GPT-6 + Jev"
                 done = elapsed >= episode.duration
-                status = ("成功" if episode.row["success"] else "未完成") if done else (
+                terminal_status = ("成功" if episode.row["success"] else
+                    "费用上限" if episode.row.get("status") == "cost_budget" else
+                    "请求超时" if episode.row.get("error_type") in {"ReadTimeout", "ConnectTimeout"} else "未完成")
+                status = terminal_status if done else (
                     "等待 GPT-6 视觉候选" if active and active["stage"] == "vision_candidates" else
                     "等待 GPT-6 视觉规划" if active and active["stage"] == "vision_plan" else
                     "等待 " + ("Jev" if active["provider"] == "jev" else "GPT-6") +
@@ -185,6 +191,8 @@ def render(pair, output, speed=8., fps=15):
             draw.text((26, 925), "RGB-D + 本体反馈 · 无物体真值 · 官方成功判定 · 小样本开发实验", font=FONTS[15], fill=MUTED)
             if frame_id == 0:
                 image.save(output / "poster.png")
+            if frame_id == count - 1:
+                image.save(output / "final.png")
             encoder.stdin.write(image.tobytes())
     finally:
         encoder.stdin.close()

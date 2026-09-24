@@ -15,6 +15,8 @@ import subprocess
 import threading
 import time
 
+import httpx
+
 
 def load_manifest(path):
     value = json.loads(Path(path).read_text())
@@ -186,6 +188,32 @@ def external_episode(manifest, case, args, output):
     repeat = getattr(args, "action_repeat", 1)
     control_mode = getattr(args, "control_mode", "skills")
     hierarchical = control_mode == "hierarchical"
+    validation_retries = getattr(args, "validation_retries", 0)
+    request_retries = getattr(args, "request_retries", 0)
+    validation_failures = []
+    transport_failures = []
+
+    def validated(stage, operation):
+        """Retry invalid replies or pre-action transport timeouts within the call budget."""
+        invalid, timeouts = 0, 0
+        while True:
+            try:
+                return operation()
+            except ValueError as exc:
+                invalid += 1
+                validation_failures.append({"stage": stage, "attempt": invalid,
+                                            "error": str(exc)[:240]})
+                if invalid > validation_retries or policy is None or policy.calls >= args.max_calls:
+                    raise
+            except (httpx.TimeoutException, httpx.HTTPStatusError) as exc:
+                status = getattr(getattr(exc, "response", None), "status_code", None)
+                if isinstance(exc, httpx.HTTPStatusError) and status not in {429, 500, 502, 503, 504, 529}:
+                    raise
+                timeouts += 1
+                transport_failures.append({"stage": stage, "attempt": timeouts,
+                                           "error_type": type(exc).__name__, **({"http_status": status} if status else {})})
+                if timeouts > request_retries or policy is None or policy.calls >= args.max_calls:
+                    raise
     try:
         worker = Worker(args.worker_python, output / f"{case['id']}-worker.log")
         reset = worker.request({"command": "reset", "backend": manifest["backend"], "case": case,
@@ -217,8 +245,9 @@ def external_episode(manifest, case, args, output):
                     if hierarchical:
                         from . import benchmark_hierarchy as hierarchy
                         state, options = hierarchy.prepare(observation, initial_observation, history)
-                        subgoal = policy.choose_plan(state, hierarchy.QUESTION,
-                                                     {name: spec["description"] for name, spec in options.items()})
+                        subgoal = validated("subgoal", lambda: policy.choose_plan(
+                            state, hierarchy.QUESTION,
+                            {name: spec["description"] for name, spec in options.items()}))
                         hierarchy_trace = {"subgoal": subgoal, "subgoal_input": policy.last_input}
                         if subgoal["selected_probability"] is not None and subgoal["selected_probability"] < args.threshold:
                             row["status"] = "uncertain"
@@ -233,13 +262,18 @@ def external_episode(manifest, case, args, output):
                             break
                         motor, questions, scales = hierarchy.motor_input(state, options, subgoal["choice"],
                                                                         observation, args.action_scale, repeat)
-                        decisions = policy.choose_channels(motor, questions)
+                        if policy.calls >= args.max_calls:
+                            row["status"] = "call_budget"
+                            trace.write(json.dumps({"step": row["steps"], "observation": observation,
+                                                    **hierarchy_trace, "executed": False}) + "\n")
+                            break
+                        decisions = validated("motor_channels", lambda: policy.choose_channels(motor, questions))
                         hierarchy_trace["motor_input"] = policy.last_input
                     else:
-                        decisions = policy.choose_channels({"observation": observation, "recent_actions": history[-4:],
+                        decisions = validated("motor_channels", lambda: policy.choose_channels({"observation": observation, "recent_actions": history[-4:],
                             "action_contract": {"translation": "normalized Cartesian controller input, not absolute XYZ or metres",
                                                 "amplitude": args.action_scale, "repeat_env_steps": repeat,
-                                                "rotation": "fixed; not model-controlled"}}, motor_questions())
+                                                "rotation": "fixed; not model-controlled"}}, motor_questions()))
                     if any(d["selected_probability"] is not None and d["selected_probability"] < args.threshold for d in decisions.values()):
                         row["status"] = "uncertain"
                         trace.write(json.dumps({"step": row["steps"], "observation": observation, "decisions": decisions,
@@ -286,6 +320,8 @@ def external_episode(manifest, case, args, output):
     except Exception as exc:
         row.update(status="setup_error" if row["success"] is None else "runtime_error",
                    error_type=type(exc).__name__)
+        if isinstance(exc, ValueError):
+            row["validation_error"] = str(exc)[:240]
         response = getattr(exc, "response", None)
         if response is not None and isinstance(getattr(response, "status_code", None), int):
             row["http_status"] = response.status_code
@@ -300,6 +336,10 @@ def external_episode(manifest, case, args, output):
                        input_tokens=usage["input_reported_tokens"] if usage["input_complete"] else None,
                        output_tokens=usage["output_reported_tokens"] if usage["output_complete"] else None)
             policy.close()
+        if validation_failures:
+            row["validation_failures"] = validation_failures
+        if transport_failures:
+            row["transport_failures"] = transport_failures
         if worker:
             worker.close()
         row["wall_seconds"] = round(time.monotonic() - start, 3)
@@ -335,6 +375,10 @@ def run(args, *, connection=None):
         raise ValueError("Invalid action scale or probability threshold")
     if type(getattr(args, "action_repeat", 1)) is not int or not 1 <= getattr(args, "action_repeat", 1) <= 20:
         raise ValueError("action-repeat must be between 1 and 20")
+    if type(getattr(args, "validation_retries", 0)) is not int or not 0 <= getattr(args, "validation_retries", 0) <= 3:
+        raise ValueError("validation-retries must be between 0 and 3")
+    if type(getattr(args, "request_retries", 0)) is not int or not 0 <= getattr(args, "request_retries", 0) <= 2:
+        raise ValueError("request-retries must be between 0 and 2")
     backend = manifest["backend"]
     if backend != "builtin" and (not args.worker_python or args.policy == "baseline"):
         raise ValueError("External benchmarks need --worker-python and --policy noop, scripted or a model")
@@ -368,6 +412,9 @@ def run(args, *, connection=None):
         report["configuration"]["control_mode"] = ("official_scripted" if args.policy == "scripted" else
             "hierarchical_xyz_gripper" if args.control_mode == "hierarchical" else "normalized_xyz_gripper")
     report["configuration"]["action_repeat"] = getattr(args, "action_repeat", 1)
+    report["configuration"]["validation_retries"] = getattr(args, "validation_retries", 0)
+    report["configuration"]["request_retries"] = getattr(args, "request_retries", 0)
+    report["configuration"]["continue_on_error"] = bool(getattr(args, "continue_on_error", False))
     report["configuration"]["connection_source"] = getattr(args, "connection_source", "environment")
     if getattr(args, "_connection", None):
         report["configuration"]["configured_model"] = args._connection["model"]
@@ -386,6 +433,7 @@ def run(args, *, connection=None):
         report["episodes"].append(row)
         save()
         print(json.dumps(row, ensure_ascii=False), flush=True)
-        if row["status"] in {"setup_error", "runtime_error"}:
+        if row["status"] == "setup_error" or (row["status"] == "runtime_error"
+                                                and not getattr(args, "continue_on_error", False)):
             break  # Preserve incomplete coverage; do not repeat or silently skip errors.
     return report

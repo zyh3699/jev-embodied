@@ -128,6 +128,45 @@ def test_timeout_is_counted_with_unknown_cost(monkeypatch):
     assert budget.calls[0]["error_type"] == "ReadTimeout"
 
 
+def test_pre_action_timeout_can_be_retried_and_both_attempts_are_metered(monkeypatch):
+    calls = 0
+    def post(*a, **kw):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise httpx.ReadTimeout("transient timeout")
+        return httpx.Response(200, request=httpx.Request("POST", "https://example.com"), json={
+            "model": "gpt-6-astra", "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(answer())}}]})
+    monkeypatch.setattr(DecisionPolicy, "_post", post)
+    budget = RequestBudget(3, 60, 2)
+    client = ModelClient("chat", {"url": "https://example.com", "model": "gpt-6-astra", "key": "fake-test"},
+                         budget, request_retries=1)
+    assert client.request("vision_plan", {}, system="test")["stage"] == "approach"
+    assert calls == 2 and len(budget.calls) == 2
+    assert budget.calls[0]["error_type"] == "ReadTimeout"
+    assert usage_summary(budget.calls)["estimated_usd"] is None
+
+
+def test_transient_gateway_status_can_be_retried_before_action(monkeypatch):
+    calls = 0
+    def post(*a, **kw):
+        nonlocal calls
+        calls += 1
+        request = httpx.Request("POST", "https://example.com")
+        if calls == 1:
+            return httpx.Response(529, request=request, json={"error": "overloaded"})
+        return httpx.Response(200, request=request, json={"model": "gpt-6-astra",
+            "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(answer())}}]})
+    monkeypatch.setattr(DecisionPolicy, "_post", post)
+    budget = RequestBudget(3, 60, 2)
+    client = ModelClient("chat", {"url": "https://example.com", "model": "gpt-6-astra", "key": "fake-test"},
+                         budget, request_retries=1)
+    assert client.request("vision_plan", {}, system="test")["stage"] == "approach"
+    assert calls == 2 and [call["http_status"] for call in budget.calls] == [529, 200]
+
+
 def test_expired_response_is_never_returned_as_executable_plan(monkeypatch):
     budget = RequestBudget(2, 60, 2)
     def late(*a, **kw):
@@ -165,3 +204,24 @@ def test_request_cut_off_at_episode_deadline_is_time_budget_not_network_failure(
         client.request("vision_plan", {}, system="test")
     assert len(budget.calls) == 1
     assert usage_summary(budget.calls)["estimated_usd"] is None
+
+
+def test_visual_plan_retries_rejected_geometry_with_public_feedback(monkeypatch):
+    invalid = {**answer(), "target": {"kind": "world", "xyz_m": [2, 0, .5]}}
+    valid = {**answer(), "target": {"kind": "relative", "delta_m": [0, 0, .1]}}
+    replies, requests = [invalid, valid], []
+    def post(*args, **kwargs):
+        requests.append(kwargs["json"])
+        reply = replies.pop(0)
+        return httpx.Response(200, request=httpx.Request("POST", "https://example.com"), json={
+            "model": "gpt-6-astra", "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            "choices": [{"finish_reason": "stop", "message": {"content": json.dumps(reply)}}]})
+    monkeypatch.setattr(DecisionPolicy, "_post", post)
+    budget = RequestBudget(3, 60, 2)
+    client = ModelClient("chat", {"url": "https://example.com", "model": "gpt-6-astra", "key": "fake-test"}, budget)
+    plan, _ = client.plan(observation(), {"external": camera()}, None, [], validation_retries=1)
+    np.testing.assert_allclose(plan["target_xyz"], [.1, .1, .7])
+    second_state = json.loads(requests[1]["messages"][1]["content"][0]["text"])
+    assert second_state["rejected_plans"][0]["error"] == "Visual waypoint is outside the declared world workspace"
+    assert "Do not repeat" in second_state["correction"]
+    assert len(budget.calls) == 2

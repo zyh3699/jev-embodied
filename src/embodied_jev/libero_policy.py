@@ -246,8 +246,9 @@ class RequestBudget:
 
 
 class ModelClient:
-    def __init__(self, provider, connection, budget):
+    def __init__(self, provider, connection, budget, *, request_retries=0):
         self.provider, self.budget = provider, budget
+        self.request_retries = request_retries
         self.policy = make_policy(provider, connection)
         self.last_answer = None
 
@@ -255,6 +256,16 @@ class ModelClient:
         self.policy.close()
 
     def request(self, stage, state, *, system=None, images=None, questions=None):
+        for attempt in range(self.request_retries + 1):
+            try:
+                return self._request_once(stage, state, system=system, images=images, questions=questions)
+            except (httpx.TimeoutException, httpx.HTTPStatusError) as exc:
+                status = getattr(getattr(exc, "response", None), "status_code", None)
+                retryable = isinstance(exc, httpx.TimeoutException) or status in {429, 500, 502, 503, 504, 529}
+                if not retryable or attempt >= self.request_retries:
+                    raise
+
+    def _request_once(self, stage, state, *, system=None, images=None, questions=None):
         self.budget.check()
         connection = self.policy.connection
         if self.provider == "jev":
@@ -307,13 +318,26 @@ class ModelClient:
                 record["estimated_usd"] = None
             self.budget.calls.append(record)
 
-    def plan(self, observation, images, previous, recent):
+    def plan(self, observation, images, previous, recent, *, validation_retries=0):
         rgb = {view: annotated_image(packet, observation["tcp"]) for view, packet in images.items()}
-        state = {"task": observation["task"], "robot": observation,
-                 "cameras": {view: {"width": packet["width"], "height": packet["height"]} for view, packet in images.items()},
-                 "previous_plan": previous, "recent_motion": recent[-3:]}
-        answer = self.request("vision_plan", state, system=PLANNER_SYSTEM, images=rgb)
-        return resolve_plan(answer, observation, images), rgb
+        rejected = []
+        for attempt in range(validation_retries + 1):
+            state = {"task": observation["task"], "robot": observation,
+                     "cameras": {view: {"width": packet["width"], "height": packet["height"]} for view, packet in images.items()},
+                     "previous_plan": previous, "recent_motion": recent[-3:]}
+            if rejected:
+                state["rejected_plans"] = rejected
+                state["correction"] = ("The previous response was rejected before robot motion. "
+                    "Choose a visibly different pixel or a small relative waypoint that projects inside "
+                    "|world x|<=1, |world y|<=1 and 0<world z<1.8. Do not repeat a rejected target.")
+            try:
+                answer = self.request("vision_plan", state, system=PLANNER_SYSTEM, images=rgb)
+                return resolve_plan(answer, observation, images), rgb
+            except ValueError as exc:
+                rejected.append({"attempt": attempt + 1, "error": str(exc)[:240],
+                                 "answer": self.last_answer})
+                if attempt >= validation_retries:
+                    raise ValueError(f"Visual planning failed after {attempt + 1} validated attempts: {exc}") from None
 
     def motor(self, state):
         questions = motor_questions(state)

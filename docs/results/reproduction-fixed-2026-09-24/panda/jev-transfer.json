@@ -1,0 +1,24 @@
+{
+  "episode": "runs/revalidation-2026-09-24/jev-skills-dev/transfer-0-episode.json",
+  "episode_sha256": "8dd554be6ed4dbb7d454fc42f068e0f9cbdfa3ac2ed52ac101b872dfa4fc0a64",
+  "model": "jev-1.13.0",
+  "success": true,
+  "frames": 139,
+  "fps": 15,
+  "model_calls_during_render": 0,
+  "physics_steps_during_render": 0,
+  "artifacts": {
+    "jev-transfer.mp4": {
+      "sha256": "797c75215d3e4ced586185f7dae360e18c7f2ae64f503a9aaa8cbdad4fefa4a5",
+      "bytes": 443233
+    },
+    "jev-transfer.gif": {
+      "sha256": "6720aef33e61bee1294fea1c413221fc8a0681a740c72891b00cc775ab706777",
+      "bytes": 580026
+    },
+    "jev-transfer.png": {
+      "sha256": "e08b074fee57c18ad9ee84ec35da4f357a230adfafcf750065cd419e4794948c",
+      "bytes": 164188
+    }
+  }
+}

@@ -376,7 +376,7 @@ class DecisionPolicy:
                                "tool_choice": {"type": "tool", "name": "select_channels", "disable_parallel_tool_use": True}}
                 else:
                     raise ValueError("Unsupported motor channel provider")
-            response = self._post(url, json=payload, headers=headers, timeout=25 if native else 60, follow_redirects=False)
+            response = self._post(url, json=payload, headers=headers, timeout=25 if native else 120, follow_redirects=False)
             response.raise_for_status()
             body = response.json()
             if not isinstance(body, dict):
@@ -437,7 +437,7 @@ class DecisionPolicy:
             payload["response_format"] = {"type": "json_object"}
         key = self.connection["key"]
         response = self._post(self.connection["url"], json=payload,
-            headers={"Authorization": f"Bearer {key}"} if key else {}, timeout=60, follow_redirects=False)
+            headers={"Authorization": f"Bearer {key}"} if key else {}, timeout=120, follow_redirects=False)
         response.raise_for_status()
         body = response.json()
         self._response_metadata(body, input_key="prompt_tokens", output_key="completion_tokens")

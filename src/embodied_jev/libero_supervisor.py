@@ -186,9 +186,11 @@ def run_episode(args, case, mode, directory, connections, reference=None):
         row["setup_seconds"] = time.monotonic() - started
         rollout_start = time.monotonic()
         budget = RequestBudget(None if wall_time else args.max_calls, args.timeout, args.max_usd)
-        planner = ModelClient("chat", connections["chat"], budget)
+        planner = ModelClient("chat", connections["chat"], budget,
+                              request_retries=getattr(args, "request_retries", 0))
         provider = "jev" if mode == "gpt6-jev" else "chat"
-        selector = ModelClient(provider, connections[provider], budget)
+        selector = ModelClient(provider, connections[provider], budget,
+                               request_retries=getattr(args, "request_retries", 0))
         clients = [planner, selector]
         row["success"], row["status"] = False, "step_budget"
         row["frames"].append(save_frame(directory, packet, 0, depth=True))

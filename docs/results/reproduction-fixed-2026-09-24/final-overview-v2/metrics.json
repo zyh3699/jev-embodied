@@ -1,0 +1,155 @@
+{
+  "pricing_usd_per_million": {
+    "jev_input": 0.042,
+    "jev_output": 0,
+    "gpt6_astra_input": 10,
+    "gpt6_astra_output": 50
+  },
+  "groups": [
+    {
+      "name": "Panda · transfer seed 0",
+      "methods": [
+        {
+          "label": "Jev",
+          "successes": 1,
+          "n": 1,
+          "wall_seconds": 7.39,
+          "estimated_usd": 0.0005381460000000001,
+          "cost_is_lower_bound": false,
+          "calls": 13,
+          "environment_steps": 8,
+          "source": "runs/revalidation-2026-09-24/jev-skills-dev/transfer-0-episode.json",
+          "pair_key": "889c7d99e5dc28ecaede7d6f320bc0db69295fd6624a24cd8705984f487af90d"
+        },
+        {
+          "label": "GPT-6 Astra",
+          "successes": 1,
+          "n": 1,
+          "wall_seconds": 47.55,
+          "estimated_usd": 0.59406,
+          "cost_is_lower_bound": false,
+          "calls": 13,
+          "environment_steps": 8,
+          "source": "runs/reproduction-fixed-2026-09-24/panda-gpt/transfer-0-episode.json",
+          "pair_key": "889c7d99e5dc28ecaede7d6f320bc0db69295fd6624a24cd8705984f487af90d"
+        }
+      ]
+    },
+    {
+      "name": "Meta-World · 6 episodes",
+      "methods": [
+        {
+          "label": "Jev",
+          "successes": 5,
+          "n": 6,
+          "wall_seconds": 126.359,
+          "estimated_usd": 0.018263574,
+          "cost_is_lower_bound": false,
+          "calls": 312,
+          "environment_steps": 765,
+          "source": "runs/reproduction-fixed-2026-09-24/metaworld-paired/jev/summary.json",
+          "pair_key": [
+            [
+              "pick-place-v3-0",
+              "6a4b31964aa2dae926073434f0eaf8c404146710a142fdf18fb0f3b046502bae"
+            ],
+            [
+              "pick-place-v3-1",
+              "9b9034cab0796bd0e6f2c1f0eed39ad5b6f537a753d1e1928b4515859d2dbc2d"
+            ],
+            [
+              "push-v3-0",
+              "50d858312ad601c359cdd11dcb648c57b6869a1899aa773751f7070fd8c6a182"
+            ],
+            [
+              "push-v3-1",
+              "73192156034ba7327f2a186588d381fcab769d54995c94d8582cb5c2313f1fb0"
+            ],
+            [
+              "reach-v3-0",
+              "b9d3fc94a13e081cccd7cde14efa7ac33e28344eba2dadbc37ee97f8a3126099"
+            ],
+            [
+              "reach-v3-1",
+              "479116ed6d7fd38f235612a84cc67c3821e704aaa4abb2f7dac447e0897b5578"
+            ]
+          ]
+        },
+        {
+          "label": "GPT-6 Astra",
+          "successes": 5,
+          "n": 6,
+          "wall_seconds": 1075.659,
+          "estimated_usd": 15.91835,
+          "cost_is_lower_bound": false,
+          "calls": 313,
+          "environment_steps": 765,
+          "source": "runs/reproduction-fixed-2026-09-24/metaworld-paired/chat/summary.json",
+          "pair_key": [
+            [
+              "pick-place-v3-0",
+              "6a4b31964aa2dae926073434f0eaf8c404146710a142fdf18fb0f3b046502bae"
+            ],
+            [
+              "pick-place-v3-1",
+              "9b9034cab0796bd0e6f2c1f0eed39ad5b6f537a753d1e1928b4515859d2dbc2d"
+            ],
+            [
+              "push-v3-0",
+              "50d858312ad601c359cdd11dcb648c57b6869a1899aa773751f7070fd8c6a182"
+            ],
+            [
+              "push-v3-1",
+              "73192156034ba7327f2a186588d381fcab769d54995c94d8582cb5c2313f1fb0"
+            ],
+            [
+              "reach-v3-0",
+              "b9d3fc94a13e081cccd7cde14efa7ac33e28344eba2dadbc37ee97f8a3126099"
+            ],
+            [
+              "reach-v3-1",
+              "479116ed6d7fd38f235612a84cc67c3821e704aaa4abb2f7dac447e0897b5578"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "name": "LIBERO · drawer init 0",
+      "methods": [
+        {
+          "label": "GPT-6 Astra",
+          "successes": 0,
+          "n": 1,
+          "wall_seconds": 998.8378830000293,
+          "estimated_usd": 5.05621,
+          "cost_is_lower_bound": false,
+          "calls": 59,
+          "environment_steps": 310,
+          "source": "runs/reproduction-fixed-2026-09-24/libero-drawer-supervisor-v2/gpt6/drawer-init0/episode.json",
+          "pair_key": [
+            "0e6867b26d97a59583bf7aa6f6604389590c00fa0a814fd39edc6c5f534d8964",
+            "6b15ce3a14474bbe11255d9bfabad97ce946acf9d1efe026e3c436bce573ba0d"
+          ],
+          "status": "cost_budget"
+        },
+        {
+          "label": "GPT-6 + Jev",
+          "successes": 0,
+          "n": 1,
+          "wall_seconds": 1068.402111500036,
+          "estimated_usd": 5.093117402,
+          "cost_is_lower_bound": false,
+          "calls": 103,
+          "environment_steps": 505,
+          "source": "runs/reproduction-fixed-2026-09-24/libero-drawer-supervisor-v2/gpt6-jev/drawer-init0/episode.json",
+          "pair_key": [
+            "0e6867b26d97a59583bf7aa6f6604389590c00fa0a814fd39edc6c5f534d8964",
+            "6b15ce3a14474bbe11255d9bfabad97ce946acf9d1efe026e3c436bce573ba0d"
+          ],
+          "status": "cost_budget"
+        }
+      ]
+    }
+  ]
+}

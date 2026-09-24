@@ -37,6 +37,12 @@ def main():
     evaluate.add_argument("--threshold", type=float, default=0)
     evaluate.add_argument("--action-scale", type=float, default=.5)
     evaluate.add_argument("--action-repeat", type=int, default=1, help="Execute each selected external action for this many environment steps, checking termination each step")
+    evaluate.add_argument("--validation-retries", type=int, default=1,
+                          help="Retry a model decision that returned HTTP 200 but failed output validation")
+    evaluate.add_argument("--request-retries", type=int, default=1,
+                          help="Retry a model timeout before any robot action is executed")
+    evaluate.add_argument("--continue-on-error", action="store_true",
+                          help="Record a failed episode and continue the remaining frozen cases")
     evaluate.add_argument("--connection-source", choices=["environment", "saved"], default="environment",
                           help="Reuse the app's saved provider connection without exporting its key")
     evaluate.add_argument("--control-mode", choices=["skills", "incremental", "hierarchical"], default="skills")

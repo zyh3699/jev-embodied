@@ -84,9 +84,11 @@ def run_episode(args, case, mode, directory, connections, reference=None):
         rollout_start = time.monotonic()
         budget = RequestBudget(None if wall_time else args.max_calls, args.timeout, args.max_usd)
         if mode != "noop":
-            planner = ModelClient("chat", connections["chat"], budget)
+            planner = ModelClient("chat", connections["chat"], budget,
+                                  request_retries=getattr(args, "request_retries", 0))
             motor_provider = "chat" if mode == "gpt6" else "jev"
-            motor = ModelClient(motor_provider, connections[motor_provider], budget)
+            motor = ModelClient(motor_provider, connections[motor_provider], budget,
+                                request_retries=getattr(args, "request_retries", 0))
             clients = [planner, motor]
         row["success"], row["status"] = False, "step_budget"
         row["frames"].append(save_frame(directory, packet, 0, depth=True))
@@ -105,7 +107,8 @@ def run_episode(args, case, mode, directory, connections, reference=None):
                 refresh = plan is None or plan_age >= plan["max_motor_steps"] or reached(state) or stalled >= 3
                 if refresh:
                     event("request_start", stage="vision_plan", step=row["steps"], wall_seconds=time.monotonic()-rollout_start)
-                    plan, annotated = planner.plan(observation, packet["images"], plan, recent)
+                    plan, annotated = planner.plan(observation, packet["images"], plan, recent,
+                                                   validation_retries=getattr(args, "validation_retries", 0))
                     for view, image in annotated.items():
                         (directory / f"inputs/{row['steps']:05d}-{view}.png").write_bytes(image)
                     # Save the exact depth/calibration from the observation used to ground this target.
@@ -193,7 +196,11 @@ def run(args):
     if len(set(args.modes)) != len(args.modes) or "noop" in args.modes and len(args.modes) != 1:
         raise ValueError("Modes must be unique; noop installation checks run separately")
     if not (0 < args.max_steps <= 1000 and 0 < args.max_calls <= 500 and 0 < args.timeout <= 7200
-            and 1 <= args.action_repeat <= 10 and 0 < args.action_scale <= .5 and 0 < args.max_usd <= 50):
+            and 1 <= args.action_repeat <= 10 and 0 < args.action_scale <= .5 and 0 < args.max_usd <= 50
+            and type(getattr(args, "validation_retries", 0)) is int
+            and 0 <= getattr(args, "validation_retries", 0) <= 3
+            and type(getattr(args, "request_retries", 0)) is int
+            and 0 <= getattr(args, "request_retries", 0) <= 2):
         raise ValueError("Invalid experiment budget or action bounds")
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -215,6 +222,9 @@ def run(args):
                     "note": "Uncached public-rate estimate; proxy invoices and cache discounts may differ. Unknown usage is not zero."},
                 "design": "Both modes use the same GPT visual planner, RGB-D grounding and checkpoint rules. GPT-only uses GPT local control; hybrid uses Jev local control. Custom development subset, not a full LIBERO score."}
     protocol["budget"]["mode"] = getattr(args, "budget_mode", "bounded")
+    protocol["budget"]["validation_retries"] = getattr(args, "validation_retries", 0)
+    protocol["budget"]["request_retries"] = getattr(args, "request_retries", 0)
+    protocol["continue_on_error"] = bool(getattr(args, "continue_on_error", False))
     if architecture == "supervisor-v2":
         protocol["design"] = ("Both modes use temporal BEFORE/NOW dual-camera GPT candidate generation (2-3 candidates), "
             "then GPT or Jev selects one candidate with normal/cautious speed or reobserve. "
@@ -247,7 +257,8 @@ def run(args):
             rows.append({**{key: value for key, value in row.items() if key not in {"frames", "decisions", "api_calls"}},
                          "episode_path": f"{mode}/{case['id']}/episode.json"})
             write_json(output / "summary.json", report)
-            if row["status"] in {"setup_error", "runtime_error", "interrupted"}:
+            if row["status"] == "setup_error" or row["status"] == "interrupted" or (
+                    row["status"] == "runtime_error" and not getattr(args, "continue_on_error", False)):
                 return report
     report["complete"] = True
     report["sources_unchanged"] = all(hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest() == digest for name, digest in frozen.items())
@@ -272,6 +283,12 @@ def add_arguments(parser):
     parser.add_argument("--action-repeat", type=int, default=5)
     parser.add_argument("--action-scale", type=float, default=.5)
     parser.add_argument("--camera-size", type=int, default=384)
+    parser.add_argument("--validation-retries", type=int, default=2,
+                        help="Retry malformed or geometrically invalid visual plans with explicit feedback")
+    parser.add_argument("--request-retries", type=int, default=1,
+                        help="Retry a model timeout before any robot action is executed")
+    parser.add_argument("--continue-on-error", action="store_true",
+                        help="Record one failed mode and continue its paired comparison")
 
 
 def main():

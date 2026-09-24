@@ -1,0 +1,24 @@
+{
+  "episode": "runs/reproduction-fixed-2026-09-24/panda-gpt/transfer-0-episode.json",
+  "episode_sha256": "ccc7959896b0e7d0d3f9bf8203ca3e0c00abad5e1f1c40ff453318d1bfe97f57",
+  "model": "gpt-6-astra",
+  "success": true,
+  "frames": 139,
+  "fps": 15,
+  "model_calls_during_render": 0,
+  "physics_steps_during_render": 0,
+  "artifacts": {
+    "gpt-transfer.mp4": {
+      "sha256": "3cd02991bca2dd252b889f3855ad09a47ff7d905138272b7f33b8d0fcb779217",
+      "bytes": 434197
+    },
+    "gpt-transfer.gif": {
+      "sha256": "742ed451f1b41d3014576304656743809d3969f912f55dcd0328d0fd14f0c677",
+      "bytes": 571071
+    },
+    "gpt-transfer.png": {
+      "sha256": "103aa7014bdddde3dba835e9173b472381d8a4f4f8f17be4475b77e5fdcd5e36",
+      "bytes": 165810
+    }
+  }
+}
