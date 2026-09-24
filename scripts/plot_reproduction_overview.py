@@ -97,7 +97,7 @@ def main():
         values = (success, wall, cost, steps)
         for column, (axis, data) in enumerate(zip(axes[row_index], values)):
             bars = axis.bar(np.arange(2), data, color=[method_colors[label] for label in labels], width=.62)
-            axis.set_xticks(np.arange(2), labels, rotation=8, ha="right")
+            axis.set_xticks(np.arange(2), labels, rotation=0, ha="center")
             axis.grid(axis="y", alpha=.22)
             axis.set_axisbelow(True)
             if column == 0:
