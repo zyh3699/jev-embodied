@@ -1,69 +1,81 @@
 # jev-embodied
 
-本机具身智能评测平台，用同一初始状态比较 Jev、纯 GPT-6 Astra，以及 GPT-6 Astra + Jev。当前接通 MuJoCo Panda、Meta-World 和 LIBERO；成功只采用仿真环境的物理判定，失败与超时同样保留。
+`jev-embodied` 是一个本地具身智能实验平台，用统一任务、初始状态和成功判定，对比 Jev、纯 GPT-6 Astra，以及 GPT-6 Astra + Jev 的决策效果、端到端时间和估算费用。项目支持 MuJoCo Panda、Meta-World 和 LIBERO，实验失败、超时与接口错误都会进入结果记录。
 
-## 当前结论
+本项目评测的是“结构化候选动作 + 模型决策 + 确定性控制器”的路线，不是端到端 VLA：环境或视觉规划器生成候选项，Jev 或 GPT 负责选择，控制器把选择转换成连续机器人动作，最终成功与否只采用仿真环境的物理判定。
 
-**现有小样本还不足以证明 Jev 能普遍提高任务成功率，但明确显示它适合替代昂贵、缓慢的结构化局部决策。** Panda 配对单局和 Meta-World 原六局中，两种方法成功数相同；新增开抽屉/开门四局中 Jev 为 4/4，GPT 为 3/4（一次接口超时后的格式错误）。Jev 在三组已完成的 MuJoCo / Meta-World 对照中分别快 6.4、8.5 和 12.1 倍。
+## 系统架构
 
-![三组配对实验总览](docs/results/reproduction-fixed-2026-09-24/final-overview-v2/overview.png)
+```text
+仿真环境 / 相机
+       ↓
+结构化状态或视觉规划器
+       ↓
+候选子目标、技能或控制参数
+       ↓
+Jev / GPT-6 Astra
+       ↓
+确定性控制器
+       ↓
+Panda、Meta-World 或 LIBERO 环境
+```
 
-| 环境与配对范围 | Jev 路线 | 纯 GPT 路线 | 可支持的结论 |
+| 环境 | 模型接收的内容 | 模型输出 | 连续动作执行者 |
+|---|---|---|---|
+| Panda | 任务目标、当前状态、可用技能 | 下一项技能 | MuJoCo 技能控制器 |
+| Meta-World | 阶段状态、目标关系、候选子目标 | 子目标或技能 | 分层控制器 |
+| LIBERO | 双相机视觉规划结果、候选动作与速度档位 | 候选动作及参数 | 代码伺服器 |
+
+## 实验结果
+
+![配对实验总览](docs/results/reproduction-fixed-2026-09-24/final-overview-v2/overview.png)
+
+| 环境与配对范围 | Jev 路线 | GPT 路线 | 对比结果 |
 |---|---:|---:|---|
-| Panda `transfer` seed 0 | 1/1；7.39 s；$0.000538 | 1/1；47.55 s；$0.5941 | 成功相同；Jev 快 6.4×，估算费用低约 1104× |
+| Panda `transfer`，seed 0 | 1/1；7.39 s；$0.000538 | 1/1；47.55 s；$0.5941 | 成功相同；Jev 快 6.4×，估算费用低约 1104× |
 | Meta-World 3 任务 × 2 seeds | 5/6；126.36 s；$0.0183 | 5/6；1075.66 s；$15.9184 | 成功相同；Jev 快 8.5×，估算费用低约 872× |
-| Meta-World 开抽屉/开门 × 2 seeds | 4/4；115.64 s；≥$0.0143 | 3/4；1403.73 s；≥$10.4788 | Jev 快 12.1×；GPT 一局运行中断，样本仍很小 |
-| LIBERO 关闭抽屉 init 0 | GPT 候选 + Jev：0/1；1068.40 s；$5.0931；505 步 | 0/1；998.84 s；$5.0562；310 步 | 两组都失败；相近预算下混合组推进更多，但没有效果提升证据 |
+| Meta-World 抽屉/门 × 2 seeds | 4/4；115.64 s；≥$0.0143 | 3/4；1403.73 s；≥$10.4788 | Jev 快 12.1×；GPT 一局因接口超时后的格式错误中断 |
+| LIBERO 关闭抽屉，init 0 | GPT 候选 + Jev：0/1；1068.40 s；$5.0931；505 步 | 0/1；998.84 s；$5.0562；310 步 | 两组均失败；现有结果不能证明成功率提升 |
 
-费用按 Jev 输入 `$0.042 / 1M`、GPT-6 Astra 输入/输出 `$10 / $50 / 1M` 估算，不代表中转平台账单。
+费用按 Jev 输入 `$0.042 / 1M`、GPT-6 Astra 输入/输出 `$10 / $50 / 1M` 估算，仅用于实验内统一比较，不代表 API 中转平台的实际账单。样本规模较小；结果能够说明 Jev 在结构化局部决策中的延迟和费用优势，不能据此推断所有具身任务的成功率。
 
-[完整指标、失败原因与协议](docs/results/reproduction-fixed-2026-09-24/RESULTS.md) · [绘图原始数据](docs/results/reproduction-fixed-2026-09-24/final-overview-v2/metrics.json)
+[完整协议、逐局指标与失败原因](docs/results/reproduction-fixed-2026-09-24/RESULTS.md) · [总览原始数据](docs/results/reproduction-fixed-2026-09-24/final-overview-v2/metrics.json)
 
-## 实验与视频
+### Panda：高层技能选择
 
-### 1. Panda：高层技能选择
+Jev 与 GPT 使用同一个 MuJoCo 场景和 seed。模型从离散技能中选择下一步，代码控制器执行连续运动。配对任务中两组均成功；墙钟动图保留 API 等待时间，因此可直接观察 7.39 秒与 47.55 秒的端到端差异。
 
-两组使用相同 MuJoCo 场景和 seed 0，模型选择离散技能，代码控制器执行连续运动。两组都成功；另一次 Jev 开发集运行为 3 个任务 × 3 seeds、9/9 成功，但不与 GPT 单局混算。
+![Panda 墙钟时间对照](docs/results/reproduction-fixed-2026-09-24/panda/wallclock-comparison.gif)
 
-![Panda Jev 与 GPT 同一墙钟时间轴对照](docs/results/reproduction-fixed-2026-09-24/panda/wallclock-comparison.gif)
+[墙钟对照 MP4](docs/results/reproduction-fixed-2026-09-24/panda/wallclock-comparison.mp4) · [Jev 轨迹](docs/results/reproduction-fixed-2026-09-24/panda/jev-transfer.mp4) · [GPT 轨迹](docs/results/reproduction-fixed-2026-09-24/panda/gpt-transfer.mp4)
 
-[墙钟对照 MP4](docs/results/reproduction-fixed-2026-09-24/panda/wallclock-comparison.mp4) · [Jev 单独轨迹](docs/results/reproduction-fixed-2026-09-24/panda/jev-transfer.mp4) · [GPT 单独轨迹](docs/results/reproduction-fixed-2026-09-24/panda/gpt-transfer.mp4)
+### Meta-World：分层子目标选择
 
-动图用同一个实验时钟做 4× 播放：黄色表示等待 API，绿色/蓝色表示执行保存的真实 qpos。Jev 在 7.39 秒完成并保持末帧，GPT-6 Astra 到 47.55 秒完成，因此 6.4× 的端到端差异直接体现在画面中。
+`reach-v3`、`push-v3` 和 `pick-place-v3` 各运行两个相同 seeds，共享 200 步和 80 次模型调用上限。两种路线都在 `push-v3` seed 0 达到步数上限，其余五局成功。保存动作的回放与原记录逐步核对，观测和成功标记误差均为 0。
 
-### 2. Meta-World：结构化分层控制
+![Meta-World 六组配对实验](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-wallclock.gif)
 
-固定 `reach-v3`、`push-v3`、`pick-place-v3`，每项两个 seeds。两组共享六个初始状态、200 步与 80 次调用上限；两者都在 `push-v3` seed 0 达到步数上限，其余 5 局成功。回放由保存动作重新执行，12 条轨迹的每一步观测与成功标记误差均为 0。
+[墙钟对照 MP4](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-wallclock.mp4) · [逐步回放 MP4](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-grid.mp4) · [统计图](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/comparison.png) · [逐局 CSV](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/episodes.csv)
 
-![Meta-World 十二局墙钟时间动态对照](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-wallclock.gif)
+`drawer-open-v3` 和 `door-open-v3` 同样各运行两个相同 seeds。适配器提供把手接近、贴合、拉抽屉和转动门的阶段状态，成功仍由 Meta-World 官方判定。
 
-[墙钟对照 MP4](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-wallclock.mp4) · [按环境步核对的原回放](docs/results/reproduction-fixed-2026-09-24/metaworld/paired-grid.mp4) · [详细统计图](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/comparison.png) · [逐局 CSV](docs/results/reproduction-fixed-2026-09-24/metaworld/comparison/episodes.csv)
+![Meta-World 抽屉和门任务](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/paired-wallclock.gif)
 
-动图让每排六局依次运行，并在同一实验时钟上做 40× 播放；黄色明确显示保存记录中的 API 等待。Jev 六局在 126.36 秒完成，GPT-6 Astra 用时 1075.66 秒，8.5× 的端到端差异没有被轨迹同步抹掉。
+![Meta-World 抽屉和门统计](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/summary.png)
 
-新增的 `drawer-open-v3` 与 `door-open-v3` 各跑两个相同 seeds。适配器加入把手接近、贴合、拉抽屉和转动门的阶段状态；成功仍只取 Meta-World 官方判定。Jev 四局全部成功并用时 115.64 秒；GPT 三局成功，一局在 120 秒读取超时后的规划格式重试中断，整批用时 1403.73 秒。
+[墙钟对照 MP4](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/paired-wallclock.mp4) · [统计数据](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/summary.json) · [逐局统计图](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/comparison/comparison.png)
 
-![Meta-World 开抽屉与开门墙钟动态对照](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/paired-wallclock.gif)
+### LIBERO：视觉规划与局部控制
 
-![新增任务成功、时间与价格](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/summary.png)
+两组共享 GPT 双相机时序视觉候选生成器和同一代码伺服器，区别是由 GPT 或 Jev 选择候选动作及正常/谨慎速度。纯 GPT 在 310 步达到 `$5` 费用保护，GPT + Jev 在相近费用下执行 505 步；两组都未通过 LIBERO 官方成功判定。
 
-[墙钟对照 MP4](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/paired-wallclock.mp4) · [简洁图 SVG](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/summary.svg) · [统计审计数据](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/summary.json) · [完整统计图](docs/results/reproduction-fixed-2026-09-24/metaworld-fixtures/comparison/comparison.png)
+![LIBERO 配对回放](docs/results/reproduction-fixed-2026-09-24/libero/drawer-supervisor-v2/comparison.gif)
 
-### 3. LIBERO：视觉规划 + 局部控制
-
-两组共享 GPT 双相机时序视觉候选生成器和同一代码伺服器；纯 GPT 或 Jev 分别选择候选及正常/谨慎速度。之前第一步的越界像素会直接终止，本轮同时加入几何验证反馈、读取超时和瞬时 429/5xx/529 的动作前重试。
-
-纯 GPT 在 310 步达到 `$5` 费用保护；GPT + Jev 在近似费用下执行了 505 步，也达到费用保护。两条轨迹都没有通过 LIBERO 官方成功判定，因此这项实验只说明混合路线单位预算推进更多，不能说明 Jev 提高成功率。
-
-![LIBERO 配对实验动态回放](docs/results/reproduction-fixed-2026-09-24/libero/drawer-supervisor-v2/comparison.gif)
-
-[观看包含模型等待的配对 MP4](docs/results/reproduction-fixed-2026-09-24/libero/drawer-supervisor-v2/comparison.mp4)
-
-README 动图为约 32× 墙钟时间回放；MP4 为 8×，两者都保留模型等待区间，未补造中间轨迹。
+[包含模型等待时间的 MP4](docs/results/reproduction-fixed-2026-09-24/libero/drawer-supervisor-v2/comparison.mp4)
 
 ## 安装与启动
 
-主平台使用 Python 3.12；Meta-World 和 LIBERO 使用独立 Python 3.11 环境，避免依赖冲突。
+主平台使用 Python 3.12。Meta-World 和 LIBERO 使用各自的 Python 3.11 环境，避免仿真依赖冲突。
 
 ```bash
 git clone https://github.com/zyh3699/jev-embodied.git
@@ -78,9 +90,9 @@ npm run build
 jev-embodied serve --port 8090
 ```
 
-浏览器打开 <http://127.0.0.1:8090>，在“模型连接”保存 Jev 与 GPT-6 Astra 配置。API Key 只从本机凭据存储读取，不写入实验结果。
+浏览器打开 <http://127.0.0.1:8090>。在“模型连接”中分别保存 Jev 和 GPT-6 Astra 的接口配置，再从实验页选择任务、决策方式、观测来源、相机和预算。API Key 保存在本机凭据存储中，不会写入实验记录或仓库文件。
 
-## 复现命令
+## 复现实验
 
 ### Panda
 
@@ -93,7 +105,7 @@ jev-embodied evaluate \
   --validation-retries 1 --request-retries 1 --continue-on-error
 ```
 
-把 `--policy chat` 改为 `--policy jev` 即运行 Jev；完整九局使用 `benchmarks/builtin-dev.json`。
+将 `--policy chat` 改成 `--policy jev` 即运行 Jev。三项任务、三个 seeds 的开发集使用 `benchmarks/builtin-dev.json`。
 
 ### Meta-World
 
@@ -105,7 +117,7 @@ python scripts/run_metaworld_hierarchical_comparison.py \
   --validation-retries 1 --request-retries 1
 ```
 
-新增开抽屉/开门任务使用同一命令，额外指定：
+抽屉和门任务使用同一命令，并添加：
 
 ```bash
 --manifest benchmarks/metaworld-fixtures-compare.json
@@ -124,21 +136,34 @@ jev-embodied libero-compare \
   --continue-on-error
 ```
 
-输出目录必须不存在。完整环境安装和固定版本见 [实验结果说明](docs/results/reproduction-fixed-2026-09-24/RESULTS.md)。
+实验输出目录必须不存在。Meta-World、LIBERO 的固定依赖版本和完整协议见[实验结果说明](docs/results/reproduction-fixed-2026-09-24/RESULTS.md)。
 
 ## 指标口径
 
-- 成功：环境官方物理成功判定，不使用模型自评。
-- 时间：端到端墙钟时间，包含网络与模型等待。
-- 费用：按 API 报告 token 和公开标准价估算；缺失用量不记为 0。
-- 对照：同一行必须共享任务、seed 和初始状态；开发子集不冒充正式榜单成绩。
-- 媒体：仅由本轮保存的 qpos、动作或相机帧生成；导出时不调用模型。
+- **成功率**：采用环境官方物理成功判定，不使用模型自评。
+- **端到端时间**：包含网络请求、模型等待和机器人执行时间。
+- **估算费用**：根据 API 返回的 token 数和统一单价计算；缺失用量不会按 0 处理。
+- **配对原则**：同一组必须共享任务、seed、初始状态和资源限制。
+- **实验媒体**：只由本仓库运行时保存的 qpos、动作或相机帧生成，导出过程不调用模型。
+
+## 仓库结构
+
+```text
+frontend/       实验配置与运行界面
+src/            Python 服务、适配器、策略和评测逻辑
+benchmarks/     Panda、Meta-World 与 LIBERO 实验清单
+scripts/        仿真运行、回放、绘图和结果校验脚本
+tests/          Python 单元与集成测试
+tests-ui/       Playwright 前端测试
+docs/results/   实验协议、结构化指标、图片与视频
+```
 
 ## 验证
 
 ```bash
 python -m pytest -q
 npm run build
+npm run test:ui
 ```
 
-项目采用 [MIT License](LICENSE)。实现说明见 [技术指南](docs/TECHNICAL_GUIDE.md)。
+项目采用 [MIT License](LICENSE)。代码架构和扩展方式见[技术指南](docs/TECHNICAL_GUIDE.md)。
