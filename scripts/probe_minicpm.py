@@ -1,7 +1,7 @@
 """Bounded real-weight diagnostics: fixed-state order probes plus closed-loop trials.
 
 Run after installing .[minicpm] and enabling EMBODIED_MINICPM=1. This performs
-real inference and can download weights; it is deliberately outside pytest.
+real inference and can download weights; it is deliberately outside the normal smoke check.
 """
 import argparse
 import json

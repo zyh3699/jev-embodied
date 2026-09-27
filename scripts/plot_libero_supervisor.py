@@ -341,8 +341,8 @@ def plot(source, output, *, font_path=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--results", type=Path, default=ROOT / "docs/results/libero-supervisor-v2")
-    parser.add_argument("--output", type=Path, default=ROOT / "docs/media/libero-supervisor-v2-summary", help="Output stem without extension")
+    parser.add_argument("--results", type=Path, default=ROOT / "runs/libero-supervisor-v2")
+    parser.add_argument("--output", type=Path, default=ROOT / "runs/plots/libero-supervisor-v2-summary", help="Output stem without extension")
     parser.add_argument("--font", type=Path, help="CJK font path; defaults to supported macOS/Linux fonts")
     parser.add_argument("--check-only", action="store_true", help="Validate final source data without importing plotting packages or writing files")
     args = parser.parse_args()

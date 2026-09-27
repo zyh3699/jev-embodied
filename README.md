@@ -153,17 +153,14 @@ frontend/       实验配置与运行界面
 src/            Python 服务、适配器、策略和评测逻辑
 benchmarks/     Panda、Meta-World 与 LIBERO 实验清单
 scripts/        仿真运行、回放、绘图和结果校验脚本
-tests/          Python 单元与集成测试
-tests-ui/       Playwright 前端测试
 docs/results/   实验协议、结构化指标、图片与视频
 ```
 
 ## 验证
 
 ```bash
-python -m pytest -q
 npm run build
-npm run test:ui
+python -m embodied_jev.cli --help
 ```
 
-项目采用 [MIT License](LICENSE)。代码架构和扩展方式见[技术指南](docs/TECHNICAL_GUIDE.md)。
+项目采用 [MIT License](LICENSE)。

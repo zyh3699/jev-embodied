@@ -14,7 +14,7 @@ MuJoCo is Apache-2.0. Three.js, Lucide, Vite, FastAPI, HTTPX and the other insta
 
 MiniCPM5-2B weights are downloaded only on explicit provider enablement and use. They are not included in the repository. See https://huggingface.co/openbmb/MiniCPM5-2B for the model card and applicable license.
 
-The repositories in `docs/REFERENCES.md` informed the architecture. Their source code, model weights and recorded performance results have not been copied into this implementation.
+External repositories informed the architecture, but their source code, model weights and recorded performance results have not been copied into this implementation.
 
 ## LIBERO experiment
 

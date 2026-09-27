@@ -1,7 +1,7 @@
 """Plot measured episode outcomes, latency and usage from a benchmark report.
 
 Install .[plots], then run:
-  python scripts/plot_experiments.py --report docs/results/REPORT.json
+  python scripts/plot_experiments.py --report runs/REPORT.json
 
 All attempted trials and API latency observations are retained. This command
 reads report data only; it does not load credentials or call a model.
