@@ -31,17 +31,17 @@
 
 ### 关闭抽屉
 
-![关闭抽屉三路线首帧](media/drawer-init0/poster.png)
+![关闭抽屉三路线动态对照](media/drawer-init0/comparison.gif)
 
-[共享墙钟视频](media/drawer-init0/comparison.mp4) · [末帧](media/drawer-init0/final.png)
+[共享墙钟视频](media/drawer-init0/comparison.mp4) · [首帧](media/drawer-init0/poster.png) · [末帧](media/drawer-init0/final.png)
 
 ### 关闭微波炉
 
-![关闭微波炉三路线首帧](media/microwave-init0/poster.png)
+![关闭微波炉三路线动态对照](media/microwave-init0/comparison.gif)
 
-[共享墙钟视频](media/microwave-init0/comparison.mp4) · [末帧](media/microwave-init0/final.png)
+[共享墙钟视频](media/microwave-init0/comparison.mp4) · [首帧](media/microwave-init0/poster.png) · [末帧](media/microwave-init0/final.png)
 
-视频按真实墙钟时间对齐并以 8× 播放，模型等待时间包含在时间轴中。两段 MP4 分别完整解码为 1040 帧和 1010 帧，SHA-256 见 [`metrics.json`](metrics.json)。
+视频按真实墙钟时间对齐并以 8× 播放，模型等待时间包含在时间轴中。README GIF 从完整 MP4 时间轴均匀采样为 60 帧、约 7.8 秒循环预览；两段 MP4 分别完整解码为 1040 帧和 1010 帧，SHA-256 见 [`metrics.json`](metrics.json)。
 
 ## 按需调度发生了什么
 

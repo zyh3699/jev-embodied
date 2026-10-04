@@ -83,8 +83,8 @@
     {"case": "microwave-init0", "task": "close the microwave", "mode": "vlm-jev-dense", "success": false, "status": "step_budget", "steps": 400, "wall_seconds": 663.286786505, "decisions": 80, "frames": 401, "vlm_requests": 80, "jev_requests": 80}
   ],
   "media": {
-    "drawer-init0": {"video_sha256": "3859541ba7153431ae1a281609be1fd86fc3f410d8f8763837c507c071dd6f48", "decoded_frames": 1040, "speed": 8.0, "fps": 12},
-    "microwave-init0": {"video_sha256": "891fd119c1eafad039f7089669ec4e32f9de24f056f48dddc07a6eb0d4839dde", "decoded_frames": 1010, "speed": 8.0, "fps": 12}
+    "drawer-init0": {"video_sha256": "3859541ba7153431ae1a281609be1fd86fc3f410d8f8763837c507c071dd6f48", "decoded_frames": 1040, "speed": 8.0, "fps": 12, "readme_gif_sha256": "aa1311ab76aa7e7b876bfbb8f445c5e79646248153d09bf9e7340a635cbb0e8c", "readme_gif_frames": 60},
+    "microwave-init0": {"video_sha256": "891fd119c1eafad039f7089669ec4e32f9de24f056f48dddc07a6eb0d4839dde", "decoded_frames": 1010, "speed": 8.0, "fps": 12, "readme_gif_sha256": "2b52830f1aa0af870ab49eaacd3a6a82f8f4fbcd69f7aabc5ba5227c48dae328", "readme_gif_frames": 60}
   },
   "validation": {
     "complete_episodes": 6,

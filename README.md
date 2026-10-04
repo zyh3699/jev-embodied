@@ -34,7 +34,13 @@ Panda、Meta-World 或 LIBERO 环境
 
 2026-10-04 在双卡 H20 上完成了 2 个 LIBERO-90 开发用例的三路线配对实验。π0.5 为 1/2 成功；按需和逐轮 `Qwen3.5 + Jev` 均为 0/2。按需调度相对逐轮调度减少 59.4% 的 VLM 请求（65 vs 160），平均端到端时间降低 48.7%（345.08 s vs 673.10 s），但没有带来成功率提升。样本仅有两个固定初始状态，这是系统级开发对比，不是 LIBERO 榜单结论。
 
-![二阶段关闭微波炉三路线对照](docs/results/phase2-qwen35-2026-10-04/media/microwave-init0/poster.png)
+关闭抽屉：
+
+![二阶段关闭抽屉三路线动态对照](docs/results/phase2-qwen35-2026-10-04/media/drawer-init0/comparison.gif)
+
+关闭微波炉：
+
+![二阶段关闭微波炉三路线动态对照](docs/results/phase2-qwen35-2026-10-04/media/microwave-init0/comparison.gif)
 
 [完整二阶段结果、限制与视频](docs/results/phase2-qwen35-2026-10-04/RESULTS.md) · [机器可读指标](docs/results/phase2-qwen35-2026-10-04/metrics.json) · [实验协议](docs/results/phase2-qwen35-2026-10-04/protocol.json)
 
