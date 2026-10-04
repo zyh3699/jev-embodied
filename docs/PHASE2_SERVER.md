@@ -2,33 +2,35 @@
 
 ## 实验问题
 
-本实验比较三条彼此独立的策略：
+本实验比较四条彼此独立的策略：
 
 1. `pi05`：相机图像、语言指令和机器人本体状态直接送入 π0.5，模型返回 7 维连续动作块。每次执行前 5 步后重新推理；整条路线不调用 Jev。
-2. `vlm-jev-triggered`：Qwen3.5 根据双相机图像提出一个至少覆盖 2 次 Jev 决策的短期计划和 3–8 个候选宏技能。Jev 在候选中连续决策；确定性执行器将技能展开为 1–5 个可同时控制多个平移、旋转通道的 7 维动作。只有首次决策、计划期限到达、机器人本体状态停滞，或 Jev 的选择概率、最高概率、前两名差值、归一化熵越过冻结阈值时，才重新调用 Qwen3.5。
-3. `vlm-jev-dense`：每次决策都由 Qwen3.5 重新观察并提出 3–8 个候选宏技能，再由 Jev 选择。它与触发式路线使用相同技能集合和执行器，用于隔离 VLM 调度频率的影响。
+2. `vlm-jev-triggered`：Qwen3.5-VL 根据双相机 RGB 提出一个至少覆盖 2 次 Jev 决策的相机坐标系视觉关键帧。程序通过已知相机外参转换方向，生成 3–8 个完整的连续 `H×7` 数值动作块，Jev 在动作块中决策。只有首次决策、关键帧期限到达、视觉与本体停滞，或 Jev 置信度越过冻结阈值时，才重新调用 Qwen3.5-VL。
+3. `vlm-jev-dense`：每次决策都由 Qwen3.5-VL 重新观察并生成关键帧，再由 Jev 选择连续动作块。它与触发式路线使用相同生成器和执行器，用于隔离 VLM 调度频率的影响。
+4. `vlm-chunk-no-jev`：与触发式路线使用相同视觉关键帧和候选生成器，但确定性选择 `nominal` 动作块，不调用 Jev。该路线用于判断性能变化究竟来自 Jev 还是来自几何与动作块生成器。
 
-三者使用相同的 LIBERO task、init state、seed、原始双相机图像、最大环境步数以及 `env.check_success()`。与 openpi 官方 LIBERO 示例一致，三条路线会先执行 10 个不计入策略预算的 dummy steps，让场景稳定；驱动程序随后比较本体状态与图像指纹，不一致时直接停止该配对。模型看不到成功标志、对象真值位姿、深度图或力传感器数据。
+各路线使用相同的 LIBERO task、init state、seed、原始双相机图像、最大环境步数以及 `env.check_success()`。与 openpi 官方 LIBERO 示例一致，各路线会先执行 10 个不计入策略预算的 dummy steps，让场景稳定；驱动程序随后比较本体状态与图像指纹，不一致时直接停止该配对。混合模型看不到成功标志、对象真值位姿、深度图或力传感器数据，只使用机器人系统通常已知的相机内外参完成坐标转换。
 
 这是不同动作抽象与调度方式的系统级对比，不应把推理调用次数直接解释成单模型能力。报告成功率和端到端时间时，也应同时报告 π0.5 推理延迟、VLM/Jev 各自的请求数与延迟。
 
-### v3 宏技能执行器
+### v4 视觉关键帧与连续动作块
 
-混合路线不再让 Jev 直接选择单轴脉冲。Qwen3.5 提供当前阶段、各轴方向证据和候选技能，Jev 选择一项后由代码展开：
+混合路线既不让 Jev 选择单轴脉冲，也不向系统提供任务命名技能。Qwen3.5-VL 只输出当前阶段、所选相机视角、相机坐标系中的平移/旋转方向、夹爪意图、动作幅度和有限期限。相机标定把方向变换到世界坐标，通用生成器产生以下完整数值轨迹：
 
-| 技能 | 最长控制步 | 执行含义 |
+| 动作块族 | 维度 | 执行含义 |
 |---|---:|---|
-| `observe_hold` | 1 | 保持 TCP 与夹爪，等待重新观察 |
-| `approach_coarse` | 4 | 多轴同时进行较大幅度自由空间接近 |
-| `approach_fine` | 2 | 多轴同时进行小幅位置与姿态修正 |
-| `align_pose` | 2 | 以姿态对齐为主，附带很小的位置修正 |
-| `contact_probe` | 1 | 单步谨慎接触试探 |
-| `manipulate_gentle` | 3 | 接触附近的短程轻柔操作 |
-| `manipulate_firm` | 5 | 接触证据充分时的持续操作 |
-| `retract_recover` | 3 | 反向水平移动并抬高 TCP 恢复空间 |
-| `open_gripper` / `close_gripper` | 2 | 原位操作夹爪 |
+| `hold` | `H×7` | 保持位姿和上一夹爪命令 |
+| `cautious` | `H×7` | 以一半力度沿关键帧误差运动 |
+| `nominal` | `H×7` | 同时控制平移、旋转和夹爪的名义轨迹 |
+| `assertive` | `H×7` | 沿相同方向提高受限控制力度 |
+| `translation` | `H×7` | 仅执行平移部分 |
+| `image_plane` | `H×7` | 只执行图像平面XY证据，暂缓不确定深度 |
+| `camera_depth` | `H×7` | 只执行相机深度方向，暂缓图像平面运动 |
+| `rotation` | `H×7` | 仅执行旋转部分 |
+| `recover` | `H×7` | 反向运动并恢复向上间隙 |
+| `gripper` | `H×7` | 保持位姿，仅执行夹爪意图 |
 
-`--action-repeat` 现在是宏技能的最大控制步数，而不是所有动作统一重复次数；`--candidate-scale` 是执行器允许的单通道幅度上限。每个环境步后仍检查官方成功条件，因此技能可以在成功时提前结束。v3 只解决单轴动作表达能力，仍依赖 VLM 提供的世界坐标方向；视觉几何标定属于下一阶段改动。
+每个动作块具有随时间衰减的控制轮廓，最终接口与 π0.5 一样是连续 `H×7` 数组。`--action-repeat` 是每次滚动执行的最大前缀长度；`--candidate-scale` 是单通道幅度上限。每个环境步后仍检查官方成功条件。候选ID只在当前决策内有效，控制器中不存在 `close_microwave`、`pull_drawer` 等任务专用函数。
 
 ## 推荐的双 H20 分配
 
@@ -116,7 +118,7 @@ jev-embodied phase2-compare \
   --manifest benchmarks/libero-phase2-smoke.json \
   --output runs/phase2-smoke-001 \
   --worker-python .venv-libero/bin/python \
-  --modes pi05 vlm-jev-triggered vlm-jev-dense \
+  --modes pi05 vlm-jev-triggered vlm-jev-dense vlm-chunk-no-jev \
   --pi05-host 127.0.0.1 --pi05-port 8000 \
   --pi05-replan-steps 5 \
   --vlm-base-url http://127.0.0.1:8001/v1 \
@@ -137,7 +139,7 @@ jev-embodied phase2-compare \
   --manifest benchmarks/libero-vision-compare.json \
   --output runs/phase2-dev-001 \
   --worker-python .venv-libero/bin/python \
-  --modes pi05 vlm-jev-triggered vlm-jev-dense \
+  --modes pi05 vlm-jev-triggered vlm-jev-dense vlm-chunk-no-jev \
   --pi05-host 127.0.0.1 --pi05-port 8000 \
   --pi05-replan-steps 5 \
   --vlm-base-url http://127.0.0.1:8001/v1 \

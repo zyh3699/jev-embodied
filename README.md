@@ -2,7 +2,7 @@
 
 `jev-embodied` 是一个本地具身智能实验平台，用统一任务、初始状态和成功判定，对比 Jev、纯 GPT-6 Astra，以及 GPT-6 Astra + Jev 的决策效果、端到端时间和估算费用。项目支持 MuJoCo Panda、Meta-World 和 LIBERO，实验失败、超时与接口错误都会进入结果记录。
 
-二阶段新增独立的 LIBERO 三路线配对实验：`π0.5` 直接输出连续动作块，不调用 Jev；`Qwen3.5 + Jev` 分为按需规划和逐轮规划两种调度。当前 v3 混合控制器由 Jev 从缓存计划的 3–8 个阶段化宏技能中快速选择，确定性执行器再将技能展开成可同时控制多个平移、旋转通道的短动作序列；按需路线只有首次决策、计划到期、机器人停滞或 Jev 低置信时才重新调用本地 Qwen3.5。二阶段不调用远端 GPT，Jev 可暂时使用远端接口。三条路线共享任务、初始状态、相机、步数上限和 LIBERO 官方成功判定。
+二阶段新增独立的 LIBERO 四路线配对实验：`π0.5` 直接输出连续动作块，不调用 Jev；`Qwen3.5 + Jev` 分为按需规划和逐轮规划；第四条无 Jev 路线固定采用 Qwen 视觉关键帧生成的名义动作块。当前 v4 混合控制器不含任务命名宏技能：Qwen3.5-27B 只输出相机坐标系视觉关键帧，通用生成器产生数值 `H×7` 候选动作块，Jev 选择要执行的精确数组。二阶段不调用远端 GPT，Jev 可暂时使用远端接口。四条路线共享任务、初始状态、相机、步数上限和 LIBERO 官方成功判定。
 
 一期评测的是“结构化候选动作 + 模型决策 + 确定性控制器”路线；二阶段才把它与端到端 VLA 正面对比。结构化路线由环境或视觉模型生成证据与候选项，Jev 负责选择；π0.5 路线则直接生成连续动作。所有路线最终成功与否都只采用仿真环境的物理判定。
 
@@ -11,9 +11,9 @@
 ```text
 仿真环境 / 相机
        ↓
-结构化状态或视觉规划器
+结构化状态或视觉关键帧规划器
        ↓
-候选子目标、技能或控制参数
+候选子目标、技能或数值动作块
        ↓
 Jev / GPT-6 Astra
        ↓
@@ -26,23 +26,25 @@ Panda、Meta-World 或 LIBERO 环境
 |---|---|---|---|
 | Panda | 任务目标、当前状态、可用技能 | 下一项技能 | MuJoCo 技能控制器 |
 | Meta-World | 阶段状态、目标关系、候选子目标 | 子目标或技能 | 分层控制器 |
-| LIBERO | 双相机视觉规划结果、候选宏技能与本体反馈 | 下一项宏技能 | 阶段化技能执行器 |
+| LIBERO | 双相机 RGB、任务、本体反馈与通用数值候选块 | 精确 `H×7` 动作块 | 滚动连续动作执行器 |
 
 ## 实验结果
 
 ### 二阶段：π0.5 vs Qwen3.5 + Jev
 
-2026-10-04 在双卡 H20 上完成了 2 个 LIBERO-90 开发用例的三路线配对实验。π0.5 为 1/2 成功；按需和逐轮 `Qwen3.5 + Jev` 均为 0/2。按需调度相对逐轮调度减少 59.4% 的 VLM 请求（65 vs 160），平均端到端时间降低 48.7%（345.08 s vs 673.10 s），但没有带来成功率提升。该结果使用的是 v2 单轴原子动作协议；当前 v3 宏技能执行器尚未进入正式结果。样本仅有两个固定初始状态，这是系统级开发对比，不是 LIBERO 榜单结论。
+2026-10-05 在双卡 H20 上完成了 2 个 LIBERO-90 开发用例的四路线配对实验。π0.5 为 1/2 成功；按需 `Qwen3.5 + Jev`、逐轮 `Qwen3.5 + Jev` 和无 Jev 名义动作块均为 0/2。按需调度相对逐轮调度减少 19.4% 的 VLM 请求（129 vs 160），平均端到端时间降低 14.9%（502.06 s vs 589.99 s），但没有带来成功率提升。
+
+这一版正式移除了任务命名宏技能，让四条路线都通过连续 `H×7` 接口执行。Jev 会实际改选谨慎、保持和恢复动作，而不是固定放行名义动作；但 RGB 视觉关键帧尚不能提供稳定的目标定位和接触轨迹。结论是输出接口已经对齐，视觉 grounding 与接触控制仍是主要瓶颈。样本仅有两个固定初始状态，这是系统级开发对比，不是 LIBERO 榜单结论。
 
 关闭抽屉：
 
-![二阶段关闭抽屉三路线动态对照](docs/results/phase2-qwen35-2026-10-04/media/drawer-init0/comparison.gif)
+![二阶段关闭抽屉四路线动态对照](docs/results/phase2-action-chunks-2026-10-05/media/drawer-init0/comparison.gif)
 
 关闭微波炉：
 
-![二阶段关闭微波炉三路线动态对照](docs/results/phase2-qwen35-2026-10-04/media/microwave-init0/comparison.gif)
+![二阶段关闭微波炉四路线动态对照](docs/results/phase2-action-chunks-2026-10-05/media/microwave-init0/comparison.gif)
 
-[完整二阶段结果、限制与视频](docs/results/phase2-qwen35-2026-10-04/RESULTS.md) · [机器可读指标](docs/results/phase2-qwen35-2026-10-04/metrics.json) · [实验协议](docs/results/phase2-qwen35-2026-10-04/protocol.json)
+[完整二阶段结果、限制与视频](docs/results/phase2-action-chunks-2026-10-05/RESULTS.md) · [机器可读指标](docs/results/phase2-action-chunks-2026-10-05/metrics.json) · [实验协议](docs/results/phase2-action-chunks-2026-10-05/protocol.json) · [上一版原子动作结果](docs/results/phase2-qwen35-2026-10-04/RESULTS.md)
 
 ### 一阶段：Jev vs GPT-6 Astra
 
@@ -158,21 +160,21 @@ jev-embodied libero-compare \
 
 ### 二阶段：π0.5 vs Qwen3.5 + Jev
 
-服务器部署和运行步骤见 [二阶段双 H20 实验手册](docs/PHASE2_SERVER.md)，本轮正式结果见 [2026-10-04 实验报告](docs/results/phase2-qwen35-2026-10-04/RESULTS.md)。快速入口：
+服务器部署和运行步骤见 [二阶段双 H20 实验手册](docs/PHASE2_SERVER.md)，本轮正式结果见 [2026-10-05 动作块实验报告](docs/results/phase2-action-chunks-2026-10-05/RESULTS.md)。快速入口：
 
 ```bash
 jev-embodied phase2-compare \
   --manifest benchmarks/libero-phase2-smoke.json \
   --output runs/phase2-smoke \
   --worker-python .venv-libero/bin/python \
-  --modes pi05 vlm-jev-triggered vlm-jev-dense \
+  --modes pi05 vlm-jev-triggered vlm-jev-dense vlm-chunk-no-jev \
   --pi05-host 127.0.0.1 --pi05-port 8000 \
   --vlm-base-url http://127.0.0.1:8001/v1 \
   --vlm-model Qwen/Qwen3.5-27B --vlm-revision REVISION_SHA \
   --continue-on-error
 ```
 
-主进程只负责模型调用与记录，LIBERO 仍在隔离的 worker 环境中运行。正式实验前先跑 smoke 清单，确认三条链路和配对初始状态完全一致。
+四条路线最终都通过同一个连续 `H×7` 动作接口控制 LIBERO。混合路线不含任务命名宏技能：Qwen3.5-VL 只产生相机坐标系视觉关键帧，已知相机标定将其转换为世界方向，通用生成器提出数值动作块，Jev 负责裁决；`vlm-chunk-no-jev` 固定选择名义动作块，用于隔离 Jev 的真实贡献。主进程只负责模型调用与记录，LIBERO 仍在隔离的 worker 环境中运行。正式实验前先跑 smoke 清单，确认所有链路和配对初始状态完全一致。
 
 ## 指标口径
 

@@ -1,0 +1,30 @@
+{
+  "speed": 8.0,
+  "fps": 12,
+  "wall_seconds": 578.3394476009998,
+  "video_sha256": "8ca8b8ce6fb4b31c91e24467127457e832b9aaceb6029ce77022dcba9b6800f3",
+  "gif_sha256": "43bcd70c20c890cc98ecdd15d65933171ac295d8c6440b852a93568adaa1df01",
+  "gif_frames": 60,
+  "episodes": [
+    {
+      "mode": "pi05",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v4-qwen35-20261005/microwave-init0--pi05/episode.json",
+      "success": true
+    },
+    {
+      "mode": "vlm-jev-triggered",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v4-qwen35-20261005/microwave-init0--vlm-jev-triggered/episode.json",
+      "success": false
+    },
+    {
+      "mode": "vlm-jev-dense",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v4-qwen35-20261005/microwave-init0--vlm-jev-dense/episode.json",
+      "success": false
+    },
+    {
+      "mode": "vlm-chunk-no-jev",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v4-qwen35-20261005/microwave-init0--vlm-chunk-no-jev/episode.json",
+      "success": false
+    }
+  ]
+}

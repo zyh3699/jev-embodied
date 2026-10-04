@@ -21,11 +21,12 @@ except ImportError:  # The phase2 extra installs this; a system ffmpeg remains a
     imageio_ffmpeg = None
 
 
-PANEL_WIDTH, WIDTH, HEIGHT = 480, 1440, 820
+PANEL_WIDTH, HEIGHT = 480, 820
 BG, PANEL, TEXT, MUTED = "#0d1b24", "#172a36", "#edf3ef", "#9fb2bd"
-COLORS = {"pi05": "#8ecae6", "vlm-jev-triggered": "#b6d58f", "vlm-jev-dense": "#c7a8e8"}
+COLORS = {"pi05": "#8ecae6", "vlm-jev-triggered": "#b6d58f", "vlm-jev-dense": "#c7a8e8",
+          "vlm-chunk-no-jev": "#f4a261"}
 LABELS = {"pi05": "pi0.5 direct", "vlm-jev-triggered": "Triggered VLM + Jev",
-          "vlm-jev-dense": "Dense VLM + Jev"}
+          "vlm-jev-dense": "Dense VLM + Jev", "vlm-chunk-no-jev": "Triggered VLM, no Jev"}
 
 
 def font(size):
@@ -82,9 +83,12 @@ class Episode:
 
 def render(episode_paths, output, speed=8., fps=12):
     episodes = [Episode(path) for path in episode_paths]
-    if len(episodes) != 3 or {episode.row["mode"] for episode in episodes} != set(LABELS):
-        raise ValueError("Expected one pi05, one triggered, and one dense episode")
+    expected = {"pi05", "vlm-jev-triggered", "vlm-jev-dense"}
+    modes = {episode.row["mode"] for episode in episodes}
+    if modes not in (expected, set(LABELS)) or len(episodes) != len(modes):
+        raise ValueError("Expected the three main modes, optionally plus the no-Jev ablation")
     episodes.sort(key=lambda episode: tuple(LABELS).index(episode.row["mode"]))
+    width = PANEL_WIDTH * len(episodes)
     fingerprints = {episode.row.get("initial_fingerprint") for episode in episodes}
     cases = {json.dumps(episode.row["case"], sort_keys=True) for episode in episodes}
     if len(fingerprints) != 1 or len(cases) != 1:
@@ -93,6 +97,9 @@ def render(episode_paths, output, speed=8., fps=12):
     end = max(episode.duration for episode in episodes)
     count = math.ceil(end / speed * fps) + fps * 2
     video = output / "comparison.mp4"
+    gif = output / "comparison.gif"
+    sample_indices = {round(index * (count - 1) / 59) for index in range(60)}
+    gif_frames = []
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe() if imageio_ffmpeg else shutil.which("ffmpeg")
     if not ffmpeg:
         raise RuntimeError("Install the phase2 extra or make ffmpeg available on PATH")
@@ -100,13 +107,13 @@ def render(episode_paths, output, speed=8., fps=12):
     os.close(descriptor)
     temporary_video = Path(temporary_name)
     encoder = subprocess.Popen([ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
-        "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{WIDTH}x{HEIGHT}", "-r", str(fps), "-i", "-",
+        "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{width}x{HEIGHT}", "-r", str(fps), "-i", "-",
         "-an", "-vcodec", "libx264", "-preset", "fast", "-crf", "20", "-pix_fmt", "yuv420p",
         "-movflags", "+faststart", str(temporary_video)], stdin=subprocess.PIPE)
     try:
         for frame_id in range(count):
             elapsed = min(end, frame_id / fps * speed)
-            canvas = Image.new("RGB", (WIDTH, HEIGHT), BG)
+            canvas = Image.new("RGB", (width, HEIGHT), BG)
             draw = ImageDraw.Draw(canvas)
             draw.text((22, 14), "jev-embodied · phase-two paired evaluation", font=FONTS[28], fill=TEXT)
             draw.text((22, 55), f"shared wall clock · {speed:g}x · {elapsed:.1f}/{end:.1f}s · model waits included",
@@ -140,14 +147,18 @@ def render(episode_paths, output, speed=8., fps=12):
                         headline = f"action chunk {decision['executed_chunk_length']}/{decision['chunk_length']}"
                         detail = f"inference {decision['inference_latency_ms']:.0f} ms"
                     else:
-                        headline = f"Jev: {decision['selection']}"
-                        confidence = decision.get("confidence", {})
-                        detail = (f"max={confidence.get('max_probability', 0):.1%} · "
+                        selected = decision["selection"]
+                        family = decision.get("candidate_chunks", {}).get(selected, {}).get("family", selected)
+                        headline = (("deterministic chunk: " if mode == "vlm-chunk-no-jev" else "Jev chunk: ")
+                                    + str(family))
+                        confidence = decision.get("confidence") or {}
+                        detail = ("nominal candidate; no Jev request" if mode == "vlm-chunk-no-jev" else
+                                  f"max={confidence.get('max_probability', 0):.1%} · "
                                   f"margin={confidence.get('top_two_margin', 0):.1%}")
                     draw.text((x + 14, 646), headline, font=FONTS[18], fill=color)
                     draw.text((x + 14, 674), detail, font=FONTS[13], fill=MUTED)
                     if mode != "pi05":
-                        plan = decision.get("vlm_plan", {})
+                        plan = decision.get("vlm_keyframe", {})
                         trigger = ", ".join(decision.get("vlm_trigger_reasons", [])) or "cached plan reused"
                         wrap(draw, f"phase: {plan.get('phase', '-')} · {plan.get('summary', '-')}",
                              x + 14, 700, 430, size=15, lines=2)
@@ -160,6 +171,8 @@ def render(episode_paths, output, speed=8., fps=12):
                 canvas.save(output / "poster.png")
             if frame_id == count - 1:
                 canvas.save(output / "final.png")
+            if frame_id in sample_indices:
+                gif_frames.append(canvas.resize((width // 2, HEIGHT // 2), Image.Resampling.LANCZOS))
             encoder.stdin.write(canvas.tobytes())
     finally:
         encoder.stdin.close()
@@ -170,8 +183,12 @@ def render(episode_paths, output, speed=8., fps=12):
         shutil.copy2(temporary_video, video)
     finally:
         temporary_video.unlink(missing_ok=True)
+    gif_frames[0].save(gif, save_all=True, append_images=gif_frames[1:], duration=130,
+                       loop=0, optimize=True, disposal=2)
     metadata = {"speed": speed, "fps": fps, "wall_seconds": end,
                 "video_sha256": hashlib.sha256(video.read_bytes()).hexdigest(),
+                "gif_sha256": hashlib.sha256(gif.read_bytes()).hexdigest(),
+                "gif_frames": len(gif_frames),
                 "episodes": [{"mode": episode.row["mode"], "path": str(episode.root / "episode.json"),
                               "success": episode.row["success"]} for episode in episodes]}
     (output / "media.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n")
@@ -180,7 +197,7 @@ def render(episode_paths, output, speed=8., fps=12):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--episodes", type=Path, nargs=3, required=True)
+    parser.add_argument("--episodes", type=Path, nargs="+", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--speed", type=float, default=8.)
     parser.add_argument("--fps", type=int, default=12)

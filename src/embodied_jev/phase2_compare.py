@@ -1,11 +1,9 @@
-"""Phase-two paired LIBERO evaluation with three independent policies.
+"""Phase-two LIBERO evaluation with interface-aligned continuous actions.
 
-pi0.5 emits continuous action chunks directly and never calls Jev. The dense
-hybrid asks a local VLM to plan before every Jev macro-skill selection. The
-triggered hybrid reuses a bounded VLM plan while Jev remains confident, and
-replans only on an explicit confidence, horizon, or stagnation trigger. A
-deterministic executor expands each selected skill into bounded concurrent 7D
-actions. The simulator alone supplies task success.
+pi0.5 and every hybrid route ultimately emit Hx7 action chunks. The local VLM
+defines a task-agnostic visual keyframe in an observed camera frame; calibrated
+geometry generates multiple numeric chunks, and Jev judges those chunks. No
+task-named skill or privileged object pose is available to the hybrid policy.
 """
 from __future__ import annotations
 
@@ -23,53 +21,40 @@ import time
 
 from .evaluation import Worker, load_manifest, saved_connection
 from .libero_policy import ModelClient, RequestBudget, usage_summary
+from .phase2_chunks import generate_action_chunks, nominal_chunk, validate_keyframe
 from .policies import environment_connection, validate_answer
 
 
-PROTOCOL = "libero-pi05-vs-local-vlm-jev-v3-macro-skills"
-MODES = ("pi05", "vlm-jev-triggered", "vlm-jev-dense")
+PROTOCOL = "libero-pi05-vs-local-vlm-jev-v4-action-chunks"
+MODES = ("pi05", "vlm-jev-triggered", "vlm-jev-dense", "vlm-chunk-no-jev")
 SOURCE_FILES = ("phase2_compare.py", "benchmark_worker.py", "evaluation.py",
-                "libero_policy.py", "evaluation_meter.py", "policies.py")
-PHASES = {"approach", "align", "contact", "manipulate", "release", "recover", "uncertain"}
-DIRECTIONS = {"negative", "hold", "positive", "unknown"}
-GRIPPER = {"open", "hold", "close", "unknown"}
-SKILL_CATALOG = {
-    "observe_hold": "Hold the TCP and gripper while waiting for a new visual checkpoint.",
-    "approach_coarse": "Move all supported translation and rotation axes together for a coarse free-space approach.",
-    "approach_fine": "Move all supported translation and rotation axes together with a small approach correction.",
-    "align_pose": "Prioritize wrist alignment while applying only a very small concurrent translation correction.",
-    "contact_probe": "Advance one cautious concurrent translation step to test or establish contact; retain the gripper.",
-    "manipulate_gentle": "Apply a short, gentle concurrent manipulation motion and follow the planned gripper state.",
-    "manipulate_firm": "Apply a longer concurrent manipulation motion after contact is visually well supported.",
-    "retract_recover": "Reverse the horizontal plan direction and move upward to recover clearance.",
-    "open_gripper": "Hold the TCP and open the gripper for two control steps.",
-    "close_gripper": "Hold the TCP and close the gripper for two control steps.",
-}
+                "libero_policy.py", "phase2_chunks.py", "evaluation_meter.py", "policies.py")
 
-VLM_SYSTEM = """You are the low-frequency visual planner in a robot-control experiment.
-Inspect the current external and wrist RGB images, the language task, proprioceptive
-state, recent executed actions, and the offered macro-skill catalogue. Report a
-short-lived visual plan and choose 3-8 candidate skill IDs for a separate selector.
-Do not claim task success, contact force, hidden object state, or exact metric depth.
-The controller uses world-frame x/y/z translation and axis-angle rx/ry/rz. Use
-'unknown' whenever the images do not support a direction. Return one JSON object
-with exactly:
-{"phase":"approach|align|contact|manipulate|release|recover|uncertain",
+VLM_SYSTEM = """You are the low-frequency visual keyframe planner in a robot-control experiment.
+Inspect the current upright external and wrist RGB images, the language task,
+proprioceptive state and recent executed action chunks. Describe only the next
+short, observable keyframe. Never output a named robot skill or a world-frame
+action. Choose motion_frame as the camera whose image best supports the motion.
+In that exact upright image, translation_camera x is image-right, y is image-down,
+and z is depth away from the camera; rotation_camera uses the same camera axes.
+Use unknown when RGB does not support a direction. The calibrated executor, not
+you, maps the camera directions into world coordinates. Do not claim task success,
+contact force, hidden object state, exact depth, or object pose. Return exactly:
+{"phase":"approach|align|contact|manipulate|release|recover|verify|uncertain",
  "summary":"brief current scene description",
  "visible_evidence":"brief image-grounded evidence",
- "translation":{"x":"negative|hold|positive|unknown","y":"...","z":"..."},
- "rotation":{"rx":"negative|hold|positive|unknown","ry":"...","rz":"..."},
- "gripper":"open|hold|close|unknown","risk":"brief risk or uncertainty",
- "candidate_skills":["3-8 exact IDs copied from available_skills"],
- "plan_horizon_decisions":4,"replan_condition":"one observable reason to replan"}
-Never output an action vector or invent an ID. The deterministic executor applies
-your supported translation and rotation directions concurrently inside each skill.
-Offer observe_hold when visual evidence is weak. Use approach skills before contact,
-contact_probe only for a cautious contact test, manipulate skills only when contact
-is supported, and retract_recover after a bad approach or lost target. A plan must
-cover at least 2 selector decisions; prefer 4-6 when the scene is clear and use 2
-only when uncertainty requires an early new observation. A separate typed selector
-chooses exactly one candidate skill."""
+ "motion_frame":"external|wrist",
+ "translation_camera":{"x":"negative|hold|positive|unknown","y":"...","z":"..."},
+ "rotation_camera":{"x":"negative|hold|positive|unknown","y":"...","z":"..."},
+ "gripper":"open|hold|close|unknown","magnitude":"fine|medium|coarse",
+ "chunk_horizon":5,"plan_horizon_decisions":4,
+ "completion_evidence":"one visible relation that would complete this keyframe",
+ "risk":"brief risk or uncertainty","replan_condition":"one observable reason to replan"}
+The action-chunk generator always creates bounded simultaneous 7D trajectories,
+including cautious, nominal, assertive, translation-only, rotation-only, recovery,
+gripper-only and hold alternatives. A separate typed judge chooses among their
+exact numeric arrays. Prefer fine motion near contact and a short horizon when
+uncertain. A keyframe must cover at least two judge decisions."""
 
 
 def write_json(path, value):
@@ -104,78 +89,6 @@ def initial_fingerprint(packet):
     public = {"prompt": policy["prompt"], "state": policy["state"],
               "images": {name: image["sha256"] for name, image in sorted(policy["images"].items())}}
     return hashlib.sha256(json.dumps(public, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-
-
-def skill_catalog():
-    """Return the frozen task-general macro-skill catalogue."""
-    return dict(SKILL_CATALOG)
-
-
-def expand_skill(skill, plan, scale, previous_gripper, max_repeat):
-    """Expand one semantic skill into bounded concurrent LIBERO OSC actions."""
-    if skill not in SKILL_CATALOG or not 0 < scale <= .5 or not -1 <= previous_gripper <= 1:
-        raise ValueError("Invalid macro skill, scale or previous gripper command")
-    if not 1 <= max_repeat <= 20:
-        raise ValueError("Invalid macro-skill duration")
-    signs = {"negative": -1., "hold": 0., "positive": 1., "unknown": 0.}
-    translation = [signs[plan["translation"][axis]] for axis in "xyz"]
-    rotation = [signs[plan["rotation"][axis]] for axis in ("rx", "ry", "rz")]
-    planned_gripper = {"open": -1., "close": 1., "hold": previous_gripper,
-                       "unknown": previous_gripper}[plan["gripper"]]
-
-    def repeated(t_scale=0., r_scale=0., repeat=1, gripper=previous_gripper):
-        action = [value * min(scale, t_scale) for value in translation]
-        action += [value * min(scale, r_scale) for value in rotation]
-        action += [float(gripper)]
-        if len(action) != 7 or any(not math.isfinite(value) or abs(value) > 1 for value in action):
-            raise AssertionError("Macro skill produced an invalid LIBERO action")
-        return [list(action) for _ in range(max(1, min(max_repeat, repeat)))]
-
-    if skill == "observe_hold":
-        return repeated()
-    if skill == "approach_coarse":
-        return repeated(.35, .16, 4)
-    if skill == "approach_fine":
-        return repeated(.12, .08, 2)
-    if skill == "align_pose":
-        return repeated(.05, .18, 2)
-    if skill == "contact_probe":
-        return repeated(.08, .04, 1)
-    if skill == "manipulate_gentle":
-        return repeated(.12, .08, 3, planned_gripper)
-    if skill == "manipulate_firm":
-        return repeated(.25, .12, 5, planned_gripper)
-    if skill == "retract_recover":
-        action = [-value * min(scale, .15) for value in translation[:2]]
-        action += [min(scale, .15), 0., 0., 0., float(previous_gripper)]
-        return [list(action) for _ in range(max(1, min(max_repeat, 3)))]
-    gripper = -1. if skill == "open_gripper" else 1.
-    return repeated(repeat=2, gripper=gripper)
-
-
-def validate_vlm_analysis(answer, candidates):
-    fields = {"phase", "summary", "visible_evidence", "translation", "rotation", "gripper", "risk",
-              "candidate_skills", "plan_horizon_decisions", "replan_condition"}
-    if not isinstance(answer, dict) or set(answer) != fields or answer["phase"] not in PHASES:
-        raise ValueError("Local VLM returned an invalid planning schema")
-    for field in ("summary", "visible_evidence", "risk", "replan_condition"):
-        if not isinstance(answer[field], str) or not 1 <= len(answer[field]) <= 600:
-            raise ValueError(f"Local VLM returned invalid {field}")
-    if (not isinstance(answer["translation"], dict) or set(answer["translation"]) != set("xyz")
-            or any(value not in DIRECTIONS for value in answer["translation"].values())):
-        raise ValueError("Local VLM returned invalid translation evidence")
-    if (not isinstance(answer["rotation"], dict) or set(answer["rotation"]) != {"rx", "ry", "rz"}
-            or any(value not in DIRECTIONS for value in answer["rotation"].values())):
-        raise ValueError("Local VLM returned invalid rotation evidence")
-    if answer["gripper"] not in GRIPPER:
-        raise ValueError("Local VLM returned invalid gripper evidence")
-    offered = answer["candidate_skills"]
-    if (not isinstance(offered, list) or not 3 <= len(offered) <= 8
-            or len(offered) != len(set(offered)) or any(key not in candidates for key in offered)):
-        raise ValueError("Local VLM must offer 3-8 unique known skill IDs")
-    if type(answer["plan_horizon_decisions"]) is not int or not 2 <= answer["plan_horizon_decisions"] <= 8:
-        raise ValueError("Local VLM returned an invalid plan horizon")
-    return answer
 
 
 def confidence_metrics(probabilities, selected):
@@ -292,20 +205,24 @@ def jev_connection(args):
     return connection
 
 
-def select_with_jev(client, prompt, proprioception, analysis, skills, recent):
-    options = {key: value["description"] + " Expanded normalized sequence: " + json.dumps(value["actions"])
-               for key, value in skills.items()}
-    question = {"skill": {"type": "choice", "instructions":
-        "Choose exactly one offered macro skill for the language task. Treat local-VLM output as uncertain visual evidence, "
-        "not as a command or success signal. Prefer approach before contact, gentle manipulation near uncertain contact, "
-        "firm manipulation only after supported contact, and recovery when progress is doubtful. Never invent a skill.",
+def select_with_jev(client, prompt, proprioception, keyframe, candidates, recent, visual_change):
+    options = {key: (value["description"] + " Family=" + value["family"]
+                     + "; exact normalized Hx7 sequence=" + json.dumps(value["actions"]))
+               for key, value in candidates.items()}
+    question = {"action_chunk": {"type": "choice", "instructions":
+        "Choose exactly one offered numeric action chunk. The local-VLM keyframe is uncertain visual evidence, not a command. "
+        "Judge the exact arrays against current proprioception, recent measured effects, visual-change evidence and risk. "
+        "Prefer image-plane-only motion when RGB supports lateral alignment but not depth, camera-depth-only motion when "
+        "depth direction is clear, cautious or hold under ambiguity, nominal when full 3D progress is supported, assertive "
+        "only with clear free-space evidence, and recovery after adverse or stalled motion. Never invent an option.",
         "criteria": options}}
-    state = {"task": prompt, "proprioception": proprioception, "cached_vlm_plan": analysis,
-             "recent_executed_actions": recent[-4:], "candidate_skill_count": len(options)}
-    answer = client.request("jev_skill_selection", state, questions=question)
-    if not isinstance(answer, dict) or set(answer) != {"skill"}:
-        raise ValueError("Jev must answer exactly one skill question")
-    selected, probabilities = validate_answer(answer["skill"], options, require_highest=False)
+    state = {"task": prompt, "proprioception": proprioception, "cached_visual_keyframe": keyframe,
+             "recent_executed_actions": recent[-6:], "recent_visual_change": visual_change,
+             "candidate_chunk_count": len(options)}
+    answer = client.request("jev_action_chunk_selection", state, questions=question)
+    if not isinstance(answer, dict) or set(answer) != {"action_chunk"}:
+        raise ValueError("Jev must answer exactly one action-chunk question")
+    selected, probabilities = validate_answer(answer["action_chunk"], options, require_highest=False)
     return selected, probabilities, state
 
 
@@ -332,19 +249,37 @@ def save_frame(directory, frame_index, policy_input, wall_seconds, *, step=None,
             "decision_index": decision_index}
 
 
-def plan_with_vlm(vlm, directory, decision_index, plan_revision, policy_input, recent, candidates):
+def visual_change(previous, current):
+    """Mean normalized RGB change in the two observable cameras."""
+    if previous is None:
+        return None
+    try:
+        from PIL import Image, ImageChops, ImageStat
+    except ImportError as exc:
+        raise RuntimeError("The phase2 extra (Pillow) is required") from exc
+    values = []
+    for view in sorted(current["images"]):
+        before = Image.open(io.BytesIO(decode_png(previous["images"][view]))).convert("RGB").resize((64, 64))
+        after = Image.open(io.BytesIO(decode_png(current["images"][view]))).convert("RGB").resize((64, 64))
+        values.append(sum(ImageStat.Stat(ImageChops.difference(before, after)).mean) / (3 * 255))
+    return statistics.mean(values)
+
+
+def plan_with_vlm(vlm, directory, decision_index, plan_revision, policy_input, recent):
     visual_state = {"task": policy_input["prompt"], "proprioception": policy_input["state"],
                     "recent_executed_actions": recent[-4:],
-                    "available_skills": candidates,
-                    "note": "No task success flag, object pose, depth, or force sensor is provided."}
+                    "camera_frames": ["external", "wrist"],
+                    "note": ("Images are upright after a 180-degree source transform. Known camera calibration is used "
+                             "only after your response. No task success flag, object pose, scene depth, force sensor, "
+                             "task-named skill or candidate action is provided.")}
     images = {view: rotate_png_180(decode_png(image)) for view, image in policy_input["images"].items()}
     model_inputs = {}
     for view, image in images.items():
         relative = f"inputs/{decision_index:05d}-plan{plan_revision:03d}-{view}-vlm.png"
         (directory / relative).write_bytes(image)
         model_inputs[view] = {"path": relative, "sha256": hashlib.sha256(image).hexdigest()}
-    plan = validate_vlm_analysis(vlm.request("local_vlm_plan", visual_state,
-                                             system=VLM_SYSTEM, images=images), candidates)
+    plan = validate_keyframe(vlm.request("local_vlm_keyframe", visual_state,
+                                         system=VLM_SYSTEM, images=images))
     return plan, model_inputs
 
 
@@ -385,11 +320,13 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
         else:
             budget = RequestBudget(args.max_calls, args.timeout, args.max_usd)
             vlm = ModelClient("chat", local_vlm_connection(args), budget, request_retries=args.request_retries)
-            selector = ModelClient("jev", jev_connection(args), budget, request_retries=args.request_retries)
+            if mode != "vlm-chunk-no-jev":
+                selector = ModelClient("jev", jev_connection(args), budget, request_retries=args.request_retries)
         previous_gripper, recent = -1., []
         plan = None
         plan_revision = 0
         plan_age = 0
+        previous_decision_input = None
         event("reset", metadata=row["metadata"], initial_fingerprint=fingerprint)
         row["frames"].append(save_frame(directory, 0, packet["policy_input"], 0., step=0))
         while row["steps"] < args.max_steps:
@@ -401,6 +338,8 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
             inputs = save_inputs(directory, index, policy_input)
             decision = {"index": index, "step": row["steps"], "input_images": inputs,
                         "start_seconds": time.monotonic() - rollout_started}
+            current_visual_change = visual_change(previous_decision_input, policy_input)
+            previous_decision_input = policy_input
             if mode == "pi05":
                 chunk, latency, model_inputs = pi05.infer(policy_input)
                 actions = chunk[:args.pi05_replan_steps]
@@ -410,7 +349,6 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                                 image_transform="rotate 180 degrees, resize_with_pad 224x224, uint8")
             else:
                 budget.check()
-                all_candidates = skill_catalog()
                 trigger_reasons = []
                 if mode == "vlm-jev-dense":
                     trigger_reasons.append("dense_schedule")
@@ -418,56 +356,77 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                     trigger_reasons.append("initial_plan")
                 elif plan_age >= min(plan["plan_horizon_decisions"], args.vlm_max_plan_decisions):
                     trigger_reasons.append("plan_horizon")
-                if mode == "vlm-jev-triggered" and stalled(
-                        recent, args.stagnation_actions, args.stagnation_threshold):
-                    trigger_reasons.append("proprioceptive_stagnation")
+                if (mode in {"vlm-jev-triggered", "vlm-chunk-no-jev"} and recent
+                        and recent[-1].get("chunk_family") in {"hold", "recover"}):
+                    trigger_reasons.append("previous_hold_or_recovery")
+                if (mode in {"vlm-jev-triggered", "vlm-chunk-no-jev"}
+                        and current_visual_change is not None
+                        and current_visual_change < args.visual_stagnation_threshold
+                        and stalled(recent, args.stagnation_actions, args.stagnation_threshold)):
+                    trigger_reasons.append("visual_and_proprioceptive_stagnation")
                 vlm_called = bool(trigger_reasons)
                 model_inputs = {}
                 if vlm_called:
                     plan_revision += 1
                     plan, model_inputs = plan_with_vlm(
-                        vlm, directory, index, plan_revision, policy_input, recent, all_candidates)
+                        vlm, directory, index, plan_revision, policy_input, recent)
                     plan_age = 0
                 if plan is None:
                     raise AssertionError("The hybrid policy requires an initialized VLM plan")
-                candidates = {key: {"description": all_candidates[key],
-                                    "actions": expand_skill(key, plan, args.candidate_scale,
-                                                            previous_gripper, args.action_repeat)}
-                              for key in plan["candidate_skills"]}
-                selected, probabilities, selector_state = select_with_jev(
-                    selector, policy_input["prompt"], policy_input["state"], plan, candidates, recent)
-                metrics = confidence_metrics(probabilities, selected)
-                jev_attempts = [{"plan_revision": plan_revision, "selection": selected,
-                                 "probabilities": probabilities, "confidence": metrics}]
-                low_confidence = confidence_triggers(metrics, args)
+                camera_packet = policy_input["images"][plan["motion_frame"]]
+                candidates = generate_action_chunks(
+                    plan, camera_packet["camera_to_world"], previous_gripper, args.candidate_scale)
+                calibration = {"motion_frame": plan["motion_frame"],
+                               "camera_to_world": camera_packet["camera_to_world"],
+                               "intrinsics": camera_packet["intrinsics"],
+                               "vlm_image_transform": "rotate_180",
+                               "scene_depth_used": False}
+                if mode == "vlm-chunk-no-jev":
+                    selected = nominal_chunk(candidates)
+                    probabilities, metrics, selector_state, jev_attempts, low_confidence = {}, None, None, [], []
+                else:
+                    selected, probabilities, selector_state = select_with_jev(
+                        selector, policy_input["prompt"], policy_input["state"], plan, candidates, recent,
+                        current_visual_change)
+                    metrics = confidence_metrics(probabilities, selected)
+                    jev_attempts = [{"plan_revision": plan_revision, "selection": selected,
+                                     "probabilities": probabilities, "confidence": metrics}]
+                    low_confidence = confidence_triggers(metrics, args)
                 if mode == "vlm-jev-triggered" and low_confidence and not vlm_called:
                     trigger_reasons.extend("jev_" + reason for reason in low_confidence)
                     plan_revision += 1
                     plan, model_inputs = plan_with_vlm(
-                        vlm, directory, index, plan_revision, policy_input, recent, all_candidates)
+                        vlm, directory, index, plan_revision, policy_input, recent)
                     plan_age = 0
                     vlm_called = True
-                    candidates = {key: {"description": all_candidates[key],
-                                        "actions": expand_skill(key, plan, args.candidate_scale,
-                                                                previous_gripper, args.action_repeat)}
-                                  for key in plan["candidate_skills"]}
+                    camera_packet = policy_input["images"][plan["motion_frame"]]
+                    candidates = generate_action_chunks(
+                        plan, camera_packet["camera_to_world"], previous_gripper, args.candidate_scale)
+                    calibration = {"motion_frame": plan["motion_frame"],
+                                   "camera_to_world": camera_packet["camera_to_world"],
+                                   "intrinsics": camera_packet["intrinsics"],
+                                   "vlm_image_transform": "rotate_180", "scene_depth_used": False}
                     selected, probabilities, selector_state = select_with_jev(
-                        selector, policy_input["prompt"], policy_input["state"], plan, candidates, recent)
+                        selector, policy_input["prompt"], policy_input["state"], plan, candidates, recent,
+                        current_visual_change)
                     metrics = confidence_metrics(probabilities, selected)
                     jev_attempts.append({"plan_revision": plan_revision, "selection": selected,
                                          "probabilities": probabilities, "confidence": metrics,
                                          "after_vlm_replan": True})
-                actions = candidates[selected]["actions"]
-                decision.update(source=("on-demand local VLM planning plus Jev macro-skill selection"
-                                        if mode == "vlm-jev-triggered" else
-                                        "dense local VLM planning plus Jev macro-skill selection"),
+                actions = candidates[selected]["actions"][:args.action_repeat]
+                source = {"vlm-jev-triggered": "on-demand visual keyframe plus Jev action-chunk judgment",
+                          "vlm-jev-dense": "dense visual keyframe plus Jev action-chunk judgment",
+                          "vlm-chunk-no-jev": "on-demand visual keyframe plus deterministic nominal chunk"}[mode]
+                decision.update(source=source,
                                 vlm_called=vlm_called, vlm_trigger_reasons=trigger_reasons,
-                                vlm_plan=plan, plan_revision=plan_revision, plan_age=plan_age,
+                                vlm_keyframe=plan, plan_revision=plan_revision, plan_age=plan_age,
                                 jev_attempts=jev_attempts, confidence=metrics,
                                 selection=selected, probabilities=probabilities,
-                                selected_skill=selected, expanded_actions=actions,
-                                skill_length=len(actions), selector_state=selector_state,
+                                selected_chunk=selected, candidate_chunks=candidates,
+                                action_chunk=actions, chunk_length=len(candidates[selected]["actions"]),
+                                executed_chunk_length=len(actions), selector_state=selector_state,
                                 candidate_count=len(candidates), model_input_images=model_inputs,
+                                calibration=calibration, recent_visual_change=current_visual_change,
                                 image_transform="rotate 180 degrees; local VLM server owns resize/tokenization")
             decision["inference_end_seconds"] = time.monotonic() - rollout_started
             row["decisions"].append(decision)
@@ -486,7 +445,8 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                 executed = {"step": row["steps"], "action": action, "success": packet["success"],
                             "state_delta_l2": delta}
                 if mode != "pi05":
-                    executed["skill"] = selected
+                    executed["chunk"] = selected
+                    executed["chunk_family"] = candidates[selected]["family"]
                 recent.append(executed)
                 row["frames"].append(save_frame(
                     directory, len(row["frames"]), packet["policy_input"],
@@ -562,7 +522,8 @@ def run(args):
             or not 0 < args.max_usd <= 100 or not 0 <= args.request_retries <= 2
             or not 0 <= args.jev_confidence_threshold <= 1 or not 0 <= args.jev_margin_threshold <= 1
             or not 0 <= args.jev_entropy_threshold <= 1 or not 1 <= args.vlm_max_plan_decisions <= 8
-            or not 0 <= args.stagnation_actions <= 20 or not 0 < args.stagnation_threshold <= 1):
+            or not 0 <= args.stagnation_actions <= 20 or not 0 < args.stagnation_threshold <= 1
+            or not 0 <= args.visual_stagnation_threshold <= 1):
         raise ValueError("Invalid phase-two experiment bounds")
     output = Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -578,13 +539,15 @@ def run(args):
     protocol = {"version": PROTOCOL, "created_at": datetime.now(timezone.utc).isoformat(),
                 "manifest": manifest, "modes": modes, "source_sha256": hashes,
                 "policy_contract": {"pi05": "direct finite 7D action chunks with official unclipped execution; Jev is never called",
-                    "vlm-jev-triggered": "cached local-VLM macro-skill plan; Jev selects until an explicit replan trigger",
-                    "vlm-jev-dense": "fresh local-VLM macro-skill plan before every Jev selection",
-                    "hybrid_executor": "phase-aware skills expand deterministically into bounded concurrent 7D OSC actions"},
+                    "vlm-jev-triggered": "cached camera-frame visual keyframe; Jev selects an exact Hx7 numeric chunk until an explicit replan trigger",
+                    "vlm-jev-dense": "fresh camera-frame visual keyframe before every Jev Hx7 chunk judgment",
+                    "vlm-chunk-no-jev": "cached camera-frame visual keyframe with deterministic nominal Hx7 chunk selection",
+                    "hybrid_executor": "calibrated camera directions generate bounded simultaneous 7D OSC chunks without task-named skills or scene depth"},
                 "budget": {key: getattr(args, key) for key in ("max_steps", "max_calls", "timeout", "max_usd",
                     "action_repeat", "candidate_scale", "pi05_replan_steps", "settle_steps",
                     "jev_confidence_threshold", "jev_margin_threshold", "jev_entropy_threshold",
-                    "vlm_max_plan_decisions", "stagnation_actions", "stagnation_threshold")},
+                    "vlm_max_plan_decisions", "stagnation_actions", "stagnation_threshold",
+                    "visual_stagnation_threshold")},
                 "endpoints": {"pi05": {"host": args.pi05_host, "port": args.pi05_port},
                               "vlm": {"base_url": args.vlm_base_url, "model": args.vlm_model,
                                       "revision": args.vlm_revision},
@@ -626,14 +589,16 @@ def add_arguments(parser):
     parser.add_argument("--timeout", type=float, default=1800)
     parser.add_argument("--max-usd", type=float, default=10)
     parser.add_argument("--action-repeat", type=int, default=5,
-                        help="Maximum environment steps in one expanded hybrid macro skill")
+                        help="Maximum environment steps executed from each hybrid Hx7 action chunk")
     parser.add_argument("--candidate-scale", type=float, default=.5,
-                        help="Maximum normalized channel magnitude used by the hybrid skill executor")
+                        help="Maximum normalized channel magnitude used by the generic chunk generator")
     parser.add_argument("--jev-confidence-threshold", type=float, default=.35)
     parser.add_argument("--jev-margin-threshold", type=float, default=.08)
     parser.add_argument("--jev-entropy-threshold", type=float, default=.90)
     parser.add_argument("--vlm-max-plan-decisions", type=int, default=6)
     parser.add_argument("--stagnation-actions", type=int, default=3)
     parser.add_argument("--stagnation-threshold", type=float, default=.001)
+    parser.add_argument("--visual-stagnation-threshold", type=float, default=.002,
+                        help="Mean normalized two-camera RGB change below which a stalled robot triggers replanning")
     parser.add_argument("--request-retries", type=int, default=1)
     parser.add_argument("--continue-on-error", action="store_true")

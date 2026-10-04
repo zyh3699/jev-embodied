@@ -1,0 +1,255 @@
+{
+  "protocol": "libero-pi05-vs-local-vlm-jev-v4-action-chunks",
+  "source": "/mnt/oss/users/zyh/runs/phase2-v4-qwen35-20261005",
+  "protocol_sha256": "02fee63e1af33f12cbc83111a8e48f9816bc079333ed0fd669982f147dc6e915",
+  "report_sha256": "a6737b7c394adcdf46f0748534a37114f16b0c7cdceac29d55faa09a29238dd3",
+  "modes": {
+    "pi05": {
+      "episodes": 2,
+      "successes": 1,
+      "success_rate": 0.5,
+      "mean_steps": 323.5,
+      "mean_wall_seconds": 68.06797013799951,
+      "vlm_requests": 0,
+      "jev_requests": 0,
+      "complete": true
+    },
+    "vlm-jev-triggered": {
+      "episodes": 2,
+      "successes": 0,
+      "success_rate": 0.0,
+      "mean_steps": 400,
+      "mean_wall_seconds": 502.06373051949777,
+      "vlm_requests": 129,
+      "jev_requests": 219,
+      "complete": true
+    },
+    "vlm-jev-dense": {
+      "episodes": 2,
+      "successes": 0,
+      "success_rate": 0.0,
+      "mean_steps": 400,
+      "mean_wall_seconds": 589.9862119299942,
+      "vlm_requests": 160,
+      "jev_requests": 160,
+      "complete": true
+    },
+    "vlm-chunk-no-jev": {
+      "episodes": 2,
+      "successes": 0,
+      "success_rate": 0.0,
+      "mean_steps": 400,
+      "mean_wall_seconds": 189.93068010649586,
+      "vlm_requests": 40,
+      "jev_requests": 0,
+      "complete": true
+    }
+  },
+  "episodes": [
+    {
+      "case": "drawer-init0",
+      "task": "libero_90/0",
+      "mode": "pi05",
+      "success": false,
+      "status": "step_budget",
+      "steps": 400,
+      "wall_seconds": 84.43412467899907,
+      "decisions": 80,
+      "frames": 401,
+      "vlm_requests": 0,
+      "jev_requests": 0,
+      "vlm_plans": 0,
+      "chunk_families": {},
+      "trigger_reasons": {},
+      "initial_fingerprint": "db138e4201a1fe93b74d0c8b73530cb2c69b9163424f228421f1946e689e557b",
+      "episode_sha256": "23b3a3a9cda49e544129c6ba2f3954bbeb83abdd24c3b0f3d311e331cb30c891"
+    },
+    {
+      "case": "drawer-init0",
+      "task": "libero_90/0",
+      "mode": "vlm-jev-triggered",
+      "success": false,
+      "status": "step_budget",
+      "steps": 400,
+      "wall_seconds": 507.24418180099747,
+      "decisions": 80,
+      "frames": 401,
+      "vlm_requests": 64,
+      "jev_requests": 107,
+      "vlm_plans": 64,
+      "chunk_families": {
+        "cautious": 43,
+        "hold": 18,
+        "nominal": 1,
+        "recover": 18
+      },
+      "trigger_reasons": {
+        "initial_plan": 1,
+        "jev_low_max_probability": 18,
+        "jev_low_selected_probability": 18,
+        "jev_low_top_two_margin": 26,
+        "previous_hold_or_recovery": 36,
+        "visual_and_proprioceptive_stagnation": 8
+      },
+      "initial_fingerprint": "db138e4201a1fe93b74d0c8b73530cb2c69b9163424f228421f1946e689e557b",
+      "episode_sha256": "5689bcd77c0551f57c832805c2de1ece63900adef332bca66507e9491f403d46"
+    },
+    {
+      "case": "drawer-init0",
+      "task": "libero_90/0",
+      "mode": "vlm-jev-dense",
+      "success": false,
+      "status": "step_budget",
+      "steps": 400,
+      "wall_seconds": 595.4041802449938,
+      "decisions": 80,
+      "frames": 401,
+      "vlm_requests": 80,
+      "jev_requests": 80,
+      "vlm_plans": 80,
+      "chunk_families": {
+        "cautious": 32,
+        "hold": 16,
+        "image_plane": 1,
+        "recover": 31
+      },
+      "trigger_reasons": {
+        "dense_schedule": 80
+      },
+      "initial_fingerprint": "db138e4201a1fe93b74d0c8b73530cb2c69b9163424f228421f1946e689e557b",
+      "episode_sha256": "9fa6acb6d0a9d6217e6070cc408305762c2baa1cd1fe1251b2b657b9ec864d51"
+    },
+    {
+      "case": "drawer-init0",
+      "task": "libero_90/0",
+      "mode": "vlm-chunk-no-jev",
+      "success": false,
+      "status": "step_budget",
+      "steps": 400,
+      "wall_seconds": 188.09231870999793,
+      "decisions": 80,
+      "frames": 401,
+      "vlm_requests": 20,
+      "jev_requests": 0,
+      "vlm_plans": 20,
+      "chunk_families": {
+        "nominal": 80
+      },
+      "trigger_reasons": {
+        "initial_plan": 1,
+        "plan_horizon": 19
+      },
+      "initial_fingerprint": "db138e4201a1fe93b74d0c8b73530cb2c69b9163424f228421f1946e689e557b",
+      "episode_sha256": "4d7245fd0bfb1fcb017b8fc3c1c26ba1714a3244401384296c10c0a4eec55beb"
+    },
+    {
+      "case": "microwave-init0",
+      "task": "libero_90/33",
+      "mode": "pi05",
+      "success": true,
+      "status": "success",
+      "steps": 247,
+      "wall_seconds": 51.70181559699995,
+      "decisions": 50,
+      "frames": 248,
+      "vlm_requests": 0,
+      "jev_requests": 0,
+      "vlm_plans": 0,
+      "chunk_families": {},
+      "trigger_reasons": {},
+      "initial_fingerprint": "499817bd28387f5df800ca415aa8bad7ca35b510fa44b416477a3fef4dfedc0d",
+      "episode_sha256": "67790df9213c56a06236a841ba37c3ff236e21c2a51c0dfb844e58f76729b44b"
+    },
+    {
+      "case": "microwave-init0",
+      "task": "libero_90/33",
+      "mode": "vlm-jev-triggered",
+      "success": false,
+      "status": "step_budget",
+      "steps": 400,
+      "wall_seconds": 496.88327923799807,
+      "decisions": 80,
+      "frames": 401,
+      "vlm_requests": 65,
+      "jev_requests": 112,
+      "vlm_plans": 65,
+      "chunk_families": {
+        "cautious": 43,
+        "gripper": 1,
+        "hold": 18,
+        "image_plane": 4,
+        "recover": 14
+      },
+      "trigger_reasons": {
+        "initial_plan": 1,
+        "jev_high_normalized_entropy": 6,
+        "jev_low_max_probability": 28,
+        "jev_low_selected_probability": 28,
+        "jev_low_top_two_margin": 29,
+        "plan_horizon": 1,
+        "previous_hold_or_recovery": 31,
+        "visual_and_proprioceptive_stagnation": 12
+      },
+      "initial_fingerprint": "499817bd28387f5df800ca415aa8bad7ca35b510fa44b416477a3fef4dfedc0d",
+      "episode_sha256": "3f85d5af9700084e37514f5a662cc756da6015640ac1fdb004b8a3f4bd09659a"
+    },
+    {
+      "case": "microwave-init0",
+      "task": "libero_90/33",
+      "mode": "vlm-jev-dense",
+      "success": false,
+      "status": "step_budget",
+      "steps": 400,
+      "wall_seconds": 584.5682436149946,
+      "decisions": 80,
+      "frames": 401,
+      "vlm_requests": 80,
+      "jev_requests": 80,
+      "vlm_plans": 80,
+      "chunk_families": {
+        "cautious": 50,
+        "gripper": 2,
+        "hold": 18,
+        "recover": 9,
+        "rotation": 1
+      },
+      "trigger_reasons": {
+        "dense_schedule": 80
+      },
+      "initial_fingerprint": "499817bd28387f5df800ca415aa8bad7ca35b510fa44b416477a3fef4dfedc0d",
+      "episode_sha256": "c0e4232073114b2402541de80b37915da60f834d42b2d8e72d77e1dc4a7899f6"
+    },
+    {
+      "case": "microwave-init0",
+      "task": "libero_90/33",
+      "mode": "vlm-chunk-no-jev",
+      "success": false,
+      "status": "step_budget",
+      "steps": 400,
+      "wall_seconds": 191.7690415029938,
+      "decisions": 80,
+      "frames": 401,
+      "vlm_requests": 20,
+      "jev_requests": 0,
+      "vlm_plans": 20,
+      "chunk_families": {
+        "nominal": 80
+      },
+      "trigger_reasons": {
+        "initial_plan": 1,
+        "plan_horizon": 19
+      },
+      "initial_fingerprint": "499817bd28387f5df800ca415aa8bad7ca35b510fa44b416477a3fef4dfedc0d",
+      "episode_sha256": "fa49d9533febb3767c3e35829b63b88448df0f15da92ceb3f1b4bf273dda3708"
+    }
+  ],
+  "pair_fingerprints": {
+    "drawer-init0": [
+      "db138e4201a1fe93b74d0c8b73530cb2c69b9163424f228421f1946e689e557b"
+    ],
+    "microwave-init0": [
+      "499817bd28387f5df800ca415aa8bad7ca35b510fa44b416477a3fef4dfedc0d"
+    ]
+  },
+  "all_pairs_match": true
+}

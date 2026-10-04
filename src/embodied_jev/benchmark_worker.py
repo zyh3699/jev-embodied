@@ -192,11 +192,19 @@ class Libero:
 
     def policy_input(self):
         import numpy as np
+        from robosuite.utils.camera_utils import get_camera_extrinsic_matrix, get_camera_intrinsic_matrix
         quaternion_transform = openpi_libero_axis_angle if self.policy_profile == "openpi_libero" else axis_angle
         state = np.concatenate([self.raw["robot0_eef_pos"], quaternion_transform(self.raw["robot0_eef_quat"]),
                                 self.raw["robot0_gripper_qpos"]])
-        images = {view: image_packet(self.raw[key]) for view, key in
-                  (("external", "agentview_image"), ("wrist", "robot0_eye_in_hand_image"))} if self.observation_mode == "vision" else {}
+        images = {}
+        if self.observation_mode == "vision":
+            for view, key, camera in (("external", "agentview_image", "agentview"),
+                                      ("wrist", "robot0_eye_in_hand_image", "robot0_eye_in_hand")):
+                packet = image_packet(self.raw[key])
+                packet["intrinsics"] = get_camera_intrinsic_matrix(
+                    self.env.sim, camera, packet["height"], packet["width"]).tolist()
+                packet["camera_to_world"] = get_camera_extrinsic_matrix(self.env.sim, camera).tolist()
+                images[view] = packet
         return {"prompt": self.language, "state": state.tolist(), "images": images, "step": self.steps}
 
     def reset(self):
@@ -211,6 +219,7 @@ class Libero:
             "observation_mode": self.observation_mode,
             "camera_names": {"external": "agentview", "wrist": "robot0_eye_in_hand"} if self.observation_mode == "vision" else {},
             "camera_orientation": "raw MuJoCo output; policy profile specifies transforms",
+            "camera_calibration": "known intrinsics and camera-to-world extrinsics; no scene depth or object pose",
             "policy_profile": self.policy_profile,
             "action_spec": {"space": "libero_osc_pose", "size": 7, "normalized": True, "frame": "world",
                             "gripper": {"open": -1., "close": 1.}, "control_hz": 20.},

@@ -1,0 +1,30 @@
+{
+  "speed": 8.0,
+  "fps": 12,
+  "wall_seconds": 588.9825049710053,
+  "video_sha256": "81522df0261dcc6ca2288095d76352310dee4839b05c9c7227dea7488fb10166",
+  "gif_sha256": "64261e0f6df4ab91d575f3755823826db36ef93dfba8e7972d827978b0184a01",
+  "gif_frames": 60,
+  "episodes": [
+    {
+      "mode": "pi05",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v4-qwen35-20261005/drawer-init0--pi05/episode.json",
+      "success": false
+    },
+    {
+      "mode": "vlm-jev-triggered",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v4-qwen35-20261005/drawer-init0--vlm-jev-triggered/episode.json",
+      "success": false
+    },
+    {
+      "mode": "vlm-jev-dense",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v4-qwen35-20261005/drawer-init0--vlm-jev-dense/episode.json",
+      "success": false
+    },
+    {
+      "mode": "vlm-chunk-no-jev",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v4-qwen35-20261005/drawer-init0--vlm-chunk-no-jev/episode.json",
+      "success": false
+    }
+  ]
+}

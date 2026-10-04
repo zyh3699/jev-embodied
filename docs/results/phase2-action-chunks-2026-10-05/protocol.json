@@ -1,0 +1,78 @@
+{
+  "version": "libero-pi05-vs-local-vlm-jev-v4-action-chunks",
+  "created_at": "2026-10-04T19:20:49.809216+00:00",
+  "manifest": {
+    "format": "embodied-jev-suite-v1",
+    "name": "libero-vision-collaboration-dev",
+    "backend": "libero",
+    "split": "development",
+    "cases": [
+      {
+        "id": "drawer-init0",
+        "suite": "libero_90",
+        "task_id": 0,
+        "init_index": 0,
+        "seed": 0
+      },
+      {
+        "id": "microwave-init0",
+        "suite": "libero_90",
+        "task_id": 33,
+        "init_index": 0,
+        "seed": 0
+      }
+    ]
+  },
+  "modes": [
+    "pi05",
+    "vlm-jev-triggered",
+    "vlm-jev-dense",
+    "vlm-chunk-no-jev"
+  ],
+  "source_sha256": {
+    "phase2_compare.py": "fe2be6c8f7238884f3d55ba69f095c2a602360a102c0bec56dd63899da17c970",
+    "benchmark_worker.py": "0e10708496b3b4213419c0b119a5519ab3435e97c75ce358f908afea267c06f7",
+    "evaluation.py": "cd3f9f903f0eae97b2b52be2bfe34d4235f9ea7a6e284360a91a12bca219cc90",
+    "libero_policy.py": "7ba09f950ca9a8f21498e8930daf706deb9fcbd4d8da6533c6c8764efa971cc5",
+    "phase2_chunks.py": "601eec4f810e648c936bf062fd41d1e30306ce7c3a71daf3c3ab35e79a699ef9",
+    "evaluation_meter.py": "0037a65084462e9aedfee6f89e78c6cecea16a2923ad8b1b4d588902d9082eeb",
+    "policies.py": "20179042ba3c1aeb9e155854a41236de5f04d286dac7cf05f61008f1fafc6377",
+    "render_phase2_comparison.py": "8b1c47325cce3d16531f7346570f8ee4e927a6d48fb2d97eb1bd32efa3e3da5a"
+  },
+  "policy_contract": {
+    "pi05": "direct finite 7D action chunks with official unclipped execution; Jev is never called",
+    "vlm-jev-triggered": "cached camera-frame visual keyframe; Jev selects an exact Hx7 numeric chunk until an explicit replan trigger",
+    "vlm-jev-dense": "fresh camera-frame visual keyframe before every Jev Hx7 chunk judgment",
+    "vlm-chunk-no-jev": "cached camera-frame visual keyframe with deterministic nominal Hx7 chunk selection",
+    "hybrid_executor": "calibrated camera directions generate bounded simultaneous 7D OSC chunks without task-named skills or scene depth"
+  },
+  "budget": {
+    "max_steps": 400,
+    "max_calls": 400,
+    "timeout": 3600.0,
+    "max_usd": 10.0,
+    "action_repeat": 5,
+    "candidate_scale": 0.5,
+    "pi05_replan_steps": 5,
+    "settle_steps": 10,
+    "jev_confidence_threshold": 0.35,
+    "jev_margin_threshold": 0.08,
+    "jev_entropy_threshold": 0.9,
+    "vlm_max_plan_decisions": 6,
+    "stagnation_actions": 3,
+    "stagnation_threshold": 0.001,
+    "visual_stagnation_threshold": 0.002
+  },
+  "endpoints": {
+    "pi05": {
+      "host": "127.0.0.1",
+      "port": 8000
+    },
+    "vlm": {
+      "base_url": "http://127.0.0.1:8001/v1",
+      "model": "Qwen/Qwen3.5-27B",
+      "revision": "local-manifest-20261004"
+    },
+    "jev_connection_source": "environment"
+  }
+}
