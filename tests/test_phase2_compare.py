@@ -35,6 +35,8 @@ class Phase2ContractTests(unittest.TestCase):
             validate_vlm_analysis({**value, "success": True}, candidates)
         with self.assertRaises(ValueError):
             validate_vlm_analysis({**value, "candidate_actions": ["hold", "invented", "gripper_open"]}, candidates)
+        with self.assertRaises(ValueError):
+            validate_vlm_analysis({**value, "plan_horizon_decisions": 1}, candidates)
 
     def test_trigger_metrics_are_explicit_and_deterministic(self):
         metrics = confidence_metrics({"a": .34, "b": .33, "c": .33}, "a")

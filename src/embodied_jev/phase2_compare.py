@@ -48,9 +48,11 @@ with exactly:
  "rotation":{"rx":"negative|hold|positive|unknown","ry":"...","rz":"..."},
  "gripper":"open|hold|close|unknown","risk":"brief risk or uncertainty",
  "candidate_actions":["3-8 exact IDs copied from available_actions"],
- "plan_horizon_decisions":1,"replan_condition":"one observable reason to replan"}
+ "plan_horizon_decisions":4,"replan_condition":"one observable reason to replan"}
 Never output an action vector or invent an ID. Include hold when visual evidence is
-weak. A separate typed selector chooses exactly one of your candidate IDs."""
+weak. A plan must cover at least 2 selector decisions; prefer 4-6 when the scene is
+clear and use 2 only when uncertainty requires an early new observation. A separate
+typed selector chooses exactly one of your candidate IDs."""
 
 
 def write_json(path, value):
@@ -139,7 +141,7 @@ def validate_vlm_analysis(answer, candidates):
     if (not isinstance(offered, list) or not 3 <= len(offered) <= 8
             or len(offered) != len(set(offered)) or any(key not in candidates for key in offered)):
         raise ValueError("Local VLM must offer 3-8 unique known candidate IDs")
-    if type(answer["plan_horizon_decisions"]) is not int or not 1 <= answer["plan_horizon_decisions"] <= 8:
+    if type(answer["plan_horizon_decisions"]) is not int or not 2 <= answer["plan_horizon_decisions"] <= 8:
         raise ValueError("Local VLM returned an invalid plan horizon")
     return answer
 

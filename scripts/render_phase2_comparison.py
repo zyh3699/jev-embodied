@@ -22,7 +22,8 @@ except ImportError:  # The phase2 extra installs this; a system ffmpeg remains a
 PANEL_WIDTH, WIDTH, HEIGHT = 480, 1440, 820
 BG, PANEL, TEXT, MUTED = "#0d1b24", "#172a36", "#edf3ef", "#9fb2bd"
 COLORS = {"pi05": "#8ecae6", "vlm-jev-triggered": "#b6d58f", "vlm-jev-dense": "#c7a8e8"}
-LABELS = {"pi05": "π0.5 直接动作", "vlm-jev-triggered": "按需 VLM + Jev", "vlm-jev-dense": "逐轮 VLM + Jev"}
+LABELS = {"pi05": "π0.5 direct", "vlm-jev-triggered": "Triggered VLM + Jev",
+          "vlm-jev-dense": "Dense VLM + Jev"}
 
 
 def font(size):
@@ -30,7 +31,7 @@ def font(size):
                  "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"):
         if Path(path).exists():
             return ImageFont.truetype(path, size)
-    return ImageFont.truetype("DejaVuSans.ttf", size)
+    return ImageFont.load_default(size=size)
 
 
 FONTS = {size: font(size) for size in (13, 15, 18, 22, 28)}
@@ -102,8 +103,8 @@ def render(episode_paths, output, speed=8., fps=12):
             elapsed = min(end, frame_id / fps * speed)
             canvas = Image.new("RGB", (WIDTH, HEIGHT), BG)
             draw = ImageDraw.Draw(canvas)
-            draw.text((22, 14), "jev-embodied · 二阶段三路线配对实验", font=FONTS[28], fill=TEXT)
-            draw.text((22, 55), f"共同墙钟 · {speed:g}× · {elapsed:.1f}/{end:.1f}s · 包含模型等待",
+            draw.text((22, 14), "jev-embodied · phase-two paired evaluation", font=FONTS[28], fill=TEXT)
+            draw.text((22, 55), f"shared wall clock · {speed:g}× · {elapsed:.1f}/{end:.1f}s · model waits included",
                       font=FONTS[15], fill=MUTED)
             for column, episode in enumerate(episodes):
                 x = column * PANEL_WIDTH + 10
@@ -114,11 +115,11 @@ def render(episode_paths, output, speed=8., fps=12):
                 draw.text((x + 14, 102), LABELS[mode], font=FONTS[22], fill=color)
                 completed = elapsed >= episode.duration
                 if completed:
-                    status = "成功" if episode.row["success"] else episode.row["status"]
+                    status = "success" if episode.row["success"] else episode.row["status"]
                 elif active:
-                    status = "等待本地 VLM" if active["provider"] == "chat" else "等待 Jev"
+                    status = "waiting for local VLM" if active["provider"] == "chat" else "waiting for Jev"
                 else:
-                    status = "执行动作"
+                    status = "executing action"
                 vlm_calls = sum(call["provider"] == "chat" for call in calls)
                 jev_calls = sum(call["provider"] == "jev" for call in calls)
                 draw.text((x + 14, 137), f"step {frame['step']} · VLM {vlm_calls} · Jev {jev_calls}",
@@ -128,11 +129,11 @@ def render(episode_paths, output, speed=8., fps=12):
                 canvas.paste(external, (x + 14, 198))
                 wrist = episode.image(frame["images"]["wrist"]["path"]).resize((122, 122))
                 canvas.paste(wrist, (x + 324, 213))
-                draw.text((x + 328, 342), "腕部相机", font=FONTS[13], fill=MUTED)
+                draw.text((x + 328, 342), "wrist camera", font=FONTS[13], fill=MUTED)
                 if decision:
                     if mode == "pi05":
-                        headline = f"动作块 {decision['executed_chunk_length']}/{decision['chunk_length']}"
-                        detail = f"推理 {decision['inference_latency_ms']:.0f} ms"
+                        headline = f"action chunk {decision['executed_chunk_length']}/{decision['chunk_length']}"
+                        detail = f"inference {decision['inference_latency_ms']:.0f} ms"
                     else:
                         headline = f"Jev: {decision['selection']}"
                         confidence = decision.get("confidence", {})
@@ -142,13 +143,14 @@ def render(episode_paths, output, speed=8., fps=12):
                     draw.text((x + 14, 674), detail, font=FONTS[13], fill=MUTED)
                     if mode != "pi05":
                         plan = decision.get("vlm_plan", {})
-                        trigger = ", ".join(decision.get("vlm_trigger_reasons", [])) or "复用缓存计划"
-                        wrap(draw, f"阶段：{plan.get('phase', '—')} · {plan.get('summary', '—')}",
+                        trigger = ", ".join(decision.get("vlm_trigger_reasons", [])) or "cached plan reused"
+                        wrap(draw, f"phase: {plan.get('phase', '—')} · {plan.get('summary', '—')}",
                              x + 14, 700, 430, size=15, lines=2)
-                        wrap(draw, "触发：" + trigger, x + 14, 746, 430, size=13, color=MUTED, lines=1)
+                        wrap(draw, "trigger: " + trigger, x + 14, 746, 430, size=13, color=MUTED, lines=1)
                 else:
-                    draw.text((x + 14, 646), "等待首次决策", font=FONTS[18], fill=MUTED)
-            draw.text((22, 798), "同任务 · 同初始状态 · 官方成功判定 · 原始双相机观测", font=FONTS[13], fill=MUTED)
+                    draw.text((x + 14, 646), "waiting for first decision", font=FONTS[18], fill=MUTED)
+            draw.text((22, 798), "same task · paired reset · official success predicate · raw dual-camera observations",
+                      font=FONTS[13], fill=MUTED)
             if frame_id == 0:
                 canvas.save(output / "poster.png")
             if frame_id == count - 1:
