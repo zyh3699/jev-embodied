@@ -24,7 +24,7 @@ except ImportError:  # The phase2 extra installs this; a system ffmpeg remains a
 PANEL_WIDTH, WIDTH, HEIGHT = 480, 1440, 820
 BG, PANEL, TEXT, MUTED = "#0d1b24", "#172a36", "#edf3ef", "#9fb2bd"
 COLORS = {"pi05": "#8ecae6", "vlm-jev-triggered": "#b6d58f", "vlm-jev-dense": "#c7a8e8"}
-LABELS = {"pi05": "π0.5 direct", "vlm-jev-triggered": "Triggered VLM + Jev",
+LABELS = {"pi05": "pi0.5 direct", "vlm-jev-triggered": "Triggered VLM + Jev",
           "vlm-jev-dense": "Dense VLM + Jev"}
 
 
@@ -109,7 +109,7 @@ def render(episode_paths, output, speed=8., fps=12):
             canvas = Image.new("RGB", (WIDTH, HEIGHT), BG)
             draw = ImageDraw.Draw(canvas)
             draw.text((22, 14), "jev-embodied · phase-two paired evaluation", font=FONTS[28], fill=TEXT)
-            draw.text((22, 55), f"shared wall clock · {speed:g}× · {elapsed:.1f}/{end:.1f}s · model waits included",
+            draw.text((22, 55), f"shared wall clock · {speed:g}x · {elapsed:.1f}/{end:.1f}s · model waits included",
                       font=FONTS[15], fill=MUTED)
             for column, episode in enumerate(episodes):
                 x = column * PANEL_WIDTH + 10
@@ -149,7 +149,7 @@ def render(episode_paths, output, speed=8., fps=12):
                     if mode != "pi05":
                         plan = decision.get("vlm_plan", {})
                         trigger = ", ".join(decision.get("vlm_trigger_reasons", [])) or "cached plan reused"
-                        wrap(draw, f"phase: {plan.get('phase', '—')} · {plan.get('summary', '—')}",
+                        wrap(draw, f"phase: {plan.get('phase', '-')} · {plan.get('summary', '-')}",
                              x + 14, 700, 430, size=15, lines=2)
                         wrap(draw, "trigger: " + trigger, x + 14, 746, 430, size=13, color=MUTED, lines=1)
                 else:
