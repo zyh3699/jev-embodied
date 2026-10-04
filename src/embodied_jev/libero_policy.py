@@ -279,6 +279,7 @@ class ModelClient:
                 {"role": "system", "content": system}, {"role": "user", "content": content}]}
             if connection.get("json_mode", True):
                 payload["response_format"] = {"type": "json_object"}
+            payload.update(connection.get("request_overrides", {}))
         start = time.monotonic()
         try:
             response = self.policy._post(connection["url"], json=payload,

@@ -51,7 +51,9 @@ def main():
     libero = sub.add_parser("libero-compare", help="Paired LIBERO camera-grounded GPT-only / GPT+Jev control")
     from .libero_compare import add_arguments
     add_arguments(libero)
-    phase2 = sub.add_parser("phase2-compare", help="Paired LIBERO pi0.5 direct actions versus local VLM + Jev selection")
+    phase2 = sub.add_parser(
+        "phase2-compare",
+        help="Paired LIBERO pi0.5 versus triggered and dense local-VLM + Jev policies")
     from .phase2_compare import add_arguments as add_phase2_arguments
     add_phase2_arguments(phase2)
     args = parser.parse_args()

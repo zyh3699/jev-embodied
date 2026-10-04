@@ -1,15 +1,16 @@
-# 二阶段服务器实验：π0.5 vs 本地 VLM + Jev
+# 二阶段服务器实验：π0.5 vs Qwen3.5 + Jev
 
 ## 实验问题
 
-本实验比较两条彼此独立的策略：
+本实验比较三条彼此独立的策略：
 
 1. `pi05`：相机图像、语言指令和机器人本体状态直接送入 π0.5，模型返回 7 维连续动作块。每次执行前 5 步后重新推理；整条路线不调用 Jev。
-2. `vlm-jev`：本地 VLM 只输出有边界的场景描述、XYZ/旋转方向证据和夹爪建议；Jev 随后从固定的 21 个原子动作中选择一个。控制代码执行该动作 5 个环境步后重新观察。
+2. `vlm-jev-triggered`：Qwen3.5 根据双相机图像提出一个短期计划和 3–8 个候选原子动作。Jev 在候选中连续决策；只有首次决策、计划期限到达、机器人本体状态停滞，或 Jev 的选择概率、最高概率、前两名差值、归一化熵越过冻结阈值时，才重新调用 Qwen3.5。
+3. `vlm-jev-dense`：每次决策都由 Qwen3.5 重新观察并提出 3–8 个候选，再由 Jev 选择。它与触发式路线使用相同动作集合和控制器，用于隔离 VLM 调度频率的影响。
 
-二者使用相同的 LIBERO task、init state、seed、原始双相机图像、最大环境步数以及 `env.check_success()`。与 openpi 官方 LIBERO 示例一致，两条路线会先执行 10 个不计入策略预算的 dummy steps，让场景稳定；驱动程序随后比较本体状态与图像指纹，不一致时直接停止该配对。模型看不到成功标志、对象真值位姿、深度图或力传感器数据。
+三者使用相同的 LIBERO task、init state、seed、原始双相机图像、最大环境步数以及 `env.check_success()`。与 openpi 官方 LIBERO 示例一致，三条路线会先执行 10 个不计入策略预算的 dummy steps，让场景稳定；驱动程序随后比较本体状态与图像指纹，不一致时直接停止该配对。模型看不到成功标志、对象真值位姿、深度图或力传感器数据。
 
-这是两种不同动作抽象的系统级对比，不应把推理调用次数直接解释成单模型能力。报告成功率和端到端时间时，也应同时报告 π0.5 推理延迟、VLM/Jev 各自的请求数与延迟。
+这是不同动作抽象与调度方式的系统级对比，不应把推理调用次数直接解释成单模型能力。报告成功率和端到端时间时，也应同时报告 π0.5 推理延迟、VLM/Jev 各自的请求数与延迟。
 
 ## 推荐的双 H20 分配
 
@@ -45,7 +46,7 @@ LIBERO 使用已有的 `.venv-libero`，至少需要官方 LIBERO、robosuite、
 .venv-libero/bin/python -c 'import libero, robosuite, PIL, numpy; print("LIBERO worker ready")'
 ```
 
-本地 VLM 建议使用单独环境，例如 vLLM 的 OpenAI-compatible server。模型不是协议的一部分，但一轮正式对比必须固定模型名、revision、量化方式和服务参数。默认示例为 Qwen2.5-VL-7B-Instruct。
+本地 VLM 使用单独的 vLLM OpenAI-compatible 服务。本轮固定 `Qwen/Qwen3.5-27B`、精确 revision、BF16 和服务参数；请求关闭 thinking，以免思考文本干扰严格 JSON 规划结构。
 
 ## 2. 启动 π0.5 服务（GPU 0）
 
@@ -62,11 +63,13 @@ CUDA_VISIBLE_DEVICES=0 uv run scripts/serve_policy.py policy:checkpoint \
 
 ## 3. 启动本地 VLM（GPU 1）
 
-以下只是一个可替换的 OpenAI-compatible 示例：
+单张 H20 运行 Qwen3.5-27B：
 
 ```bash
-CUDA_VISIBLE_DEVICES=1 vllm serve Qwen/Qwen2.5-VL-7B-Instruct \
-  --host 127.0.0.1 --port 8001 --dtype bfloat16 --api-key local
+CUDA_VISIBLE_DEVICES=1 vllm serve /mnt/oss/users/zyh/models/Qwen3.5-27B \
+  --served-model-name Qwen/Qwen3.5-27B \
+  --host 127.0.0.1 --port 8001 --dtype bfloat16 --api-key local \
+  --max-model-len 8192 --gpu-memory-utilization 0.90
 ```
 
 若使用其他本地服务，只需支持 `/v1/chat/completions`、双图输入和 JSON object 输出。设置与服务相同的本地 key：
@@ -95,17 +98,17 @@ jev-embodied phase2-compare \
   --manifest benchmarks/libero-phase2-smoke.json \
   --output runs/phase2-smoke-001 \
   --worker-python .venv-libero/bin/python \
-  --modes pi05 vlm-jev \
+  --modes pi05 vlm-jev-triggered vlm-jev-dense \
   --pi05-host 127.0.0.1 --pi05-port 8000 \
   --pi05-replan-steps 5 \
   --vlm-base-url http://127.0.0.1:8001/v1 \
-  --vlm-model Qwen/Qwen2.5-VL-7B-Instruct \
+  --vlm-model Qwen/Qwen3.5-27B --vlm-revision REVISION_SHA \
   --max-steps 100 --settle-steps 10 --max-calls 100 --timeout 1800 \
   --action-repeat 5 --candidate-scale 0.5 \
   --continue-on-error
 ```
 
-每个 `--output` 必须是尚不存在的新目录，避免覆盖实验。检查 `report.json` 中两条路线均为 `complete: true`，并确认 episode 的 `initial_fingerprint` 一致。smoke 成功后再扩大清单和步数。
+每个 `--output` 必须是尚不存在的新目录，避免覆盖实验。检查 `report.json` 中三条路线均为 `complete: true`，并确认 episode 的 `initial_fingerprint` 一致。smoke 成功后再扩大清单和步数。
 
 ## 6. 正式配对实验
 
@@ -116,17 +119,20 @@ jev-embodied phase2-compare \
   --manifest benchmarks/libero-vision-compare.json \
   --output runs/phase2-dev-001 \
   --worker-python .venv-libero/bin/python \
-  --modes pi05 vlm-jev \
+  --modes pi05 vlm-jev-triggered vlm-jev-dense \
   --pi05-host 127.0.0.1 --pi05-port 8000 \
   --pi05-replan-steps 5 \
   --vlm-base-url http://127.0.0.1:8001/v1 \
-  --vlm-model Qwen/Qwen2.5-VL-7B-Instruct \
+  --vlm-model Qwen/Qwen3.5-27B --vlm-revision REVISION_SHA \
   --max-steps 400 --settle-steps 10 --max-calls 400 --timeout 3600 --max-usd 10 \
   --action-repeat 5 --candidate-scale 0.5 \
+  --jev-confidence-threshold 0.35 --jev-margin-threshold 0.08 \
+  --jev-entropy-threshold 0.90 --vlm-max-plan-decisions 6 \
+  --stagnation-actions 3 --stagnation-threshold 0.001 \
   --request-retries 1 --continue-on-error
 ```
 
-开发清单只有两局，不能支持有说服力的成功率结论。完成链路验证后，应另外冻结包含多个 task、init index 和 seed 的评测清单；不要根据中途结果挑选样本。两种模式必须始终成对运行，并使用完全相同的预算。
+开发清单只有两局，不能支持有说服力的成功率结论。完成链路验证后，应另外冻结包含多个 task、init index 和 seed 的评测清单；不要根据中途结果挑选样本。三种模式必须始终配对运行，并使用完全相同的预算。
 
 ## 输出文件
 
@@ -134,7 +140,8 @@ jev-embodied phase2-compare \
 - `report.json`：按模式聚合的成功率、环境步数、墙钟时间和完整性。
 - `<case>--<mode>/episode.json`：逐次决策、实际执行动作、延迟、用量和状态。
 - `<case>--<mode>/events.jsonl`：可流式恢复的事件记录。
-- `<case>--<mode>/inputs/`：每次决策的原始双相机 PNG；VLM 路线还保存旋转后的实际输入 PNG。π0.5 的记录包含送入服务的 224×224 uint8 数组 SHA-256、shape 和 dtype。
+- `<case>--<mode>/inputs/`：每次模型决策的双相机输入；VLM 路线保存旋转后的实际输入 PNG。π0.5 的记录包含送入服务的 224×224 uint8 数组 SHA-256、shape 和 dtype。
+- `<case>--<mode>/frames/`：每一个实际环境步的原始外部与腕部相机 PNG，用于生成共同墙钟三栏视频。
 - `<case>--<mode>/worker.log`：LIBERO/robosuite 的隔离日志。
 - `reproduction/`：本轮使用的关键 Python 源码快照。
 
