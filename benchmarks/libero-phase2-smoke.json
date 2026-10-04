@@ -1,0 +1,9 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "libero-phase2-paired-smoke",
+  "backend": "libero",
+  "split": "smoke",
+  "cases": [
+    {"id": "drawer-init0", "suite": "libero_90", "task_id": 0, "init_index": 0, "seed": 0}
+  ]
+}

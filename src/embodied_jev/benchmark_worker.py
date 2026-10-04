@@ -51,6 +51,17 @@ def axis_angle(quaternion):
     return np.zeros(3) if length < 1e-8 else q[:3] * (2 * math.atan2(length, q[3]) / length)
 
 
+def openpi_libero_axis_angle(quaternion):
+    """Match openpi examples/libero/main.py rather than canonicalizing the sign."""
+    import numpy as np
+    q = np.asarray(quaternion, dtype=float)
+    if q.shape != (4,) or not np.isfinite(q).all():
+        raise ValueError("Invalid proprioceptive quaternion")
+    w = float(np.clip(q[3], -1., 1.))
+    denominator = math.sqrt(max(0., 1. - w * w))
+    return np.zeros(3) if math.isclose(denominator, 0.) else q[:3] * (2. * math.acos(w) / denominator)
+
+
 class MetaWorld:
     def __init__(self, case, horizon, observation_mode="privileged", control_mode="skills"):
         import gymnasium as gym
@@ -143,10 +154,12 @@ class MetaWorld:
 
 
 class Libero:
-    def __init__(self, case, horizon, observation_mode="privileged"):
+    def __init__(self, case, horizon, observation_mode="privileged", policy_profile="default"):
         from libero.libero import benchmark
         from libero.libero.envs.env_wrapper import ControlEnv
-        self.case, self.steps, self.observation_mode = case, 0, observation_mode
+        if policy_profile not in {"default", "openpi_libero"}:
+            raise ValueError("Unknown LIBERO policy profile")
+        self.case, self.steps, self.observation_mode, self.policy_profile = case, 0, observation_mode, policy_profile
         suite = benchmark.get_benchmark_dict()[case["suite"]](task_order_index=0)
         task_id = case["task_id"]
         if not 0 <= task_id < suite.get_num_tasks():
@@ -178,7 +191,8 @@ class Libero:
 
     def policy_input(self):
         import numpy as np
-        state = np.concatenate([self.raw["robot0_eef_pos"], axis_angle(self.raw["robot0_eef_quat"]),
+        quaternion_transform = openpi_libero_axis_angle if self.policy_profile == "openpi_libero" else axis_angle
+        state = np.concatenate([self.raw["robot0_eef_pos"], quaternion_transform(self.raw["robot0_eef_quat"]),
                                 self.raw["robot0_gripper_qpos"]])
         images = {view: image_packet(self.raw[key]) for view, key in
                   (("external", "agentview_image"), ("wrist", "robot0_eye_in_hand_image"))} if self.observation_mode == "vision" else {}
@@ -196,6 +210,7 @@ class Libero:
             "observation_mode": self.observation_mode,
             "camera_names": {"external": "agentview", "wrist": "robot0_eye_in_hand"} if self.observation_mode == "vision" else {},
             "camera_orientation": "raw MuJoCo output; policy profile specifies transforms",
+            "policy_profile": self.policy_profile,
             "action_spec": {"space": "libero_osc_pose", "size": 7, "normalized": True, "frame": "world",
                             "gripper": {"open": -1., "close": 1.}, "control_hz": 20.},
             "success_source": "official env.check_success()"}}
@@ -232,7 +247,8 @@ def main():
                         control = request.get("control_mode", "skills")
                         if control != "skills" and request["backend"] != "metaworld":
                             raise ValueError("External hierarchy is currently Meta-World only")
-                        extra = {"control_mode": control} if request["backend"] == "metaworld" else {}
+                        extra = ({"control_mode": control} if request["backend"] == "metaworld" else
+                                 {"policy_profile": request.get("policy_profile", "default")})
                         backend = cls(request["case"], request["horizon"], mode, **extra)
                         result = backend.reset()
                     elif request["command"] == "step" and backend is not None:

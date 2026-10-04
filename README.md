@@ -2,7 +2,9 @@
 
 `jev-embodied` 是一个本地具身智能实验平台，用统一任务、初始状态和成功判定，对比 Jev、纯 GPT-6 Astra，以及 GPT-6 Astra + Jev 的决策效果、端到端时间和估算费用。项目支持 MuJoCo Panda、Meta-World 和 LIBERO，实验失败、超时与接口错误都会进入结果记录。
 
-本项目评测的是“结构化候选动作 + 模型决策 + 确定性控制器”的路线，不是端到端 VLA：环境或视觉规划器生成候选项，Jev 或 GPT 负责选择，控制器把选择转换成连续机器人动作，最终成功与否只采用仿真环境的物理判定。
+二阶段新增独立的 LIBERO 配对实验：`π0.5` 直接输出连续动作块，不调用 Jev；另一条路线由本地 VLM 提取视觉与方向证据，再由 Jev 从固定的 21 个原子动作中选择一个。二阶段在线链路不调用远端 GPT，Jev 可暂时使用远端接口。两条路线共享任务、初始状态、相机、步数上限和 LIBERO 官方成功判定。
+
+一期评测的是“结构化候选动作 + 模型决策 + 确定性控制器”路线；二阶段才把它与端到端 VLA 正面对比。结构化路线由环境或视觉模型生成证据与候选项，Jev 负责选择；π0.5 路线则直接生成连续动作。两条路线最终成功与否都只采用仿真环境的物理判定。
 
 ## 系统架构
 
@@ -137,6 +139,23 @@ jev-embodied libero-compare \
 ```
 
 实验输出目录必须不存在。Meta-World、LIBERO 的固定依赖版本和完整协议见[实验结果说明](docs/results/reproduction-fixed-2026-09-24/RESULTS.md)。
+
+### 二阶段：π0.5 vs 本地 VLM + Jev
+
+服务器部署和运行步骤见 [二阶段双 H20 实验手册](docs/PHASE2_SERVER.md)。快速入口：
+
+```bash
+jev-embodied phase2-compare \
+  --manifest benchmarks/libero-phase2-smoke.json \
+  --output runs/phase2-smoke \
+  --worker-python .venv-libero/bin/python \
+  --pi05-host 127.0.0.1 --pi05-port 8000 \
+  --vlm-base-url http://127.0.0.1:8001/v1 \
+  --vlm-model Qwen/Qwen2.5-VL-7B-Instruct \
+  --continue-on-error
+```
+
+主进程只负责模型调用与记录，LIBERO 仍在隔离的 worker 环境中运行。正式实验前先跑 smoke 清单，确认两条链路和配对初始状态完全一致。
 
 ## 指标口径
 
