@@ -143,14 +143,14 @@ def validate_action_chunk(value, minimum=1):
         if hasattr(action, "tolist"):
             action = action.tolist()
         if not isinstance(action, (list, tuple)) or len(action) != 7:
-            raise ValueError("pi0.5 actions must be finite normalized 7D vectors in [-1, 1]")
+            raise ValueError("pi0.5 actions must be finite 7D vectors")
         try:
             converted = [float(number) for number in action]
         except (TypeError, ValueError, OverflowError):
-            raise ValueError("pi0.5 actions must be finite normalized 7D vectors in [-1, 1]") from None
-        if any(isinstance(number, bool) or not math.isfinite(value) or abs(value) > 1
+            raise ValueError("pi0.5 actions must be finite 7D vectors") from None
+        if any(isinstance(number, bool) or not math.isfinite(value)
                for number, value in zip(action, converted)):
-            raise ValueError("pi0.5 actions must be finite normalized 7D vectors in [-1, 1]")
+            raise ValueError("pi0.5 actions must be finite 7D vectors")
         result.append(converted)
     return result
 
@@ -176,11 +176,13 @@ class Pi05Client:
         return self.image_tools.convert_to_uint8(image)
 
     def infer(self, policy_input):
+        import numpy as np
         external = self._image(policy_input["images"]["external"])
         wrist = self._image(policy_input["images"]["wrist"])
         observation = {"observation/image": external,
                        "observation/wrist_image": wrist,
-                       "observation/state": policy_input["state"], "prompt": policy_input["prompt"]}
+                       "observation/state": np.asarray(policy_input["state"], dtype=np.float32),
+                       "prompt": policy_input["prompt"]}
         started = time.perf_counter()
         response = self.policy.infer(observation)
         latency = (time.perf_counter() - started) * 1000
@@ -320,7 +322,8 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
             for action in actions:
                 if row["steps"] >= args.max_steps or time.monotonic() - rollout_started >= args.timeout:
                     break
-                packet = worker.request({"command": "step", "action": action, "capture": True})
+                packet = worker.request({"command": "step", "action": action, "capture": True,
+                                         "allow_unbounded": mode == "pi05"})
                 row["steps"] = packet["policy_input"]["step"] - args.settle_steps
                 previous_gripper = float(action[-1])
                 executed = {"step": row["steps"], "action": action, "success": packet["success"]}

@@ -1,6 +1,6 @@
 import unittest
 
-from embodied_jev.benchmark_worker import openpi_libero_axis_angle
+from embodied_jev.benchmark_worker import openpi_libero_axis_angle, validate_action
 from embodied_jev.phase2_compare import action_candidates, validate_action_chunk, validate_vlm_analysis
 
 
@@ -12,10 +12,13 @@ class Phase2ContractTests(unittest.TestCase):
         self.assertEqual(len(set(actions)), 21)
         self.assertTrue(all(len(action) == 7 and max(map(abs, action)) <= 1 for action in actions))
 
-    def test_pi05_chunk_rejects_clipping_candidates(self):
+    def test_pi05_chunk_matches_official_unclipped_actions(self):
         with self.assertRaises(ValueError):
-            validate_action_chunk([[0, 0, 0, 0, 0, 0, 1.01]])
-        self.assertEqual(validate_action_chunk([[0, 0, 0, 0, 0, 0, -1]])[0][-1], -1.)
+            validate_action_chunk([[0, 0, 0, 0, 0, 0, float("nan")]])
+        self.assertEqual(validate_action_chunk([[0, 0, 0, 0, 0, 0, 1.01]])[0][-1], 1.01)
+        with self.assertRaises(ValueError):
+            validate_action([0, 0, 0, 0, 0, 0, 1.01], 7)
+        self.assertEqual(validate_action([0, 0, 0, 0, 0, 0, 1.01], 7, bounded=False)[-1], 1.01)
 
     def test_vlm_schema_is_closed(self):
         value = {"phase": "align", "summary": "hand near handle", "visible_evidence": "handle visible",

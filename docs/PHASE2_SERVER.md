@@ -58,7 +58,7 @@ CUDA_VISIBLE_DEVICES=0 uv run scripts/serve_policy.py policy:checkpoint \
   --policy.dir=gs://openpi-assets/checkpoints/pi05_libero
 ```
 
-默认 WebSocket 端口是 `8000`。首次运行会下载权重，不要把下载时间计入实验。驱动侧严格复现官方 LIBERO 输入约定：两路 RGB 图旋转 180°、pad resize 到 `224×224`，输入键为 `observation/image`、`observation/wrist_image`、`observation/state` 和 `prompt`。返回动作必须是有限的 7 维归一化向量；代码不会静默裁剪非法输出。
+默认 WebSocket 端口是 `8000`。首次运行会下载权重，不要把下载时间计入实验。驱动侧严格复现官方 LIBERO 输入约定：两路 RGB 图旋转 180°、pad resize 到 `224×224`，输入键为 `observation/image`、`observation/wrist_image`、`observation/state` 和 `prompt`。返回动作必须是有限的 7 维向量；与官方评测一致，π0.5 反归一化后的动作不会被额外裁剪，而 VLM + Jev 的固定候选仍严格限制在 `[-1, 1]`。
 
 ## 3. 启动本地 VLM（GPU 1）
 

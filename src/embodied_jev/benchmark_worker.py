@@ -15,11 +15,12 @@ import math
 import sys
 
 
-def validate_action(action, size):
+def validate_action(action, size, bounded=True):
     import numpy as np
     value = np.asarray(action, dtype=float)
-    if value.shape != (size,) or not np.isfinite(value).all() or (abs(value) > 1).any():
-        raise ValueError(f"Expected {size} finite normalized action values in [-1, 1]")
+    if value.shape != (size,) or not np.isfinite(value).all() or bounded and (abs(value) > 1).any():
+        suffix = " normalized action values in [-1, 1]" if bounded else " finite action values"
+        raise ValueError(f"Expected {size}{suffix}")
     return value
 
 
@@ -215,10 +216,10 @@ class Libero:
                             "gripper": {"open": -1., "close": 1.}, "control_hz": 20.},
             "success_source": "official env.check_success()"}}
 
-    def step(self, action=None, scripted=False, capture=True):
+    def step(self, action=None, scripted=False, capture=True, allow_unbounded=False):
         if scripted:
             raise ValueError("No LIBERO scripted baseline is supplied")
-        action = validate_action(action, 7)
+        action = validate_action(action, 7, bounded=not allow_unbounded)
         self.raw, _, done, _ = self.env.step(action)
         self.steps += 1
         success = bool(self.env.check_success())
@@ -252,7 +253,10 @@ def main():
                         backend = cls(request["case"], request["horizon"], mode, **extra)
                         result = backend.reset()
                     elif request["command"] == "step" and backend is not None:
-                        result = backend.step(request.get("action"), request.get("scripted", False), request.get("capture", True))
+                        extra = ({"allow_unbounded": request.get("allow_unbounded", False)}
+                                 if isinstance(backend, Libero) else {})
+                        result = backend.step(request.get("action"), request.get("scripted", False),
+                                              request.get("capture", True), **extra)
                     elif request["command"] == "close":
                         break
                     else:
