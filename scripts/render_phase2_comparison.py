@@ -6,10 +6,12 @@ import bisect
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
+import tempfile
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -94,10 +96,13 @@ def render(episode_paths, output, speed=8., fps=12):
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe() if imageio_ffmpeg else shutil.which("ffmpeg")
     if not ffmpeg:
         raise RuntimeError("Install the phase2 extra or make ffmpeg available on PATH")
+    descriptor, temporary_name = tempfile.mkstemp(prefix="phase2-comparison-", suffix=".mp4")
+    os.close(descriptor)
+    temporary_video = Path(temporary_name)
     encoder = subprocess.Popen([ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
         "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{WIDTH}x{HEIGHT}", "-r", str(fps), "-i", "-",
         "-an", "-vcodec", "libx264", "-preset", "fast", "-crf", "20", "-pix_fmt", "yuv420p",
-        "-movflags", "+faststart", str(video)], stdin=subprocess.PIPE)
+        "-movflags", "+faststart", str(temporary_video)], stdin=subprocess.PIPE)
     try:
         for frame_id in range(count):
             elapsed = min(end, frame_id / fps * speed)
@@ -159,7 +164,12 @@ def render(episode_paths, output, speed=8., fps=12):
     finally:
         encoder.stdin.close()
     if encoder.wait():
+        temporary_video.unlink(missing_ok=True)
         raise RuntimeError("Video encoder failed")
+    try:
+        shutil.copy2(temporary_video, video)
+    finally:
+        temporary_video.unlink(missing_ok=True)
     metadata = {"speed": speed, "fps": fps, "wall_seconds": end,
                 "video_sha256": hashlib.sha256(video.read_bytes()).hexdigest(),
                 "episodes": [{"mode": episode.row["mode"], "path": str(episode.root / "episode.json"),
