@@ -1,0 +1,73 @@
+{
+  "version": "libero-pi05-vs-local-vlm-jev-v2",
+  "created_at": "2026-10-04T13:07:50.849322+00:00",
+  "manifest": {
+    "format": "embodied-jev-suite-v1",
+    "name": "libero-vision-collaboration-dev",
+    "backend": "libero",
+    "split": "development",
+    "cases": [
+      {
+        "id": "drawer-init0",
+        "suite": "libero_90",
+        "task_id": 0,
+        "init_index": 0,
+        "seed": 0
+      },
+      {
+        "id": "microwave-init0",
+        "suite": "libero_90",
+        "task_id": 33,
+        "init_index": 0,
+        "seed": 0
+      }
+    ]
+  },
+  "modes": [
+    "pi05",
+    "vlm-jev-triggered",
+    "vlm-jev-dense"
+  ],
+  "source_sha256": {
+    "phase2_compare.py": "24a000c574d55b72237c962b2403631b66595c64cdcfa05b15f1bf7cd569777b",
+    "benchmark_worker.py": "291f31976a3574c92460ab09e5461293b54bff68dccdb40d9887ad604efddd99",
+    "evaluation.py": "cd3f9f903f0eae97b2b52be2bfe34d4235f9ea7a6e284360a91a12bca219cc90",
+    "libero_policy.py": "7ba09f950ca9a8f21498e8930daf706deb9fcbd4d8da6533c6c8764efa971cc5",
+    "evaluation_meter.py": "0037a65084462e9aedfee6f89e78c6cecea16a2923ad8b1b4d588902d9082eeb",
+    "policies.py": "20179042ba3c1aeb9e155854a41236de5f04d286dac7cf05f61008f1fafc6377",
+    "render_phase2_comparison.py": "13f9f1291a306d7564640d7764d15933260c1248765d7dca291eca0c00f54696"
+  },
+  "policy_contract": {
+    "pi05": "direct finite 7D action chunks with official unclipped execution; Jev is never called",
+    "vlm-jev-triggered": "cached local-VLM candidate plan; Jev selects until an explicit replan trigger",
+    "vlm-jev-dense": "fresh local-VLM candidate plan before every Jev selection"
+  },
+  "budget": {
+    "max_steps": 400,
+    "max_calls": 400,
+    "timeout": 3600.0,
+    "max_usd": 10.0,
+    "action_repeat": 5,
+    "candidate_scale": 0.5,
+    "pi05_replan_steps": 5,
+    "settle_steps": 10,
+    "jev_confidence_threshold": 0.35,
+    "jev_margin_threshold": 0.08,
+    "jev_entropy_threshold": 0.9,
+    "vlm_max_plan_decisions": 6,
+    "stagnation_actions": 3,
+    "stagnation_threshold": 0.001
+  },
+  "endpoints": {
+    "pi05": {
+      "host": "127.0.0.1",
+      "port": 8000
+    },
+    "vlm": {
+      "base_url": "http://127.0.0.1:8001/v1",
+      "model": "Qwen/Qwen3.5-27B",
+      "revision": "fc05daec18b0a78c049392ed2e771dde82bdf654"
+    },
+    "jev_connection_source": "environment"
+  }
+}

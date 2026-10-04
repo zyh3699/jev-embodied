@@ -1,0 +1,104 @@
+{
+  "schema": "jev-embodied-phase2-summary-v1",
+  "experiment_date": "2026-10-04",
+  "server_run": "/mnt/oss/users/zyh/runs/phase2-qwen35-dev-20261004",
+  "artifacts": {
+    "report_sha256": "ef67f25bdbc8502ec707e7e5b447e7893d06583b2289d9f7aa135bb1eca45bb9",
+    "protocol_sha256": "57ee569749e726c350f71f8d51eef22ad11dfd694aeed08998177c9504bf5efb"
+  },
+  "models": {
+    "pi05_checkpoint": "pi05_libero",
+    "openpi_package_version": "0.1.0",
+    "openpi_git_revision": null,
+    "vlm": "Qwen/Qwen3.5-27B",
+    "vlm_revision": "fc05daec18b0a78c049392ed2e771dde82bdf654",
+    "jev": "jev-1.13.0"
+  },
+  "runtime": {
+    "accelerators": "2 x NVIDIA H20",
+    "vllm": "0.30.0",
+    "torch": "2.13.0+cu130",
+    "vlm_dtype": "bfloat16",
+    "vlm_max_model_len": 8192,
+    "vlm_max_num_seqs": 8,
+    "remote_gpt_calls": 0
+  },
+  "aggregate": {
+    "pi05": {
+      "successes": 1,
+      "episodes": 2,
+      "success_rate": 0.5,
+      "mean_environment_steps": 326.5,
+      "mean_wall_seconds": 67.022216505,
+      "vlm_requests": 0,
+      "jev_requests": 0,
+      "pi05_inference_requests": 131,
+      "pi05_inference_mean_ms": 76.3383362674,
+      "pi05_inference_median_ms": 76.1338149896
+    },
+    "vlm-jev-triggered": {
+      "successes": 0,
+      "episodes": 2,
+      "success_rate": 0.0,
+      "mean_environment_steps": 400.0,
+      "mean_wall_seconds": 345.082784168,
+      "vlm_requests": 65,
+      "jev_requests": 173,
+      "vlm_input_tokens": 92189,
+      "vlm_output_tokens": 19299,
+      "vlm_mean_latency_ms": 6109.56323077,
+      "jev_input_tokens": 263461,
+      "jev_output_tokens": 12724,
+      "jev_mean_latency_ms": 755.364046243,
+      "known_jev_input_cost_usd": 0.011065362
+    },
+    "vlm-jev-dense": {
+      "successes": 0,
+      "episodes": 2,
+      "success_rate": 0.0,
+      "mean_environment_steps": 400.0,
+      "mean_wall_seconds": 673.103550988,
+      "vlm_requests": 160,
+      "jev_requests": 160,
+      "vlm_input_tokens": 227523,
+      "vlm_output_tokens": 47003,
+      "vlm_mean_latency_ms": 6057.732275,
+      "jev_input_tokens": 242684,
+      "jev_output_tokens": 11664,
+      "jev_mean_latency_ms": 1264.78966875,
+      "known_jev_input_cost_usd": 0.010192728
+    }
+  },
+  "triggered_vs_dense": {
+    "vlm_request_reduction_fraction": 0.59375,
+    "mean_wall_time_reduction_fraction": 0.4873258599,
+    "jev_retry_requests": 13
+  },
+  "episodes": [
+    {"case": "drawer-init0", "task": "close the top drawer of the cabinet", "mode": "pi05", "success": false, "status": "step_budget", "steps": 400, "wall_seconds": 80.469295295, "decisions": 80, "frames": 401, "vlm_requests": 0, "jev_requests": 0},
+    {"case": "drawer-init0", "task": "close the top drawer of the cabinet", "mode": "vlm-jev-triggered", "success": false, "status": "step_budget", "steps": 400, "wall_seconds": 368.348008866, "decisions": 80, "frames": 401, "vlm_requests": 36, "jev_requests": 84},
+    {"case": "drawer-init0", "task": "close the top drawer of the cabinet", "mode": "vlm-jev-dense", "success": false, "status": "step_budget", "steps": 400, "wall_seconds": 682.92031547, "decisions": 80, "frames": 401, "vlm_requests": 80, "jev_requests": 80},
+    {"case": "microwave-init0", "task": "close the microwave", "mode": "pi05", "success": true, "status": "success", "steps": 253, "wall_seconds": 53.575137715, "decisions": 51, "frames": 254, "vlm_requests": 0, "jev_requests": 0},
+    {"case": "microwave-init0", "task": "close the microwave", "mode": "vlm-jev-triggered", "success": false, "status": "step_budget", "steps": 400, "wall_seconds": 321.81755947, "decisions": 80, "frames": 401, "vlm_requests": 29, "jev_requests": 89},
+    {"case": "microwave-init0", "task": "close the microwave", "mode": "vlm-jev-dense", "success": false, "status": "step_budget", "steps": 400, "wall_seconds": 663.286786505, "decisions": 80, "frames": 401, "vlm_requests": 80, "jev_requests": 80}
+  ],
+  "media": {
+    "drawer-init0": {"video_sha256": "3859541ba7153431ae1a281609be1fd86fc3f410d8f8763837c507c071dd6f48", "decoded_frames": 1040, "speed": 8.0, "fps": 12},
+    "microwave-init0": {"video_sha256": "891fd119c1eafad039f7089669ec4e32f9de24f056f48dddc07a6eb0d4839dde", "decoded_frames": 1010, "speed": 8.0, "fps": 12}
+  },
+  "validation": {
+    "complete_episodes": 6,
+    "paired_initial_fingerprints": true,
+    "setup_or_runtime_errors": 0,
+    "recorded_timepoints": 2259,
+    "recorded_camera_images": 4518,
+    "credential_scan_passed": true,
+    "videos_fully_decoded": true
+  },
+  "limitations": [
+    "Two fixed development cases are not statistically meaningful and are not a LIBERO leaderboard score.",
+    "This is a system-level comparison across different action abstractions.",
+    "The restored openpi source archive did not include Git metadata, so its exact commit is unavailable.",
+    "Local accelerator cost is excluded."
+  ]
+}

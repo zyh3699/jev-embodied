@@ -30,6 +30,16 @@ Panda、Meta-World 或 LIBERO 环境
 
 ## 实验结果
 
+### 二阶段：π0.5 vs Qwen3.5 + Jev
+
+2026-10-04 在双卡 H20 上完成了 2 个 LIBERO-90 开发用例的三路线配对实验。π0.5 为 1/2 成功；按需和逐轮 `Qwen3.5 + Jev` 均为 0/2。按需调度相对逐轮调度减少 59.4% 的 VLM 请求（65 vs 160），平均端到端时间降低 48.7%（345.08 s vs 673.10 s），但没有带来成功率提升。样本仅有两个固定初始状态，这是系统级开发对比，不是 LIBERO 榜单结论。
+
+![二阶段关闭微波炉三路线对照](docs/results/phase2-qwen35-2026-10-04/media/microwave-init0/poster.png)
+
+[完整二阶段结果、限制与视频](docs/results/phase2-qwen35-2026-10-04/RESULTS.md) · [机器可读指标](docs/results/phase2-qwen35-2026-10-04/metrics.json) · [实验协议](docs/results/phase2-qwen35-2026-10-04/protocol.json)
+
+### 一阶段：Jev vs GPT-6 Astra
+
 ![配对实验总览](docs/results/reproduction-fixed-2026-09-24/final-overview-v2/overview.png)
 
 | 环境与配对范围 | Jev 路线 | GPT 路线 | 对比结果 |
@@ -142,7 +152,7 @@ jev-embodied libero-compare \
 
 ### 二阶段：π0.5 vs Qwen3.5 + Jev
 
-服务器部署和运行步骤见 [二阶段双 H20 实验手册](docs/PHASE2_SERVER.md)。快速入口：
+服务器部署和运行步骤见 [二阶段双 H20 实验手册](docs/PHASE2_SERVER.md)，本轮正式结果见 [2026-10-04 实验报告](docs/results/phase2-qwen35-2026-10-04/RESULTS.md)。快速入口：
 
 ```bash
 jev-embodied phase2-compare \
