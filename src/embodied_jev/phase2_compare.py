@@ -1,10 +1,11 @@
 """Phase-two paired LIBERO evaluation with three independent policies.
 
 pi0.5 emits continuous action chunks directly and never calls Jev. The dense
-hybrid asks a local VLM to plan before every Jev selection. The triggered hybrid
-reuses a bounded VLM plan while Jev remains confident, and replans only on an
-explicit confidence, horizon, or stagnation trigger. The simulator alone supplies
-task success.
+hybrid asks a local VLM to plan before every Jev macro-skill selection. The
+triggered hybrid reuses a bounded VLM plan while Jev remains confident, and
+replans only on an explicit confidence, horizon, or stagnation trigger. A
+deterministic executor expands each selected skill into bounded concurrent 7D
+actions. The simulator alone supplies task success.
 """
 from __future__ import annotations
 
@@ -25,18 +26,30 @@ from .libero_policy import ModelClient, RequestBudget, usage_summary
 from .policies import environment_connection, validate_answer
 
 
-PROTOCOL = "libero-pi05-vs-local-vlm-jev-v2"
+PROTOCOL = "libero-pi05-vs-local-vlm-jev-v3-macro-skills"
 MODES = ("pi05", "vlm-jev-triggered", "vlm-jev-dense")
 SOURCE_FILES = ("phase2_compare.py", "benchmark_worker.py", "evaluation.py",
                 "libero_policy.py", "evaluation_meter.py", "policies.py")
 PHASES = {"approach", "align", "contact", "manipulate", "release", "recover", "uncertain"}
 DIRECTIONS = {"negative", "hold", "positive", "unknown"}
 GRIPPER = {"open", "hold", "close", "unknown"}
+SKILL_CATALOG = {
+    "observe_hold": "Hold the TCP and gripper while waiting for a new visual checkpoint.",
+    "approach_coarse": "Move all supported translation and rotation axes together for a coarse free-space approach.",
+    "approach_fine": "Move all supported translation and rotation axes together with a small approach correction.",
+    "align_pose": "Prioritize wrist alignment while applying only a very small concurrent translation correction.",
+    "contact_probe": "Advance one cautious concurrent translation step to test or establish contact; retain the gripper.",
+    "manipulate_gentle": "Apply a short, gentle concurrent manipulation motion and follow the planned gripper state.",
+    "manipulate_firm": "Apply a longer concurrent manipulation motion after contact is visually well supported.",
+    "retract_recover": "Reverse the horizontal plan direction and move upward to recover clearance.",
+    "open_gripper": "Hold the TCP and open the gripper for two control steps.",
+    "close_gripper": "Hold the TCP and close the gripper for two control steps.",
+}
 
 VLM_SYSTEM = """You are the low-frequency visual planner in a robot-control experiment.
 Inspect the current external and wrist RGB images, the language task, proprioceptive
-state, recent executed actions, and the offered atomic-action catalogue. Report a
-short-lived visual plan and choose 3-8 candidate action IDs for a separate selector.
+state, recent executed actions, and the offered macro-skill catalogue. Report a
+short-lived visual plan and choose 3-8 candidate skill IDs for a separate selector.
 Do not claim task success, contact force, hidden object state, or exact metric depth.
 The controller uses world-frame x/y/z translation and axis-angle rx/ry/rz. Use
 'unknown' whenever the images do not support a direction. Return one JSON object
@@ -47,12 +60,16 @@ with exactly:
  "translation":{"x":"negative|hold|positive|unknown","y":"...","z":"..."},
  "rotation":{"rx":"negative|hold|positive|unknown","ry":"...","rz":"..."},
  "gripper":"open|hold|close|unknown","risk":"brief risk or uncertainty",
- "candidate_actions":["3-8 exact IDs copied from available_actions"],
+ "candidate_skills":["3-8 exact IDs copied from available_skills"],
  "plan_horizon_decisions":4,"replan_condition":"one observable reason to replan"}
-Never output an action vector or invent an ID. Include hold when visual evidence is
-weak. A plan must cover at least 2 selector decisions; prefer 4-6 when the scene is
-clear and use 2 only when uncertainty requires an early new observation. A separate
-typed selector chooses exactly one of your candidate IDs."""
+Never output an action vector or invent an ID. The deterministic executor applies
+your supported translation and rotation directions concurrently inside each skill.
+Offer observe_hold when visual evidence is weak. Use approach skills before contact,
+contact_probe only for a cautious contact test, manipulate skills only when contact
+is supported, and retract_recover after a bad approach or lost target. A plan must
+cover at least 2 selector decisions; prefer 4-6 when the scene is clear and use 2
+only when uncertainty requires an early new observation. A separate typed selector
+chooses exactly one candidate skill."""
 
 
 def write_json(path, value):
@@ -89,41 +106,56 @@ def initial_fingerprint(packet):
     return hashlib.sha256(json.dumps(public, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def action_candidates(scale, previous_gripper):
-    """Return the frozen 21-way normalized LIBERO action set."""
-    if not 0 < scale <= .5 or not -1 <= previous_gripper <= 1:
-        raise ValueError("Invalid candidate scale or previous gripper command")
-    # Half effort is intentionally distinct from the saturated open/close
-    # candidates while still preserving the current gripper direction.
-    pause_gripper = previous_gripper / 2 if previous_gripper else .25
-    result = {"hold": {"description": "Hold pose and reduce current gripper effort by half.",
-                       "action": [0., 0., 0., 0., 0., 0., float(pause_gripper)]}}
-    for magnitude_name, magnitude in (("small", scale / 2), ("full", scale)):
-        for index, axis in enumerate("xyz"):
-            for sign_name, sign in (("negative", -1), ("positive", 1)):
-                action = [0.] * 6 + [float(previous_gripper)]
-                action[index] = sign * magnitude
-                key = f"translate_{axis}_{sign_name}_{magnitude_name}"
-                result[key] = {"description": f"Translate world {axis.upper()} {sign_name}, {magnitude_name} step; retain gripper.",
-                               "action": action}
-    for index, axis in enumerate(("rx", "ry", "rz"), start=3):
-        for sign_name, sign in (("negative", -1), ("positive", 1)):
-            action = [0.] * 6 + [float(previous_gripper)]
-            action[index] = sign * scale / 2
-            key = f"rotate_{axis}_{sign_name}"
-            result[key] = {"description": f"Rotate world {axis.upper()} {sign_name}, small step; retain gripper.",
-                           "action": action}
-    for name, value in (("open", -1.), ("close", 1.)):
-        result["gripper_" + name] = {"description": f"Hold pose and {name} the gripper.",
-                                     "action": [0.] * 6 + [value]}
-    if len(result) != 21:
-        raise AssertionError("The frozen candidate set must contain 21 actions")
-    return result
+def skill_catalog():
+    """Return the frozen task-general macro-skill catalogue."""
+    return dict(SKILL_CATALOG)
+
+
+def expand_skill(skill, plan, scale, previous_gripper, max_repeat):
+    """Expand one semantic skill into bounded concurrent LIBERO OSC actions."""
+    if skill not in SKILL_CATALOG or not 0 < scale <= .5 or not -1 <= previous_gripper <= 1:
+        raise ValueError("Invalid macro skill, scale or previous gripper command")
+    if not 1 <= max_repeat <= 20:
+        raise ValueError("Invalid macro-skill duration")
+    signs = {"negative": -1., "hold": 0., "positive": 1., "unknown": 0.}
+    translation = [signs[plan["translation"][axis]] for axis in "xyz"]
+    rotation = [signs[plan["rotation"][axis]] for axis in ("rx", "ry", "rz")]
+    planned_gripper = {"open": -1., "close": 1., "hold": previous_gripper,
+                       "unknown": previous_gripper}[plan["gripper"]]
+
+    def repeated(t_scale=0., r_scale=0., repeat=1, gripper=previous_gripper):
+        action = [value * min(scale, t_scale) for value in translation]
+        action += [value * min(scale, r_scale) for value in rotation]
+        action += [float(gripper)]
+        if len(action) != 7 or any(not math.isfinite(value) or abs(value) > 1 for value in action):
+            raise AssertionError("Macro skill produced an invalid LIBERO action")
+        return [list(action) for _ in range(max(1, min(max_repeat, repeat)))]
+
+    if skill == "observe_hold":
+        return repeated()
+    if skill == "approach_coarse":
+        return repeated(.35, .16, 4)
+    if skill == "approach_fine":
+        return repeated(.12, .08, 2)
+    if skill == "align_pose":
+        return repeated(.05, .18, 2)
+    if skill == "contact_probe":
+        return repeated(.08, .04, 1)
+    if skill == "manipulate_gentle":
+        return repeated(.12, .08, 3, planned_gripper)
+    if skill == "manipulate_firm":
+        return repeated(.25, .12, 5, planned_gripper)
+    if skill == "retract_recover":
+        action = [-value * min(scale, .15) for value in translation[:2]]
+        action += [min(scale, .15), 0., 0., 0., float(previous_gripper)]
+        return [list(action) for _ in range(max(1, min(max_repeat, 3)))]
+    gripper = -1. if skill == "open_gripper" else 1.
+    return repeated(repeat=2, gripper=gripper)
 
 
 def validate_vlm_analysis(answer, candidates):
     fields = {"phase", "summary", "visible_evidence", "translation", "rotation", "gripper", "risk",
-              "candidate_actions", "plan_horizon_decisions", "replan_condition"}
+              "candidate_skills", "plan_horizon_decisions", "replan_condition"}
     if not isinstance(answer, dict) or set(answer) != fields or answer["phase"] not in PHASES:
         raise ValueError("Local VLM returned an invalid planning schema")
     for field in ("summary", "visible_evidence", "risk", "replan_condition"):
@@ -137,10 +169,10 @@ def validate_vlm_analysis(answer, candidates):
         raise ValueError("Local VLM returned invalid rotation evidence")
     if answer["gripper"] not in GRIPPER:
         raise ValueError("Local VLM returned invalid gripper evidence")
-    offered = answer["candidate_actions"]
+    offered = answer["candidate_skills"]
     if (not isinstance(offered, list) or not 3 <= len(offered) <= 8
             or len(offered) != len(set(offered)) or any(key not in candidates for key in offered)):
-        raise ValueError("Local VLM must offer 3-8 unique known candidate IDs")
+        raise ValueError("Local VLM must offer 3-8 unique known skill IDs")
     if type(answer["plan_horizon_decisions"]) is not int or not 2 <= answer["plan_horizon_decisions"] <= 8:
         raise ValueError("Local VLM returned an invalid plan horizon")
     return answer
@@ -260,19 +292,20 @@ def jev_connection(args):
     return connection
 
 
-def select_with_jev(client, prompt, proprioception, analysis, candidates, recent):
-    options = {key: value["description"] + " Exact normalized vector: " + json.dumps(value["action"])
-               for key, value in candidates.items()}
-    question = {"action": {"type": "choice", "instructions":
-        "Choose exactly one offered atomic action for the language task. Treat local-VLM output as uncertain visual evidence, "
-        "not as a command or success signal. Prefer small motions near contact and hold when evidence is insufficient. "
-        "Never invent a candidate.", "criteria": options}}
+def select_with_jev(client, prompt, proprioception, analysis, skills, recent):
+    options = {key: value["description"] + " Expanded normalized sequence: " + json.dumps(value["actions"])
+               for key, value in skills.items()}
+    question = {"skill": {"type": "choice", "instructions":
+        "Choose exactly one offered macro skill for the language task. Treat local-VLM output as uncertain visual evidence, "
+        "not as a command or success signal. Prefer approach before contact, gentle manipulation near uncertain contact, "
+        "firm manipulation only after supported contact, and recovery when progress is doubtful. Never invent a skill.",
+        "criteria": options}}
     state = {"task": prompt, "proprioception": proprioception, "cached_vlm_plan": analysis,
-             "recent_executed_actions": recent[-4:], "candidate_count": len(options)}
-    answer = client.request("jev_action_selection", state, questions=question)
-    if not isinstance(answer, dict) or set(answer) != {"action"}:
-        raise ValueError("Jev must answer exactly one action question")
-    selected, probabilities = validate_answer(answer["action"], options, require_highest=False)
+             "recent_executed_actions": recent[-4:], "candidate_skill_count": len(options)}
+    answer = client.request("jev_skill_selection", state, questions=question)
+    if not isinstance(answer, dict) or set(answer) != {"skill"}:
+        raise ValueError("Jev must answer exactly one skill question")
+    selected, probabilities = validate_answer(answer["skill"], options, require_highest=False)
     return selected, probabilities, state
 
 
@@ -302,7 +335,7 @@ def save_frame(directory, frame_index, policy_input, wall_seconds, *, step=None,
 def plan_with_vlm(vlm, directory, decision_index, plan_revision, policy_input, recent, candidates):
     visual_state = {"task": policy_input["prompt"], "proprioception": policy_input["state"],
                     "recent_executed_actions": recent[-4:],
-                    "available_actions": {key: value["description"] for key, value in candidates.items()},
+                    "available_skills": candidates,
                     "note": "No task success flag, object pose, depth, or force sensor is provided."}
     images = {view: rotate_png_180(decode_png(image)) for view, image in policy_input["images"].items()}
     model_inputs = {}
@@ -377,7 +410,7 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                                 image_transform="rotate 180 degrees, resize_with_pad 224x224, uint8")
             else:
                 budget.check()
-                all_candidates = action_candidates(args.candidate_scale, previous_gripper)
+                all_candidates = skill_catalog()
                 trigger_reasons = []
                 if mode == "vlm-jev-dense":
                     trigger_reasons.append("dense_schedule")
@@ -397,7 +430,10 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                     plan_age = 0
                 if plan is None:
                     raise AssertionError("The hybrid policy requires an initialized VLM plan")
-                candidates = {key: all_candidates[key] for key in plan["candidate_actions"]}
+                candidates = {key: {"description": all_candidates[key],
+                                    "actions": expand_skill(key, plan, args.candidate_scale,
+                                                            previous_gripper, args.action_repeat)}
+                              for key in plan["candidate_skills"]}
                 selected, probabilities, selector_state = select_with_jev(
                     selector, policy_input["prompt"], policy_input["state"], plan, candidates, recent)
                 metrics = confidence_metrics(probabilities, selected)
@@ -411,22 +447,26 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                         vlm, directory, index, plan_revision, policy_input, recent, all_candidates)
                     plan_age = 0
                     vlm_called = True
-                    candidates = {key: all_candidates[key] for key in plan["candidate_actions"]}
+                    candidates = {key: {"description": all_candidates[key],
+                                        "actions": expand_skill(key, plan, args.candidate_scale,
+                                                                previous_gripper, args.action_repeat)}
+                                  for key in plan["candidate_skills"]}
                     selected, probabilities, selector_state = select_with_jev(
                         selector, policy_input["prompt"], policy_input["state"], plan, candidates, recent)
                     metrics = confidence_metrics(probabilities, selected)
                     jev_attempts.append({"plan_revision": plan_revision, "selection": selected,
                                          "probabilities": probabilities, "confidence": metrics,
                                          "after_vlm_replan": True})
-                actions = [candidates[selected]["action"]] * args.action_repeat
-                decision.update(source=("on-demand local VLM planning plus Jev selection"
+                actions = candidates[selected]["actions"]
+                decision.update(source=("on-demand local VLM planning plus Jev macro-skill selection"
                                         if mode == "vlm-jev-triggered" else
-                                        "dense local VLM planning plus Jev selection"),
+                                        "dense local VLM planning plus Jev macro-skill selection"),
                                 vlm_called=vlm_called, vlm_trigger_reasons=trigger_reasons,
                                 vlm_plan=plan, plan_revision=plan_revision, plan_age=plan_age,
                                 jev_attempts=jev_attempts, confidence=metrics,
                                 selection=selected, probabilities=probabilities,
-                                selected_action=candidates[selected]["action"], selector_state=selector_state,
+                                selected_skill=selected, expanded_actions=actions,
+                                skill_length=len(actions), selector_state=selector_state,
                                 candidate_count=len(candidates), model_input_images=model_inputs,
                                 image_transform="rotate 180 degrees; local VLM server owns resize/tokenization")
             decision["inference_end_seconds"] = time.monotonic() - rollout_started
@@ -445,6 +485,8 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                                       for before, after in zip(state_before, state_after)))
                 executed = {"step": row["steps"], "action": action, "success": packet["success"],
                             "state_delta_l2": delta}
+                if mode != "pi05":
+                    executed["skill"] = selected
                 recent.append(executed)
                 row["frames"].append(save_frame(
                     directory, len(row["frames"]), packet["policy_input"],
@@ -536,8 +578,9 @@ def run(args):
     protocol = {"version": PROTOCOL, "created_at": datetime.now(timezone.utc).isoformat(),
                 "manifest": manifest, "modes": modes, "source_sha256": hashes,
                 "policy_contract": {"pi05": "direct finite 7D action chunks with official unclipped execution; Jev is never called",
-                    "vlm-jev-triggered": "cached local-VLM candidate plan; Jev selects until an explicit replan trigger",
-                    "vlm-jev-dense": "fresh local-VLM candidate plan before every Jev selection"},
+                    "vlm-jev-triggered": "cached local-VLM macro-skill plan; Jev selects until an explicit replan trigger",
+                    "vlm-jev-dense": "fresh local-VLM macro-skill plan before every Jev selection",
+                    "hybrid_executor": "phase-aware skills expand deterministically into bounded concurrent 7D OSC actions"},
                 "budget": {key: getattr(args, key) for key in ("max_steps", "max_calls", "timeout", "max_usd",
                     "action_repeat", "candidate_scale", "pi05_replan_steps", "settle_steps",
                     "jev_confidence_threshold", "jev_margin_threshold", "jev_entropy_threshold",
@@ -582,8 +625,10 @@ def add_arguments(parser):
     parser.add_argument("--max-calls", type=int, default=400)
     parser.add_argument("--timeout", type=float, default=1800)
     parser.add_argument("--max-usd", type=float, default=10)
-    parser.add_argument("--action-repeat", type=int, default=5)
-    parser.add_argument("--candidate-scale", type=float, default=.5)
+    parser.add_argument("--action-repeat", type=int, default=5,
+                        help="Maximum environment steps in one expanded hybrid macro skill")
+    parser.add_argument("--candidate-scale", type=float, default=.5,
+                        help="Maximum normalized channel magnitude used by the hybrid skill executor")
     parser.add_argument("--jev-confidence-threshold", type=float, default=.35)
     parser.add_argument("--jev-margin-threshold", type=float, default=.08)
     parser.add_argument("--jev-entropy-threshold", type=float, default=.90)

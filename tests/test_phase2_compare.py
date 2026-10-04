@@ -2,17 +2,26 @@ import unittest
 from types import SimpleNamespace
 
 from embodied_jev.benchmark_worker import openpi_libero_axis_angle, validate_action
-from embodied_jev.phase2_compare import (MODES, action_candidates, confidence_metrics,
-    confidence_triggers, stalled, validate_action_chunk, validate_vlm_analysis)
+from embodied_jev.phase2_compare import (MODES, confidence_metrics, confidence_triggers,
+    expand_skill, select_with_jev, skill_catalog, stalled, validate_action_chunk,
+    validate_vlm_analysis)
 
 
 class Phase2ContractTests(unittest.TestCase):
-    def test_candidate_set_is_21_unique_bounded_actions(self):
-        candidates = action_candidates(.5, -1.)
-        self.assertEqual(len(candidates), 21)
-        actions = [tuple(item["action"]) for item in candidates.values()]
-        self.assertEqual(len(set(actions)), 21)
-        self.assertTrue(all(len(action) == 7 and max(map(abs, action)) <= 1 for action in actions))
+    def test_macro_skills_expand_to_bounded_concurrent_actions(self):
+        candidates = skill_catalog()
+        self.assertEqual(len(candidates), 10)
+        plan = {"translation": {"x": "negative", "y": "positive", "z": "negative"},
+                "rotation": {"rx": "hold", "ry": "positive", "rz": "negative"},
+                "gripper": "close"}
+        for name in candidates:
+            actions = expand_skill(name, plan, .5, -1., 5)
+            self.assertTrue(1 <= len(actions) <= 5)
+            self.assertTrue(all(len(action) == 7 and max(map(abs, action)) <= 1 for action in actions))
+        approach = expand_skill("approach_coarse", plan, .5, -1., 5)[0]
+        self.assertGreater(sum(value != 0 for value in approach[:6]), 1)
+        self.assertEqual(expand_skill("manipulate_firm", plan, .5, -1., 3)[0][-1], 1.)
+        self.assertGreater(expand_skill("retract_recover", plan, .5, -1., 5)[0][2], 0)
 
     def test_pi05_chunk_matches_official_unclipped_actions(self):
         with self.assertRaises(ValueError):
@@ -23,18 +32,18 @@ class Phase2ContractTests(unittest.TestCase):
         self.assertEqual(validate_action([0, 0, 0, 0, 0, 0, 1.01], 7, bounded=False)[-1], 1.01)
 
     def test_vlm_schema_is_closed(self):
-        candidates = action_candidates(.5, -1.)
+        candidates = skill_catalog()
         value = {"phase": "align", "summary": "hand near handle", "visible_evidence": "handle visible",
                  "translation": {"x": "unknown", "y": "positive", "z": "hold"},
                  "rotation": {"rx": "hold", "ry": "unknown", "rz": "negative"},
                  "gripper": "open", "risk": "depth is uncertain",
-                 "candidate_actions": ["hold", "translate_y_positive_small", "gripper_open"],
+                 "candidate_skills": ["observe_hold", "approach_fine", "align_pose"],
                  "plan_horizon_decisions": 3, "replan_condition": "handle leaves view"}
         self.assertIs(validate_vlm_analysis(value, candidates), value)
         with self.assertRaises(ValueError):
             validate_vlm_analysis({**value, "success": True}, candidates)
         with self.assertRaises(ValueError):
-            validate_vlm_analysis({**value, "candidate_actions": ["hold", "invented", "gripper_open"]}, candidates)
+            validate_vlm_analysis({**value, "candidate_skills": ["observe_hold", "invented", "align_pose"]}, candidates)
         with self.assertRaises(ValueError):
             validate_vlm_analysis({**value, "plan_horizon_decisions": 1}, candidates)
 
@@ -47,6 +56,28 @@ class Phase2ContractTests(unittest.TestCase):
                           "low_top_two_margin", "high_normalized_entropy"])
         self.assertTrue(stalled([{"state_delta_l2": .0001}] * 3, 3, .001))
         self.assertFalse(stalled([{"state_delta_l2": .01}] * 3, 3, .001))
+
+    def test_jev_selects_one_expanded_skill(self):
+        class Client:
+            def request(self, stage, state, *, questions):
+                self.stage, self.state, self.questions = stage, state, questions
+                options = questions["skill"]["criteria"]
+                probabilities = {name: 0. for name in options}
+                probabilities["approach_fine"] = 1.
+                return {"skill": {"choice": "approach_fine", "probabilities": probabilities}}
+
+        client = Client()
+        skills = {
+            "observe_hold": {"description": "wait", "actions": [[0.] * 6 + [-1.]]},
+            "approach_fine": {"description": "move", "actions": [[.1, .1, 0., 0., 0., 0., -1.]]},
+            "retract_recover": {"description": "recover", "actions": [[-.1, -.1, .1, 0., 0., 0., -1.]]},
+        }
+        selected, probabilities, state = select_with_jev(
+            client, "close drawer", [0.] * 8, {"phase": "approach"}, skills, [])
+        self.assertEqual(selected, "approach_fine")
+        self.assertEqual(probabilities[selected], 1.)
+        self.assertEqual(client.stage, "jev_skill_selection")
+        self.assertEqual(state["candidate_skill_count"], 3)
 
     def test_phase2_has_direct_triggered_and_dense_modes(self):
         self.assertEqual(MODES, ("pi05", "vlm-jev-triggered", "vlm-jev-dense"))
