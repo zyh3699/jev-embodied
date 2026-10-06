@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-07",
+  "official_success_only": true,
+  "development": {
+    "tasks": 5,
+    "pi05": {"successes": 5, "trials": 5, "mean_steps": 106.4, "mean_wall_seconds": 37.7523},
+    "vlm_chunk_no_jev": {"successes": 0, "trials": 5, "mean_steps": 320.0, "mean_wall_seconds": 81.3923, "vlm_requests": 66},
+    "vlm_jev_triggered": {"successes": 0, "trials": 5, "mean_steps": 233.0, "mean_wall_seconds": 113.8296, "vlm_requests": 109, "jev_requests": 233}
+  },
+  "holdout": {
+    "tasks": 5,
+    "pi05": {"successes": 5, "trials": 5, "mean_steps": 103.4, "mean_wall_seconds": 46.2078},
+    "vlm_jev_triggered": {"successes": 0, "trials": 5, "mean_steps": 37.0, "mean_wall_seconds": 75.2100, "vlm_requests": 49, "jev_requests": 37}
+  },
+  "interpretation": "The generalized hybrid removed task-named skills, static appearance assets and region-ID selection, but did not solve full 6D contact control. Jev improved candidate diversity in some traces but did not improve official success in this evaluation."
+}

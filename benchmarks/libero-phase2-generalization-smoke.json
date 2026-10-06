@@ -1,0 +1,10 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "libero-phase2-generalization-smoke",
+  "backend": "libero",
+  "split": "development",
+  "cases": [
+    {"id": "object-salad-dressing-init0", "suite": "libero_object", "task_id": 2, "init_index": 0, "seed": 7},
+    {"id": "goal-open-middle-drawer-init0", "suite": "libero_goal", "task_id": 0, "init_index": 0, "seed": 7}
+  ]
+}

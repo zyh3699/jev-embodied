@@ -9,13 +9,17 @@ DIRECTIONS = {"negative", "hold", "positive", "unknown"}
 PHASES = {"approach", "align", "contact", "manipulate", "release", "recover", "verify", "uncertain"}
 GRIPPER = {"open", "hold", "close", "unknown"}
 MAGNITUDES = {"fine", "medium", "coarse"}
-CONTACT_MODES = {"push", "pull", "grasp", "release", "none"}
+CONTACT_MODES = {"push", "pull", "rotate", "grasp", "release", "none"}
+GOAL_RELATIONS = {"none", "inside", "on", "at"}
+MOTION_HINTS = {"auto", "normal_in", "normal_out", "image_left", "image_right",
+                "image_up", "image_down", "image_up_left", "image_up_right",
+                "image_down_left", "image_down_right", "clockwise", "counterclockwise"}
 
 
 def validate_keyframe(value):
     """Validate a task-agnostic, pixel-grounded contact keyframe."""
     fields = {"phase", "summary", "visible_evidence", "target_identity", "distractor_check",
-              "target", "contact_mode", "gripper",
+              "target", "contact_mode", "goal_relation", "motion_hint", "gripper",
               "magnitude", "chunk_horizon", "plan_horizon_decisions", "completion_evidence",
               "risk", "replan_condition"}
     if not isinstance(value, dict) or set(value) != fields or value["phase"] not in PHASES:
@@ -37,6 +41,14 @@ def validate_keyframe(value):
             raise ValueError(f"Local VLM returned invalid target {field}")
     if value["contact_mode"] not in CONTACT_MODES:
         raise ValueError("Local VLM returned an invalid contact mode")
+    if value["goal_relation"] not in GOAL_RELATIONS:
+        raise ValueError("Local VLM returned an invalid goal relation")
+    if value["motion_hint"] not in MOTION_HINTS:
+        raise ValueError("Local VLM returned an invalid motion hint")
+    if value["contact_mode"] != "release" and value["goal_relation"] != "none":
+        raise ValueError("Only release keyframes may specify a goal relation")
+    if value["contact_mode"] == "release" and value["goal_relation"] == "none":
+        raise ValueError("Release keyframes require an explicit goal relation")
     if value["gripper"] not in GRIPPER or value["magnitude"] not in MAGNITUDES:
         raise ValueError("Local VLM returned invalid gripper or magnitude")
     if type(value["chunk_horizon"]) is not int or not 2 <= value["chunk_horizon"] <= 10:
@@ -83,18 +95,44 @@ def generate_grounded_action_chunks(keyframe, geometry, proprioception, previous
     # Once near the interaction surface, manipulate along its normal. Grasp and
     # release also need a generic contact transition; closing the fingers alone
     # is not evidence that a grasp has completed.
-    manipulating = contact_mode in {"push", "pull"} and distance_to_target < .105
-    controller_phase = "surface_manipulation" if manipulating else "approach"
+    contact_ready = distance_to_target < .028
+    contact_established = (contact_mode == "push" or previous_gripper > .5)
+    continued_contact = previous_controller_phase in {"surface_manipulation",
+                                                       "rotational_manipulation"}
+    manipulating = (contact_mode in {"push", "pull", "rotate"}
+                    and contact_established and (contact_ready or continued_contact))
+    controller_phase = (("rotational_manipulation" if contact_mode == "rotate" else
+                         "surface_manipulation") if manipulating else
+                        ("contact_close" if contact_mode in {"pull", "rotate"}
+                         and contact_ready else "approach"))
     destination = (target if contact_mode == "release" or distance_to_precontact < .045
                    else precontact)
     approach = [destination[i] - tcp[i] for i in range(3)]
-    motion = ([-value for value in normal] if contact_mode == "push" else list(normal)) if manipulating else approach
+    learned_direction = geometry.get("manipulation_direction_world")
+    if (not isinstance(learned_direction, list) or len(learned_direction) != 3
+            or any(not math.isfinite(float(value)) for value in learned_direction)):
+        learned_direction = None
+    if learned_direction is not None:
+        learned_norm = math.sqrt(sum(float(value) ** 2 for value in learned_direction))
+        learned_direction = ([float(value) / learned_norm for value in learned_direction]
+                             if learned_norm > 1e-8 else None)
+    default_manipulation = ([-value for value in normal] if contact_mode == "push" else list(normal))
+    manipulation_direction = learned_direction or default_manipulation
+    motion = (manipulation_direction if manipulating and contact_mode != "rotate" else
+              ([0., 0., 0.] if manipulating else
+               ([target[i] - tcp[i] for i in range(3)]
+                if controller_phase == "contact_close" else approach)))
     # LIBERO's robot0_eef_pos is the grip site between the fingers.  It should
     # meet the object's mid-height contact point directly; adding a fingertip
     # length here closes the fingers above the object.  The small positive gap
     # keeps the grip site just above the RGB-D center while allowing compliance.
     in_grasp_envelope = horizontal_error < .025 and -.005 < vertical_gap < .035
-    ready_to_close = horizontal_error < .014 and 0. < vertical_gap < .015
+    # The MuJoCo grip site is between the fingers. On many geometries the palm
+    # or fingertips make first contact while that site is still 2--4 cm above
+    # the RGB-D object center. Requiring millimetre-perfect convergence causes
+    # an endless downward command against a physically blocking object. Close
+    # anywhere inside the same generic collision-aware grasp envelope.
+    ready_to_close = horizontal_error < .025 and -.005 < vertical_gap < .040
     if contact_mode == "grasp" and previous_gripper > .5 and in_grasp_envelope:
         if (previous_controller_phase in {"contact_close", "grasp_squeeze"}
                 and previous_aperture is not None
@@ -150,8 +188,10 @@ def generate_grounded_action_chunks(keyframe, geometry, proprioception, previous
     effort = min(maximum_scale, base)
     finger = {"open": -1., "close": 1., "hold": previous_gripper,
               "unknown": previous_gripper}[keyframe["gripper"]]
-    if contact_mode == "push":
+    if contact_mode in {"push", "rotate"}:
         finger = 1.  # a compact closed tool is safer and more repeatable for pushing
+    elif contact_mode == "pull":
+        finger = 1. if controller_phase in {"contact_close", "surface_manipulation"} else -1.
     elif contact_mode == "grasp":
         finger = 1. if controller_phase in {"contact_close", "grasp_squeeze", "post_grasp_lift"} else -1.
     elif contact_mode == "release":
@@ -167,8 +207,18 @@ def generate_grounded_action_chunks(keyframe, geometry, proprioception, previous
     tangent_norm = math.sqrt(sum(value * value for value in tangent_a))
     tangent_a = ([value / tangent_norm for value in tangent_a]
                  if tangent_norm > 1e-8 else [1., 0., 0.])
-    normal_motion = [-value for value in normal] if contact_mode == "push" else list(normal)
-    if controller_phase == "contact_release":
+    normal_motion = manipulation_direction
+    if contact_mode == "none":
+        controller_phase = "observe"
+        proposals = [
+            ("nominal", "Hold pose for a fresh observation.",
+             _bounded_action([0.] * 3, [0.] * 3, previous_gripper)),
+            ("observe_lift", "Add a small upward clearance for a less occluded observation.",
+             _bounded_action([0., 0., .08], [0.] * 3, previous_gripper)),
+            ("observe_parallax", "Add a small lateral parallax motion for a less occluded observation.",
+             _bounded_action([.08, 0., 0.], [0.] * 3, previous_gripper)),
+        ]
+    elif controller_phase == "contact_release":
         proposals = [
             ("nominal", "Hold at the destination while opening the fingers.", bounded([0., 0., 0.], 1.)),
             ("release_lift", "Open and add slight upward clearance.", bounded([0., 0., 1.], .4)),
@@ -183,6 +233,31 @@ def generate_grounded_action_chunks(keyframe, geometry, proprioception, previous
             ("micro_lift", "Maintain closure with a tiny upward tension motion.",
              bounded([0., 0., 1.], .25)),
         ]
+    elif controller_phase == "rotational_manipulation":
+        sign = -1. if keyframe["motion_hint"] == "clockwise" else 1.
+        rotation_axis = normal
+        inward = [-.10 * value for value in normal]
+        rotation_effort = min(maximum_scale, .28)
+
+        def rotational(axis, multiplier=1.):
+            rotation = [max(-maximum_scale, min(maximum_scale,
+                        sign * rotation_effort * multiplier * value)) for value in axis]
+            return _bounded_action(inward, rotation, finger)
+
+        tangent_b = [normal[2], 0., -normal[0]]
+        tangent_b_norm = math.sqrt(sum(value * value for value in tangent_b))
+        tangent_b = ([value / tangent_b_norm for value in tangent_b]
+                     if tangent_b_norm > 1e-8 else [0., 1., 0.])
+        proposals = [
+            ("cautious", "Rotate cautiously about the measured surface-normal axis.",
+             rotational(rotation_axis, .55)),
+            ("nominal", "Rotate about the measured surface-normal axis while maintaining contact.",
+             rotational(rotation_axis, 1.)),
+            ("reverse_rotation", "Rotate in the opposite direction about the same axis.",
+             _bounded_action(inward, [-value for value in rotational(rotation_axis, 1.)[3:6]], finger)),
+            ("alternate_axis", "Rotate about an orthogonal local axis if the mechanism axis is ambiguous.",
+             rotational(tangent_b, .75)),
+        ]
     else:
         proposals = [
             ("cautious", "Three-quarter-effort progress toward the deprojected contact geometry.", bounded(direction, .75)),
@@ -190,7 +265,7 @@ def generate_grounded_action_chunks(keyframe, geometry, proprioception, previous
             ("nominal", "Nominal progress toward the deprojected contact geometry.", bounded(direction, 1.)),
             ("assertive", "Higher-effort bounded progress toward the same grounded target.", bounded(direction, 1.3)),
         ]
-    if manipulating:
+    if manipulating and controller_phase != "rotational_manipulation":
         proposals.extend([
             ("surface_normal", "Manipulate along the locally measured surface normal.", bounded(normal_motion, 1.)),
             ("surface_normal_cautious", "Manipulate cautiously along the measured surface normal.", bounded(normal_motion, .55)),
@@ -203,6 +278,15 @@ def generate_grounded_action_chunks(keyframe, geometry, proprioception, previous
                       for value in [target[i] - tcp[i] for i in range(3)]], .65)),
             ("retreat", "Retreat from the surface along its measured outward normal.", bounded(normal, .45)),
         ])
+        if contact_mode in {"pull", "rotate"}:
+            rotation_effort = min(maximum_scale, .18)
+            for axis_index, axis_name in enumerate(("roll", "pitch", "yaw")):
+                for sign, label in ((1., "positive"), (-1., "negative")):
+                    rotation = [0., 0., 0.]
+                    rotation[axis_index] = sign * rotation_effort
+                    proposals.append((f"orientation_probe_{axis_name}_{label}",
+                                      f"Hold translation and probe {label} {axis_name} to resolve a side-contact pose.",
+                                      _bounded_action([0., 0., 0.], rotation, finger)))
     if ((contact_mode == "grasp" and controller_phase == "contact_close")
             or (contact_mode == "release" and controller_phase == "contact_release")):
         proposals.append(("gripper", "Hold Cartesian pose and apply only the requested gripper command.",

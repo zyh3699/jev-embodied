@@ -1,0 +1,13 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "libero-phase2-generalization-holdout",
+  "backend": "libero",
+  "split": "test",
+  "cases": [
+    {"id": "object-milk-init0", "suite": "libero_object", "task_id": 7, "init_index": 0, "seed": 7},
+    {"id": "spatial-bowl-cookie-init0", "suite": "libero_spatial", "task_id": 6, "init_index": 0, "seed": 7},
+    {"id": "goal-wine-cabinet-init0", "suite": "libero_goal", "task_id": 2, "init_index": 0, "seed": 7},
+    {"id": "goal-bowl-plate-init0", "suite": "libero_goal", "task_id": 8, "init_index": 0, "seed": 7},
+    {"id": "goal-wine-rack-init0", "suite": "libero_goal", "task_id": 9, "init_index": 0, "seed": 7}
+  ]
+}

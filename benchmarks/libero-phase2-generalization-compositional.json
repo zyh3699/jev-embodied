@@ -1,0 +1,11 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "libero-phase2-generalization-compositional",
+  "backend": "libero",
+  "split": "test",
+  "cases": [
+    {"id": "libero10-two-cans-init0", "suite": "libero_10", "task_id": 0, "init_index": 0, "seed": 7},
+    {"id": "libero10-bowl-drawer-init0", "suite": "libero_10", "task_id": 3, "init_index": 0, "seed": 7},
+    {"id": "libero10-mug-microwave-init0", "suite": "libero_10", "task_id": 9, "init_index": 0, "seed": 7}
+  ]
+}

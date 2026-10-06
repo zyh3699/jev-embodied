@@ -83,10 +83,10 @@ class Episode:
 
 def render(episode_paths, output, speed=8., fps=12):
     episodes = [Episode(path) for path in episode_paths]
-    expected = {"pi05", "vlm-jev-triggered", "vlm-jev-dense"}
     modes = {episode.row["mode"] for episode in episodes}
-    if modes not in (expected, set(LABELS)) or len(episodes) != len(modes):
-        raise ValueError("Expected the three main modes, optionally plus the no-Jev ablation")
+    if (not 2 <= len(modes) <= len(LABELS) or not modes.issubset(LABELS)
+            or len(episodes) != len(modes)):
+        raise ValueError("Expected two to four distinct known phase-two modes")
     episodes.sort(key=lambda episode: tuple(LABELS).index(episode.row["mode"]))
     width = PANEL_WIDTH * len(episodes)
     fingerprints = {episode.row.get("initial_fingerprint") for episode in episodes}

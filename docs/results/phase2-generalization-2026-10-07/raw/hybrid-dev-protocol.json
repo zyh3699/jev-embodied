@@ -1,0 +1,97 @@
+{
+  "version": "libero-pi05-vs-local-vlm-jev-v7-general-relational-action-chunks",
+  "created_at": "2026-10-06T20:04:57.151905+00:00",
+  "manifest": {
+    "format": "embodied-jev-suite-v1",
+    "name": "libero-phase2-generalization-development",
+    "backend": "libero",
+    "split": "development",
+    "cases": [
+      {
+        "id": "object-salad-dressing-init0",
+        "suite": "libero_object",
+        "task_id": 2,
+        "init_index": 0,
+        "seed": 7
+      },
+      {
+        "id": "spatial-bowl-between-init0",
+        "suite": "libero_spatial",
+        "task_id": 0,
+        "init_index": 0,
+        "seed": 7
+      },
+      {
+        "id": "goal-open-middle-drawer-init0",
+        "suite": "libero_goal",
+        "task_id": 0,
+        "init_index": 0,
+        "seed": 7
+      },
+      {
+        "id": "goal-push-plate-init0",
+        "suite": "libero_goal",
+        "task_id": 5,
+        "init_index": 0,
+        "seed": 7
+      },
+      {
+        "id": "goal-turn-on-stove-init0",
+        "suite": "libero_goal",
+        "task_id": 7,
+        "init_index": 0,
+        "seed": 7
+      }
+    ]
+  },
+  "modes": [
+    "vlm-chunk-no-jev",
+    "vlm-jev-triggered"
+  ],
+  "source_sha256": {
+    "phase2_compare.py": "39ff008648ad22ea3454f2d6a63a0315bf2af2e94d91be278dc9d6da04a0fc9d",
+    "benchmark_worker.py": "d65df9f0a81762dfef0df367b3b8d66cdecf0bd2e48712b265d3cbf42c55c711",
+    "evaluation.py": "cd3f9f903f0eae97b2b52be2bfe34d4235f9ea7a6e284360a91a12bca219cc90",
+    "libero_policy.py": "da52626eae555b565d80bf05507f876f0c977f682775f41948d1b64444606e46",
+    "phase2_chunks.py": "15d76f5b6f6c4562a02284e08f1107fabc2a66bada2d9031f8b4f3fba85af566",
+    "evaluation_meter.py": "0037a65084462e9aedfee6f89e78c6cecea16a2923ad8b1b4d588902d9082eeb",
+    "policies.py": "20179042ba3c1aeb9e155854a41236de5f04d286dac7cf05f61008f1fafc6377",
+    "render_phase2_comparison.py": "c4d6f97bd66003987c0c044dfa891d044426c674363dd8e2e4d6797658be4605"
+  },
+  "policy_contract": {
+    "pi05": "official openpi LIBERO environment and direct finite 7D action chunks; Jev is never called",
+    "vlm-jev-triggered": "cached semantic pixel keyframe; calibrated RGB-D geometry creates exact Hx7 chunks for Jev",
+    "vlm-jev-dense": "fresh semantic pixel keyframe before each non-atomic ready-state Jev judgment; verified geometry is locked through physical contact transitions",
+    "vlm-chunk-no-jev": "cached semantic pixel keyframe with deterministic nominal grounded Hx7 selection",
+    "hybrid_executor": "direct semantic contact point, dynamic local support plane, relational placement and generic grasp/push/pull/rotate chunks; no region proposals, static asset texture, scene object pose, segmentation, success state or task-named skill"
+  },
+  "budget": {
+    "max_steps": 400,
+    "max_calls": 800,
+    "timeout": 3000.0,
+    "max_usd": 40.0,
+    "action_repeat": 5,
+    "candidate_scale": 0.5,
+    "pi05_replan_steps": 5,
+    "settle_steps": 10,
+    "jev_confidence_threshold": 0.35,
+    "jev_margin_threshold": 0.08,
+    "jev_entropy_threshold": 0.9,
+    "vlm_max_plan_decisions": 40,
+    "stagnation_actions": 3,
+    "stagnation_threshold": 0.001,
+    "visual_stagnation_threshold": 0.002
+  },
+  "endpoints": {
+    "pi05": {
+      "host": "127.0.0.1",
+      "port": 8000
+    },
+    "vlm": {
+      "base_url": "http://127.0.0.1:8001/v1",
+      "model": "Qwen/Qwen3.5-27B",
+      "revision": "local-vllm-20261007"
+    },
+    "jev_connection_source": "environment"
+  }
+}

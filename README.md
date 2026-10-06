@@ -32,6 +32,20 @@ Panda、Meta-World 或 LIBERO 环境
 
 ### 二阶段：π0.5 vs Qwen3.5 + Jev
 
+2026-10-07 完成了通用化冻结评估。新版本去掉静态纹理、候选区域编号和任务命名宏技能，同一套 Qwen3.5 语义像素 + RGB-D 动作块 + Jev 代码覆盖抓放、空间关系、抽屉、推压和旋钮五类任务。结果必须如实强调：π0.5 在开发集和未见 holdout 都是 5/5；通用 VLM+Jev 两组都是 0/5，无 Jev 开发消融也是 0/5。瓶颈已经定位为学习式 6D 末端姿态、接触保持和遮挡闭环，而不是继续添加物体/任务小规则。
+
+推盘任务（三路线共享墙钟）：
+
+![通用化推盘实验](docs/results/phase2-generalization-2026-10-07/media/push-three-way.gif)
+
+空间关系任务（三路线共享墙钟）：
+
+![通用化空间关系实验](docs/results/phase2-generalization-2026-10-07/media/spatial-three-way.gif)
+
+[2026-10-07 通用化完整结果、五组 GIF 与失败分层](docs/results/phase2-generalization-2026-10-07/RESULTS.md) · [机器可读指标](docs/results/phase2-generalization-2026-10-07/metrics.json) · [开发集原始报告](docs/results/phase2-generalization-2026-10-07/raw/hybrid-dev-report.json) · [holdout 原始报告](docs/results/phase2-generalization-2026-10-07/raw/hybrid-holdout-report.json)
+
+上一轮窄任务族结果如下，保留作为系统链路成功对照，而不是泛化结论。
+
 2026-10-06 在双卡 H20 上完成了 2 个 LIBERO-90 固定开发初态的四路线配对实验，共 8/8 局通过官方成功判定：`π0.5`、无 Jev、按需 `Qwen3.5 + Jev` 和逐轮 `Qwen3.5 + Jev` 均为 2/2。π0.5 平均 129.5 步、34.36 秒；无 Jev 为 370.5 步、85.51 秒；按需 Jev 为 485.5 步、154.43 秒；逐轮 Jev 为 483.0 步、372.37 秒。
 
 修正版仍让四条路线通过连续 `H×7` 接口执行，但为混合路线补齐了 RGB-D 反投影、分层 XYZ 接触/运输/释放和显式阶段锁定。Qwen 只提出语义关键帧；公开静态资产纹理只做外观匹配，不提供场景真值位姿、分割或成功标签。Jev 确实在多个动作块之间裁决，但本轮常偏向谨慎动作，所以不能声称它比无 Jev 或 π0.5 更快。样本仅有两个固定初态，这是系统级开发验证，不是 LIBERO 榜单或泛化结论。

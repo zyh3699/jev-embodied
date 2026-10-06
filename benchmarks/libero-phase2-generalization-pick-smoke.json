@@ -1,0 +1,9 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "libero-phase2-generalization-pick-smoke",
+  "backend": "libero",
+  "split": "development",
+  "cases": [
+    {"id": "object-salad-dressing-init0", "suite": "libero_object", "task_id": 2, "init_index": 0, "seed": 7}
+  ]
+}

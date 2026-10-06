@@ -264,6 +264,12 @@ class ModelClient:
                 retryable = isinstance(exc, httpx.TimeoutException) or status in {429, 500, 502, 503, 504, 529}
                 if not retryable or attempt >= self.request_retries:
                     raise
+            except ValueError as exc:
+                # Local OpenAI-compatible VLMs can end a syntactically valid
+                # request at their output limit. A fresh stateless retry is safe:
+                # no action has been executed and every attempt is metered.
+                if str(exc) != "Incomplete chat response" or attempt >= self.request_retries:
+                    raise
 
     def _request_once(self, stage, state, *, system=None, images=None, questions=None):
         self.budget.check()

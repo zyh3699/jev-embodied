@@ -1,0 +1,10 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "libero-phase2-generalization-contact-smoke",
+  "backend": "libero",
+  "split": "development",
+  "cases": [
+    {"id": "goal-push-plate-init0", "suite": "libero_goal", "task_id": 5, "init_index": 0, "seed": 7},
+    {"id": "goal-turn-on-stove-init0", "suite": "libero_goal", "task_id": 7, "init_index": 0, "seed": 7}
+  ]
+}

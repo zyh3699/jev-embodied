@@ -15,7 +15,7 @@ class Phase2ContractTests(unittest.TestCase):
                 "target_identity": "drawer handle", "distractor_check": "not the cabinet edge",
                 "target": {"view": "external", "proposal_id": "region_02",
                            "u": .35, "v": .62, "confidence": .9},
-                "contact_mode": "push",
+                "contact_mode": "push", "goal_relation": "none", "motion_hint": "auto",
                 "gripper": "close", "magnitude": "medium", "chunk_horizon": 5,
                 "plan_horizon_decisions": 2, "completion_evidence": "hand aligned to handle",
                 "risk": "depth is uncertain", "replan_condition": "handle leaves view"}
@@ -92,7 +92,7 @@ class Phase2ContractTests(unittest.TestCase):
 
     def test_release_keeps_hold_until_contact_radius(self):
         keyframe = {**self.keyframe(), "phase": "release", "contact_mode": "release",
-                    "gripper": "hold"}
+                    "goal_relation": "on", "gripper": "hold"}
         geometry = {"valid": True, "point_world": [0., 0., .10],
                     "normal_toward_camera_world": [0., 0., 1.], "depth_m": .5}
         approach = generate_grounded_action_chunks(
@@ -108,7 +108,7 @@ class Phase2ContractTests(unittest.TestCase):
 
     def test_release_uses_lift_translate_descend_hierarchy(self):
         keyframe = {**self.keyframe(), "phase": "release", "contact_mode": "release",
-                    "gripper": "hold"}
+                    "goal_relation": "on", "gripper": "hold"}
         geometry = {"valid": True, "point_world": [0., 0., .10],
                     "normal_toward_camera_world": [0., 0., 1.], "depth_m": .5}
         lift = generate_grounded_action_chunks(
@@ -143,6 +143,85 @@ class Phase2ContractTests(unittest.TestCase):
             validate_keyframe({**value, "success": True})
         with self.assertRaises(ValueError):
             validate_keyframe({**value, "target": {**value["target"], "u": 1.1}})
+        with self.assertRaises(ValueError):
+            validate_keyframe({**value, "goal_relation": "inside"})
+        with self.assertRaises(ValueError):
+            validate_keyframe({**value, "contact_mode": "release", "goal_relation": "none"})
+        self.assertEqual(validate_keyframe({**value, "motion_hint": "image_up_left"})["motion_hint"],
+                         "image_up_left")
+
+    def test_push_uses_task_general_image_direction_when_grounded(self):
+        geometry = {"valid": True, "point_world": [0., 0., .10],
+                    "normal_toward_camera_world": [0., 0., 1.], "depth_m": .5,
+                    "manipulation_direction_world": [1., 0., 0.]}
+        candidates = generate_grounded_action_chunks(
+            {**self.keyframe(), "motion_hint": "image_right"}, geometry,
+            [0., 0., .11, 0., 0., 0., .04, -.04], -1., .5)
+        action = candidates[nominal_chunk(candidates)]["actions"][0]
+        self.assertGreater(action[0], 0.)
+        self.assertAlmostEqual(action[1], 0.)
+        self.assertAlmostEqual(action[2], 0.)
+
+    def test_surface_manipulation_persists_after_leaving_contact_origin(self):
+        geometry = {"valid": True, "point_world": [0., 0., .10],
+                    "normal_toward_camera_world": [0., 0., 1.], "depth_m": .5,
+                    "manipulation_direction_world": [1., 0., 0.]}
+        candidates = generate_grounded_action_chunks(
+            {**self.keyframe(), "motion_hint": "image_right"}, geometry,
+            [.12, 0., .10, 0., 0., 0., .04, -.04], 1., .5,
+            previous_controller_phase="surface_manipulation")
+        nominal = candidates[nominal_chunk(candidates)]
+        self.assertEqual(nominal["geometry"]["controller_phase"], "surface_manipulation")
+        self.assertGreater(nominal["actions"][0][0], 0.)
+
+    def test_rotate_generates_contact_preserving_rotation_chunks(self):
+        geometry = {"valid": True, "point_world": [0., 0., .10],
+                    "normal_toward_camera_world": [0., -1., 0.], "depth_m": .5}
+        contact = generate_grounded_action_chunks(
+            {**self.keyframe(), "contact_mode": "rotate", "motion_hint": "clockwise"},
+            geometry, [0., 0., .11, 0., 0., 0., .04, -.04], -1., .5)
+        self.assertEqual(contact[nominal_chunk(contact)]["geometry"]["controller_phase"],
+                         "contact_close")
+        candidates = generate_grounded_action_chunks(
+            {**self.keyframe(), "contact_mode": "rotate", "motion_hint": "clockwise"},
+            geometry, [0., 0., .11, 0., 0., 0., .04, -.04], 1., .5,
+            previous_controller_phase="contact_close")
+        nominal = candidates[nominal_chunk(candidates)]
+        self.assertEqual(nominal["geometry"]["controller_phase"], "rotational_manipulation")
+        self.assertTrue(any(abs(value) > 0 for value in nominal["actions"][0][3:6]))
+
+    def test_none_contact_mode_holds_for_observation(self):
+        geometry = {"valid": True, "point_world": [0., 0., .10],
+                    "normal_toward_camera_world": [0., 0., 1.], "depth_m": .5}
+        candidates = generate_grounded_action_chunks(
+            {**self.keyframe(), "contact_mode": "none", "gripper": "hold"},
+            geometry, [0., 0., .30, 0., 0., 0., .04, -.04], -1., .5)
+        nominal = candidates[nominal_chunk(candidates)]
+        self.assertEqual(nominal["geometry"]["controller_phase"], "observe")
+        self.assertEqual(nominal["actions"][0][:6], [0.] * 6)
+
+    def test_side_contact_approach_offers_orientation_probes(self):
+        geometry = {"valid": True, "point_world": [0., 0., .10],
+                    "normal_toward_camera_world": [0., -1., 0.], "depth_m": .5}
+        candidates = generate_grounded_action_chunks(
+            {**self.keyframe(), "contact_mode": "pull", "motion_hint": "normal_out",
+             "gripper": "open"}, geometry,
+            [.20, .20, .30, 0., 0., 0., .04, -.04], -1., .5)
+        probes = [candidate for candidate in candidates.values()
+                  if candidate["family"].startswith("orientation_probe_")]
+        self.assertEqual(len(probes), 6)
+        self.assertTrue(all(any(abs(value) > 0 for value in candidate["actions"][0][3:6])
+                            for candidate in probes))
+
+    def test_grasp_closes_when_contact_blocks_exact_center(self):
+        geometry = {"valid": True, "point_world": [0., 0., .10],
+                    "normal_toward_camera_world": [0., 0., 1.], "depth_m": .5}
+        candidates = generate_grounded_action_chunks(
+            {**self.keyframe(), "contact_mode": "grasp", "gripper": "open"}, geometry,
+            [.020, 0., .132, 0., 0., 0., .04, -.04], -1., .5)
+        nominal = candidates[nominal_chunk(candidates)]
+        self.assertEqual(nominal["geometry"]["controller_phase"], "contact_close")
+        self.assertEqual(nominal["actions"][0][-1], 1.)
 
     def test_trigger_metrics_are_explicit_and_deterministic(self):
         metrics = confidence_metrics({"a": .34, "b": .33, "c": .33}, "a")
@@ -175,6 +254,7 @@ class Phase2ContractTests(unittest.TestCase):
         self.assertEqual(probabilities[selected], 1.)
         self.assertEqual(client.stage, "jev_action_chunk_selection")
         self.assertEqual(state["candidate_chunk_count"], 3)
+        self.assertEqual(state["recent_candidate_effects"], [])
 
     def test_phase2_has_direct_triggered_and_dense_modes(self):
         self.assertEqual(MODES, ("pi05", "vlm-jev-triggered", "vlm-jev-dense", "vlm-chunk-no-jev"))

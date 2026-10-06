@@ -287,12 +287,37 @@ class Libero:
             if float(np.dot(normal, camera_position - center)) < 0:
                 normal = -normal
         semantic_normal = normal.copy() if valid else np.array([0., 0., 0.])
-        # Fixed robot-workspace calibration for the LIBERO tabletop. This is
-        # shared across tasks and contains no object pose or success state.
-        support_height = 0.
+        # Estimate the nearest broad horizontal support below the semantic seed.
+        # Peaks in world-Z density correspond to table, cabinet and shelf tops;
+        # selecting the highest broad peak below the target avoids a fixed table
+        # height while excluding the much smaller object's own top surface.
+        raw_rows, raw_columns = np.indices((height, width))
+        calibrated_rows = height - 1 - raw_rows
+        camera_cloud = np.stack([
+            (raw_columns - intrinsic[0, 2]) * metric / intrinsic[0, 0],
+            (calibrated_rows - intrinsic[1, 2]) * metric / intrinsic[1, 1],
+            metric, np.ones_like(metric)], axis=-1)
+        world_cloud = camera_cloud @ camera_to_world.T
+        workspace = (np.isfinite(world_cloud[..., 2])
+                     & (np.abs(world_cloud[..., 0]) < .75)
+                     & (np.abs(world_cloud[..., 1]) < .90)
+                     & (world_cloud[..., 2] > -.15) & (world_cloud[..., 2] < 1.20))
+        below = world_cloud[..., 2][workspace & (world_cloud[..., 2] < semantic_center[2] - .008)]
+        support_height = None
+        if below.size:
+            quantized = np.round(below / .005).astype(int)
+            bins, counts = np.unique(quantized, return_counts=True)
+            broad = bins[counts >= max(40, int(.001 * below.size))]
+            if broad.size:
+                support_height = float(broad.max() * .005)
+        if support_height is None:
+            support_height = float(np.percentile(below, 5)) if below.size else 0.
         grasp_refined = False
+        push_refined = False
+        object_center_world = None
+        object_half_extent_world = None
         component_size = 0
-        if contact_mode == "grasp":
+        if contact_mode in {"grasp", "push"}:
             # The VLM owns semantic identity, while RGB-D owns precise contact.
             # Grow a depth-continuous component around the semantic seed and use
             # its upper world-space band for a top-down grasp point. This reads
@@ -334,7 +359,8 @@ class Libero:
                 # silhouette onto the table.  Split it again after projection:
                 # retain pixels physically above the support plane, then keep
                 # only the image-connected island containing the semantic seed.
-                above = world_component[:, 2] > support_height + .010
+                minimum_object_height = .003 if contact_mode == "push" else .010
+                above = world_component[:, 2] > support_height + minimum_object_height
                 lookup = {(int(row), int(column)): index
                           for index, (row, column) in enumerate(zip(rr, cc)) if above[index]}
                 seed_key = (sample_row, sample_column)
@@ -357,6 +383,10 @@ class Libero:
                 upper = object_points[object_points[:, 2] >= cutoff]
                 if len(upper) >= 3:
                     object_top = float(np.percentile(upper[:, 2], 65))
+                    lower_bounds = np.percentile(object_points, 5, axis=0)
+                    upper_bounds = np.percentile(object_points, 95, axis=0)
+                    object_center_world = np.median(object_points, axis=0)
+                    object_half_extent_world = .5 * (upper_bounds - lower_bounds)
                     # OSC controls the EEF grip site between the fingers, not
                     # the fingertips. Keep semantic-seed XY and place the grip
                     # site near the object's vertical center, rather than on
@@ -370,13 +400,17 @@ class Libero:
                     # This uses only RGB-D geometry, never simulator object
                     # poses or segmentation.
                     center = semantic_center.copy()
-                    center[:2] = np.median(upper[:, :2], axis=0)
+                    if contact_mode == "grasp":
+                        center[:2] = np.median(upper[:, :2], axis=0)
+                    elif contact_mode == "push":
+                        center[:2] = object_center_world[:2]
                     center[2] = (support_height + .50 * (object_top - support_height)
                                  if support_height is not None else
                                  (float(semantic_center[2]) + object_top) / 2)
                     normal = np.array([0., 0., 1.])
                     valid = bool(np.isfinite(center).all())
-                    grasp_refined = valid
+                    grasp_refined = valid and contact_mode == "grasp"
+                    push_refined = valid and contact_mode == "push"
         return {"valid": valid, "view": view, "pixel_rotated_normalized": [u, v],
                 "raw_pixel_row_column": [sample_row, sample_column],
                 "camera_pixel_row_column": [camera_row, camera_column], "depth_m": depth,
@@ -388,9 +422,17 @@ class Libero:
                 "height_above_support_m": (float(center[2]) - support_height
                                              if support_height is not None else None),
                 "grasp_geometry_refined": grasp_refined,
+                "push_geometry_refined": push_refined,
+                "object_center_world": (object_center_world.tolist()
+                                         if object_center_world is not None else None),
+                "object_half_extent_world": (object_half_extent_world.tolist()
+                                              if object_half_extent_world is not None else None),
                 "semantic_component_pixels": component_size,
                 "source": ("semantic RGB-D seed plus depth-connected object-center refinement"
-                           if grasp_refined else "metric RGB-D deprojection and local depth-plane normal")}
+                           if grasp_refined else
+                           "semantic trailing-side seed plus depth-connected object mid-height refinement"
+                           if push_refined else
+                           "metric RGB-D deprojection and local depth-plane normal")}
 
     def grounded_proposals(self, view="external", image_rotated_180=True):
         """Return RGB-D surface components without simulator segmentation."""
@@ -412,14 +454,25 @@ class Libero:
             (camera_rows - intrinsic[1, 2]) * metric / intrinsic[1, 1],
             metric, np.ones_like(metric)], axis=-1)
         world = camera_points @ camera_to_world.T
-        # The threshold is relative to the common LIBERO tabletop calibration.
-        # It rejects the support plane while retaining flat packages such as
-        # small boxes and tubs, not only tall cans and bottles. Robot and basket
-        # surfaces remain as honest distractors for the semantic model.
-        support_height = 0.
-        mask = ((world[..., 2] > support_height + .012) & (world[..., 2] < .30)
-                & (np.abs(world[..., 0]) < .40) & (np.abs(world[..., 1]) < .40)
-                & np.isfinite(metric) & (metric > 0))
+        # Segment every finite camera-depth surface, independent of world-frame
+        # table height or a hand-written workspace box. Very large connected
+        # regions are background/support planes; useful objects, handles and
+        # fixtures form smaller depth-continuous islands.
+        support_height = None
+        finite = np.isfinite(metric) & (metric > .05) & (metric < 3.)
+        # Remove every broad horizontal Z mode observed in the current frame,
+        # rather than assuming one table plane at a calibrated height. This
+        # handles table, stove, cabinet and shelf supports with the same code.
+        z_values = world[..., 2][finite & np.isfinite(world[..., 2])]
+        horizontal_distance = np.full(metric.shape, np.inf, dtype=float)
+        if z_values.size:
+            z_bins, z_counts = np.unique(np.round(z_values / .005).astype(int),
+                                         return_counts=True)
+            broad_bins = z_bins[z_counts >= max(150, int(.003 * z_values.size))]
+            for value in broad_bins:
+                horizontal_distance = np.minimum(horizontal_distance,
+                                                 np.abs(world[..., 2] - value * .005))
+        mask = finite & (horizontal_distance > .010)
         visited = np.zeros(mask.shape, dtype=bool)
         components = []
         for start_row, start_column in zip(*np.nonzero(mask)):
@@ -439,14 +492,17 @@ class Libero:
                             and abs(float(metric[nr, nc]) - depth) <= .025):
                         visited[nr, nc] = True
                         stack.append((nr, nc))
-            if len(pixels) >= 8:
-                components.append(pixels)
+            if 8 <= len(pixels) <= int(.28 * height * width):
+                rows = [pixel[0] for pixel in pixels]
+                columns = [pixel[1] for pixel in pixels]
+                if max(rows) - min(rows) >= 2 and max(columns) - min(columns) >= 2:
+                    components.append(pixels)
 
         # Larger coherent surfaces are the most useful semantic candidates.
         # Keep a bounded list so point labels never obscure the source image.
         components.sort(key=len, reverse=True)
         proposals = []
-        for pixels in components[:24]:
+        for pixels in components[:16]:
             rr = np.asarray([pixel[0] for pixel in pixels], dtype=int)
             cc = np.asarray([pixel[1] for pixel in pixels], dtype=int)
             model_rr = height - 1 - rr
@@ -462,8 +518,7 @@ class Libero:
                                           float(model_cc.max() / (width - 1)),
                                           float(model_rr.max() / (height - 1))],
                               "pixels": len(pixels), "candidate_kind": "visible_surface",
-                              "height_m": round(float(world[rr[index], cc[index], 2]
-                                                      - support_height), 4)})
+                              "height_m": round(float(world[rr[index], cc[index], 2]), 4)})
         # A large U-shaped depth component has useful wall pixels but its median
         # surface point is a poor drop target. Add an upper-middle interior probe
         # for large components. This is geometric and carries no object identity.
@@ -478,8 +533,10 @@ class Libero:
             x_bounds = np.percentile(component_world[:, 0], [2, 98])
             y_bounds = np.percentile(component_world[:, 1], [2, 98])
             wall_top = float(np.percentile(component_world[:, 2], 95))
+            component_floor = float(np.percentile(component_world[:, 2], 3))
             interior_world = [float(x_bounds.mean()), float(y_bounds.mean()),
-                              float(min(.25, max(support_height + .10, wall_top + .025)))]
+                              float(min(component_floor + .25,
+                                        max(component_floor + .08, wall_top + .025)))]
             u = (left + right) / 2
             v = top + .22 * (bottom - top)
             try:

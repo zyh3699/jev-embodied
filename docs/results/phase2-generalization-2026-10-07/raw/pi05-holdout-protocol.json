@@ -1,0 +1,96 @@
+{
+  "version": "libero-pi05-vs-local-vlm-jev-v7-general-relational-action-chunks",
+  "created_at": "2026-10-06T18:08:11.982333+00:00",
+  "manifest": {
+    "format": "embodied-jev-suite-v1",
+    "name": "libero-phase2-generalization-holdout",
+    "backend": "libero",
+    "split": "test",
+    "cases": [
+      {
+        "id": "object-milk-init0",
+        "suite": "libero_object",
+        "task_id": 7,
+        "init_index": 0,
+        "seed": 7
+      },
+      {
+        "id": "spatial-bowl-cookie-init0",
+        "suite": "libero_spatial",
+        "task_id": 6,
+        "init_index": 0,
+        "seed": 7
+      },
+      {
+        "id": "goal-wine-cabinet-init0",
+        "suite": "libero_goal",
+        "task_id": 2,
+        "init_index": 0,
+        "seed": 7
+      },
+      {
+        "id": "goal-bowl-plate-init0",
+        "suite": "libero_goal",
+        "task_id": 8,
+        "init_index": 0,
+        "seed": 7
+      },
+      {
+        "id": "goal-wine-rack-init0",
+        "suite": "libero_goal",
+        "task_id": 9,
+        "init_index": 0,
+        "seed": 7
+      }
+    ]
+  },
+  "modes": [
+    "pi05"
+  ],
+  "source_sha256": {
+    "phase2_compare.py": "b0b5de863cd3526eeab0df2a473548c3db5039a92deb07b6c68c37ed0d158af9",
+    "benchmark_worker.py": "1016ebebb4eaee24cdfc96e603c438c38eb61a65bc0137ab0532a1508c24e27c",
+    "evaluation.py": "cd3f9f903f0eae97b2b52be2bfe34d4235f9ea7a6e284360a91a12bca219cc90",
+    "libero_policy.py": "7ba09f950ca9a8f21498e8930daf706deb9fcbd4d8da6533c6c8764efa971cc5",
+    "phase2_chunks.py": "2b66476c78f0bbfd75a2af93de49aae9d7e08a600e53c73b3e3155251f05285c",
+    "evaluation_meter.py": "0037a65084462e9aedfee6f89e78c6cecea16a2923ad8b1b4d588902d9082eeb",
+    "policies.py": "20179042ba3c1aeb9e155854a41236de5f04d286dac7cf05f61008f1fafc6377",
+    "render_phase2_comparison.py": "c4d6f97bd66003987c0c044dfa891d044426c674363dd8e2e4d6797658be4605"
+  },
+  "policy_contract": {
+    "pi05": "official openpi LIBERO environment and direct finite 7D action chunks; Jev is never called",
+    "vlm-jev-triggered": "cached semantic pixel keyframe; calibrated RGB-D geometry creates exact Hx7 chunks for Jev",
+    "vlm-jev-dense": "fresh semantic pixel keyframe before each non-atomic ready-state Jev judgment; verified geometry is locked through physical contact transitions",
+    "vlm-chunk-no-jev": "cached semantic pixel keyframe with deterministic nominal grounded Hx7 selection",
+    "hybrid_executor": "task-blind region inventory, semantic contact point, dynamic local support plane, relational placement and generic grasp/push/pull/rotate chunks; no static asset texture, scene object pose, segmentation, success state or task-named skill"
+  },
+  "budget": {
+    "max_steps": 1000,
+    "max_calls": 400,
+    "timeout": 3600.0,
+    "max_usd": 10,
+    "action_repeat": 5,
+    "candidate_scale": 0.5,
+    "pi05_replan_steps": 5,
+    "settle_steps": 10,
+    "jev_confidence_threshold": 0.35,
+    "jev_margin_threshold": 0.08,
+    "jev_entropy_threshold": 0.9,
+    "vlm_max_plan_decisions": 20,
+    "stagnation_actions": 3,
+    "stagnation_threshold": 0.001,
+    "visual_stagnation_threshold": 0.002
+  },
+  "endpoints": {
+    "pi05": {
+      "host": "127.0.0.1",
+      "port": 8000
+    },
+    "vlm": {
+      "base_url": "http://127.0.0.1:8001/v1",
+      "model": "Qwen/Qwen3.5-27B",
+      "revision": "unspecified"
+    },
+    "jev_connection_source": "environment"
+  }
+}

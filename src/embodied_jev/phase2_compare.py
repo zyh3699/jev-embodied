@@ -21,33 +21,15 @@ import time
 
 from .evaluation import Worker, load_manifest, saved_connection
 from .libero_policy import ModelClient, RequestBudget, usage_summary
-from .phase2_chunks import generate_grounded_action_chunks, nominal_chunk, validate_keyframe
+from .phase2_chunks import (camera_directions_to_world, generate_grounded_action_chunks,
+                            nominal_chunk, validate_keyframe)
 from .policies import environment_connection, validate_answer
 
 
-PROTOCOL = "libero-pi05-vs-local-vlm-jev-v6-reference-grounded-action-chunks"
+PROTOCOL = "libero-pi05-vs-local-vlm-jev-v7-general-relational-action-chunks"
 MODES = ("pi05", "vlm-jev-triggered", "vlm-jev-dense", "vlm-chunk-no-jev")
 SOURCE_FILES = ("phase2_compare.py", "benchmark_worker.py", "evaluation.py",
                 "libero_policy.py", "phase2_chunks.py", "evaluation_meter.py", "policies.py")
-
-VLM_INVENTORY_SYSTEM = """You are a task-blind visual inventory observer.
-The user intentionally withholds the robot task so that it cannot bias recognition.
-Inspect the full external scene and the magnified region gallery. For every supplied
-proposal ID, report only ordinary visible category, package shape, genuinely legible
-text (or "unreadable"), and confidence. Do not guess a desired object, action, pose,
-coordinate, or task. Blurry strokes are not words. Use commonplace package priors:
-soup is usually in a cylindrical food can, milk in a tall carton, cream cheese in a
-small box or tub, and dressing in a bottle, unless clear visible evidence contradicts
-the prior. Return exactly:
-{"regions":[{"proposal_id":"region_00","category":"basket","shape":"open woven bin",
-"visible_text":"unreadable","confidence":0.9}]}"""
-
-VLM_REFERENCE_MATCH_SYSTEM = """You are an appearance-matching juror.
-The target_reference is a public static texture for the language-named object and
-contains no scene pose, segmentation, state, or success information. Match its colors,
-artwork and package appearance to exactly one current region-gallery proposal. Compare
-same-shape distractors directly. Return exactly:
-{"choice":"region_00","evidence":"brief visual correspondence","confidence":0.8}"""
 
 VLM_SYSTEM = """You are the semantic visual keypoint planner in a robot-control experiment.
 Inspect the current upright external and wrist RGB images, the language task,
@@ -57,22 +39,15 @@ output a named robot skill, world coordinate, depth or robot action. Coordinates
 normalized within the exact upright image: u=0 left, u=1 right, v=0 top, v=1 bottom.
 Grid lines mark normalized quarters and the cyan TCP marker is measured robot
 proprioception, not a semantic object label.
-The state includes external_rgbd_regions produced without simulator segmentation and
-an external_region_gallery with a magnified tile for every candidate. When selecting
-an external target, inspect that gallery, return its exact region ID as proposal_id,
-and copy the corresponding u,v center. Numbered dots are proposals, not identities.
-For a wrist target proposal_id must be null. Never invent an ID or point between
-proposals. Reason from ordinary package shape and visible appearance; blurry marks
-are not readable labels and must not be expanded into convenient text.
-For release into an open receptacle, prefer a visibly correct proposal whose
-candidate_kind is geometric_interior_probe; never target the exterior wall and never
-use an interior probe to grasp a source object.
-The state also includes task_blind_region_inventory generated before the task was
-revealed to that observer. Use it to resist goal-induced label hallucinations. Apply
-ordinary category priors: soup is normally a cylindrical can, milk a tall carton,
-cream cheese a small box or tub, and dressing a bottle, absent clear contrary evidence.
-When source_appearance_match is present, it is the independently matched source object
-and must be used for grasp-stage targeting. It is not the destination.
+Select the semantic point directly in the full image and always return proposal_id null.
+There is no detector, segmentation mask, region proposal, asset texture, or privileged
+object list. Reason from ordinary visible shape, appearance, scene context, and the
+language instruction; blurry marks are not readable labels. For goal_relation inside,
+do not click the receptacle's object-detection-box center: select visible open interior
+space or an interior floor point beyond the front rim (under perspective this is often
+slightly above the front wall in the image), never the rim or exterior side. For on or
+at, select the visible destination support surface. Never use a destination point to
+grasp or manipulate the source object.
 Prefer a broad, rigid, visible interaction surface over an occluded edge. For grasp,
 place the semantic seed well inside the exact object's visible identity-bearing body,
 away from its silhouette and the support surface. The RGB-D controller grows a
@@ -81,20 +56,42 @@ object's grasp center, so you should not
 try to point at a tiny top edge. For close
 tasks, contact_mode push means press the movable surface toward its closed state;
 for open or pick tasks use pull or grasp only when the language and image support it.
+Use grasp only for a free object that must be lifted and transported. For a drawer,
+door, lever, or other attached mechanism use pull, push, or rotate even when the
+fingers must close around a handle; attached mechanisms never enter holding-object state.
+For turn-on or turn-off instructions, select the appliance's visible control affordance
+(knob, button, or switch), never its working surface, burner, vessel area, or door handle.
 Before choosing a pixel, identify the exact task object by label, shape and context,
 and explicitly distinguish it from every nearby distractor and from the destination
 receptacle. Do not choose the basket, plate or other destination while the task object
 has not yet been grasped. Do not substitute a visually similar product.
 The RGB-D controller, not you, deprojects the semantic pixel and estimates a local
 surface normal. Do not claim task success, force, hidden state or object pose.
-Planning is stageful. If replan_reasons contains contact_transition_complete and
-the previous keyframe used grasp, the controller has closed and executed a
-closed-finger lift. Do not reacquire the source: locate the language-specified
-destination and return contact_mode release while keeping the gripper closed until
-arrival. After a completed release, visually verify the task.
+Planning is stageful but task-general. interaction_state reports whether the gripper
+is empty or holding an object and lists completed physical transitions. Infer the next
+unfinished subgoal from the full language instruction and current images; do not assume
+that every task is pick-and-place or has a container. If the gripper is holding an
+object, choose the task-specified destination and use release with goal_relation inside,
+on, or at. If it is empty, choose grasp, push, pull, rotate, or observation according to
+the next unfinished physical relation. After a completed release or mechanism motion,
+inspect the scene and continue with any remaining clause of a multi-step instruction.
 If replan_reasons contains empty_grasp_recovery or grasp_lost_recovery, the object is
-not held: reacquire the appearance-matched source with contact_mode grasp. Never
+not held: reacquire the language-specified visible source with contact_mode grasp. Never
 return release for an empty or lost grasp.
+contact_mode none means one active observation only. If the previous keyframe was none
+and a fresh observation has already been taken, choose the next physical interaction;
+never declare task completion or repeatedly hold position.
+For push or pull, motion_hint may use the local surface normal or an image-plane
+direction. image_up/down/left/right and the four diagonal combinations refer to the
+selected upright camera image and describe the desired object motion, not the approach
+direction. Use a diagonal when the visible goal displacement has substantial horizontal
+and vertical components; do not approximate it by alternating cardinal directions. For knobs and rotary
+controls use contact_mode rotate and clockwise/counterclockwise when visually or
+linguistically supported. For pushing a free object, select a reachable contact point
+on the object's trailing side opposite the intended motion rather than its center or
+leading side. goal_relation MUST be none for grasp, push, pull, rotate and
+none; it is inside, on or at only for release. For grasp, release and none use
+motion_hint auto.
 Return exactly:
 {"phase":"approach|align|contact|manipulate|release|recover|verify|uncertain",
  "summary":"brief current scene description",
@@ -102,7 +99,9 @@ Return exactly:
  "target_identity":"exact object or destination surface selected for this stage",
  "distractor_check":"why the pixel is not on a nearby distractor or the wrong stage target",
  "target":{"view":"external|wrist","proposal_id":"region_00 or null","u":0.50,"v":0.50,"confidence":0.80},
- "contact_mode":"push|pull|grasp|release|none",
+ "contact_mode":"push|pull|rotate|grasp|release|none",
+ "goal_relation":"none|inside|on|at",
+ "motion_hint":"auto|normal_in|normal_out|image_left|image_right|image_up|image_down|image_up_left|image_up_right|image_down_left|image_down_right|clockwise|counterclockwise",
  "gripper":"open|hold|close|unknown","magnitude":"fine|medium|coarse",
  "chunk_horizon":5,"plan_horizon_decisions":20,
  "completion_evidence":"one visible relation that would complete this keyframe",
@@ -117,17 +116,19 @@ reinterpret a cached wrist pixel after the wrist camera moves."""
 
 VLM_VERIFY_SYSTEM = """You independently verify one proposed semantic contact pixel.
 The target_crop image is magnified around that exact pixel without a grid; external_context
-shows the full scene for comparison. Use the language task and current interaction stage,
-not any identity claim from the planner. Accept only if visible crop evidence
-supports the exact task object or the correct destination for the current stage. The
+shows the full scene for comparison. Use the language task and current interaction state,
+not any identity claim from the planner. Accept only if visible crop evidence supports
+the exact object, destination surface, handle, button, knob, or other interaction target
+required by the proposed contact mode and next unfinished task relation. The
 central quarter itself must lie on that target; a target visible only near an edge is a
 rejection. Reject
-lookalike products, receptacles selected before grasp, robot parts, table, floor, empty
-space, and crops whose identity is not actually supported. Use ordinary category and
-package-shape knowledge, and never hallucinate words from blurry texture. Never trust
-the proposal text over the crop. When target_reference is supplied, it is a static
-appearance-only image of the language-named source object; compare the crop to it
-directly. It is not a scene location and is not supplied for destination verification.
+lookalike products, irrelevant receptacles, robot parts, unrelated support surfaces,
+empty space, and crops whose identity is not actually supported. Use ordinary category and
+package-shape knowledge, and never hallucinate words from blurry texture. For push,
+pull, or rotate, also reject when the proposed motion_hint contradicts the language
+relation in the full external context (for example, motion must lead toward the named
+landmark, not merely along any screen direction). Judge image directions in the exact
+upright external_context frame.
 Return exactly:
 {"accept":true,"observed_identity":"what is visibly centered","evidence":"brief reason"}"""
 
@@ -204,7 +205,7 @@ def inspection_png(packet):
         raise RuntimeError("The phase2 extra (Pillow) is required") from exc
     image = Image.open(io.BytesIO(rotate_png_180(decode_png(packet)))).convert("RGB")
     output = io.BytesIO()
-    image.resize((1024, 1024), Image.Resampling.LANCZOS).save(output, format="PNG")
+    image.resize((768, 768), Image.Resampling.LANCZOS).save(output, format="PNG")
     return output.getvalue()
 
 
@@ -215,7 +216,7 @@ def proposal_gallery_png(packet, proposals):
     except ImportError as exc:
         raise RuntimeError("The phase2 extra (Pillow) is required") from exc
     source = Image.open(io.BytesIO(rotate_png_180(decode_png(packet)))).convert("RGB")
-    tile_size, columns = 256, 3
+    tile_size, columns = 192, 3
     rows = max(1, math.ceil(len(proposals) / columns))
     gallery = Image.new("RGB", (columns * tile_size, rows * tile_size), (24, 24, 24))
     for index, proposal in enumerate(proposals):
@@ -365,7 +366,7 @@ def local_vlm_connection(args):
     if not base or not args.vlm_model:
         raise ValueError("VLM + Jev modes require --vlm-base-url and --vlm-model")
     return {"url": url, "key": key, "model": args.vlm_model, "json_mode": True,
-            "request_overrides": {"temperature": .2, "top_p": .8, "max_tokens": 1024,
+            "request_overrides": {"temperature": .2, "top_p": .8, "max_tokens": 1536,
                                   "chat_template_kwargs": {"enable_thinking": False}}}
 
 
@@ -386,11 +387,16 @@ def select_with_jev(client, prompt, proprioception, keyframe, candidates, recent
         "Choose exactly one offered numeric action chunk. The VLM supplied only a semantic pixel; calibrated RGB-D supplied "
         "the metric point, local surface normal and distances attached to each option. Judge the exact arrays against current "
         "proprioception, recent measured effects, visual change and risk. Prefer nominal grounded progress in free space, "
-        "cautious progress near contact, and a measured surface-normal option during manipulation. Retreat or tangential "
-        "motion requires evidence of adverse motion or a bad normal. Never invent an option.",
+        "cautious progress near contact, and a measured surface-normal option during manipulation. However, repeated use "
+        "of one family with negligible measured state change is direct evidence that it is ineffective: do not select that "
+        "family again; choose direct_contact, assertive, a rotation probe, or a tangential probe as offered. Retreat requires "
+        "evidence of adverse motion. Never invent an option.",
         "criteria": options}}
+    recent_effects = [{"family": item.get("chunk_family"), "state_delta_l2": item.get("state_delta_l2")}
+                      for item in recent[-6:]]
     state = {"task": prompt, "proprioception": proprioception, "cached_visual_keyframe": keyframe,
              "recent_executed_actions": recent[-6:], "recent_visual_change": visual_change,
+             "recent_candidate_effects": recent_effects,
              "candidate_chunk_count": len(options)}
     answer = client.request("jev_action_chunk_selection", state, questions=question)
     if not isinstance(answer, dict) or set(answer) != {"action_chunk"}:
@@ -453,127 +459,61 @@ def validate_semantic_grounding(plan, geometry):
 
 def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_input, recent,
                   previous_plan=None, trigger_reasons=None, interaction_stage=None,
-                  semantic_cache=None):
-    proposal_packet = worker.request({"command": "grounded_proposals", "view": "external",
-                                      "image_rotated_180": True})
-    private_proposals = proposal_packet["proposals"]
-    proposal_geometry = {item["id"]: item.get("_interior_point_world")
-                         for item in private_proposals}
-    # Private metric geometry is consumed only after semantic selection.  The
-    # VLM sees the same task-blind pixel candidates as before, never XYZ.
-    proposals = [{key: value for key, value in item.items() if not key.startswith("_")}
-                 for item in private_proposals]
-    if not proposals:
-        raise ValueError("RGB-D produced no external object-region proposals")
+                  semantic_cache=None, locked_motion_hint=None):
     visual_state = {"task": policy_input["prompt"], "proprioception": policy_input["state"],
                     "recent_executed_actions": recent[-4:],
                     "camera_frames": ["external", "wrist"],
                     "note": ("Images are upright after a 180-degree source transform. Metric RGB-D and camera calibration "
                              "are used only after you return a semantic pixel. No task success flag, object pose, force sensor, "
-                             "task-named skill or candidate action is provided.")}
+                             "segmentation, static asset reference, task-named skill or candidate action is provided. "
+                             "Return proposal_id null and ground the visible target directly with normalized u,v.")}
     if previous_plan is not None:
         visual_state["previous_keyframe"] = {
             field: previous_plan[field] for field in
             ("phase", "target_identity", "contact_mode", "gripper", "completion_evidence")}
     visual_state["replan_reasons"] = list(trigger_reasons or [])
     if interaction_stage is not None:
-        visual_state["interaction_stage"] = interaction_stage
-    visual_state["external_rgbd_regions"] = proposals
-    images = {view: annotated_planner_png(
-        image, policy_input["state"], proposals if view == "external" else ())
+        visual_state["interaction_state"] = interaction_stage
+    if locked_motion_hint is not None:
+        visual_state["locked_motion_hint"] = locked_motion_hint
+        visual_state["locked_motion_note"] = (
+            "Continuous manipulation already began. Re-ground contact if needed, but preserve this verified "
+            "task-motion direction; a local stall is not evidence that the language goal reversed.")
+    images = {view: annotated_planner_png(image, policy_input["state"], ())
         for view, image in policy_input["images"].items()}
     images["external_detail_reference_only"] = inspection_png(policy_input["images"]["external"])
-    images["external_region_gallery"] = proposal_gallery_png(
-        policy_input["images"]["external"], proposals)
     model_inputs = {}
     for view, image in images.items():
         relative = f"inputs/{decision_index:05d}-plan{plan_revision:03d}-{view}-vlm.png"
         (directory / relative).write_bytes(image)
         model_inputs[view] = {"path": relative, "sha256": hashlib.sha256(image).hexdigest()}
-    expected_ids = {proposal["id"] for proposal in proposals}
-    cache_valid = bool(semantic_cache is not None
-                       and semantic_cache.get("interaction_stage") == interaction_stage
-                       and set(semantic_cache.get("proposal_ids", [])) == expected_ids
-                       and isinstance(semantic_cache.get("inventory"), list))
-    if cache_valid:
-        inventory = semantic_cache["inventory"]
-    else:
-        inventory_answer = vlm.request("local_vlm_task_blind_inventory", {
-            "proposal_ids": [proposal["id"] for proposal in proposals],
-            "note": "The robot task is deliberately withheld. Describe visible objects only."
-        }, system=VLM_INVENTORY_SYSTEM,
-           images={"external_context": images["external_detail_reference_only"],
-                   "external_region_gallery": images["external_region_gallery"]})
-        inventory = inventory_answer.get("regions") if isinstance(inventory_answer, dict) else None
-    if (not isinstance(inventory, list) or len(inventory) != len(expected_ids)
-            or {item.get("proposal_id") for item in inventory if isinstance(item, dict)} != expected_ids):
-        raise ValueError("Task-blind VLM inventory did not cover every RGB-D proposal exactly once")
-    for item in inventory:
-        if (set(item) != {"proposal_id", "category", "shape", "visible_text", "confidence"}
-                or any(not isinstance(item[field], str) or not item[field]
-                       for field in ("proposal_id", "category", "shape", "visible_text"))
-                or isinstance(item["confidence"], bool)
-                or not isinstance(item["confidence"], (int, float))
-                or not 0 <= float(item["confidence"]) <= 1):
-            raise ValueError("Task-blind VLM inventory returned an invalid region record")
-    visual_state["task_blind_region_inventory"] = inventory
-    source_stage = (interaction_stage == "source" if interaction_stage is not None else
-                    not (previous_plan is not None
-                         and previous_plan.get("contact_mode") == "grasp"
-                         and "contact_transition_complete" in (trigger_reasons or [])))
-    required_source_proposal = None
-    reference_image = None
-    if source_stage:
-        reference = worker.request({"command": "appearance_reference"})
-        if reference.get("available"):
-            reference_image = decode_png(reference["image"])
-            reference_relative = (f"inputs/{decision_index:05d}-plan{plan_revision:03d}"
-                                  "-target_appearance_reference-vlm.png")
-            (directory / reference_relative).write_bytes(reference_image)
-            model_inputs["target_appearance_reference"] = {
-                "path": reference_relative,
-                "sha256": hashlib.sha256(reference_image).hexdigest()}
-            match = (semantic_cache.get("source_appearance_match") if cache_valid else None)
-            if not isinstance(match, dict) or match.get("choice") not in expected_ids:
-                match = vlm.request("local_vlm_reference_match", {
-                    "target_noun_phrase": reference["target_noun_phrase"],
-                    "available_proposal_ids": sorted(expected_ids),
-                    "task_blind_region_inventory": inventory,
-                    "reference_source": reference["source"]},
-                    system=VLM_REFERENCE_MATCH_SYSTEM,
-                    images={"target_reference": reference_image,
-                            "current_region_gallery": images["external_region_gallery"]})
-                if (not isinstance(match, dict)
-                        or set(match) != {"choice", "evidence", "confidence"}
-                        or match["choice"] not in expected_ids
-                        or not isinstance(match["evidence"], str) or not match["evidence"]
-                        or isinstance(match["confidence"], bool)
-                        or not isinstance(match["confidence"], (int, float))
-                        or not 0 <= float(match["confidence"]) <= 1):
-                    raise ValueError("Appearance-reference matcher returned an invalid choice")
-            required_source_proposal = match["choice"]
-            visual_state["source_appearance_match"] = {
-                **match, "target_noun_phrase": reference["target_noun_phrase"],
-                "source": reference["source"]}
-    if semantic_cache is not None and not cache_valid:
+    if semantic_cache is not None:
         semantic_cache.clear()
-        semantic_cache.update(interaction_stage=interaction_stage,
-                              proposal_ids=sorted(expected_ids), inventory=inventory,
-                              source_appearance_match=(match if source_stage and reference_image is not None
-                                                       else None))
     rejected = []
     for attempt in range(6):
         state = dict(visual_state)
         if rejected:
             state["rejected_groundings"] = rejected
             state["correction"] = ("The prior semantic pixel was rejected by measured RGB-D geometry before motion. "
-                                   "Choose a visibly different point on the exact current-stage target (source before "
-                                   "grasp, destination after the closed-finger lift); never repeat that pixel. "
+                                   "Choose a visibly different point on the exact target required by the next unfinished "
+                                   "task relation; never repeat that pixel. For an inside relation, move the point across "
+                                   "the visible front rim into the open cavity rather than recentering on the container wall. "
                                    "Use the external view for this correction because it shows the full object inventory; "
                                    "do not claim an object is centered in the wrist view without readable evidence.")
             state["correction_target_view"] = "external"
         answer = vlm.request("local_vlm_keyframe", state, system=VLM_SYSTEM, images=images)
         if isinstance(answer, dict):
+            if answer.get("contact_mode") != "release" and "goal_relation" in answer:
+                answer["goal_relation"] = "none"
+            if answer.get("contact_mode") in {"grasp", "release", "none"} and "motion_hint" in answer:
+                answer["motion_hint"] = "auto"
+            elif (locked_motion_hint is not None
+                  and answer.get("contact_mode") in {"push", "pull", "rotate"}):
+                answer["motion_hint"] = locked_motion_hint
+            if answer.get("contact_mode") in {"push", "pull", "rotate"}:
+                answer["plan_horizon_decisions"] = 40
+            if isinstance(answer.get("target"), dict):
+                answer["target"]["proposal_id"] = None
             for field in ("summary", "visible_evidence", "target_identity", "distractor_check",
                           "completion_evidence", "risk", "replan_condition"):
                 if isinstance(answer.get(field), str) and len(answer[field]) > 600:
@@ -587,13 +527,20 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
                                                  if isinstance(answer, dict) else None),
                              "target": (answer.get("target") if isinstance(answer, dict) else None)})
             continue
-        if ((interaction_stage == "destination"
-             or (interaction_stage is None and previous_plan is not None
-                 and previous_plan.get("contact_mode") == "grasp"
-                 and "contact_transition_complete" in (trigger_reasons or [])))
-                and plan["contact_mode"] != "release"):
+        if (interaction_stage == "holding" and plan["contact_mode"] == "grasp"):
             rejected.append({"attempt": attempt + 1,
-                             "reason": "completed grasp transition requires destination release planning",
+                             "reason": "the gripper is already holding an object; choose the next task relation",
+                             "target_identity": plan["target_identity"], "target": plan["target"]})
+            continue
+        if (previous_plan is not None and previous_plan["contact_mode"] == "none"
+                and plan["contact_mode"] == "none"):
+            rejected.append({"attempt": attempt + 1,
+                             "reason": "one observation was already taken; choose a physical interaction now",
+                             "target_identity": plan["target_identity"], "target": plan["target"]})
+            continue
+        if (interaction_stage != "holding" and plan["contact_mode"] == "release"):
+            rejected.append({"attempt": attempt + 1,
+                             "reason": "release requires a physically held object",
                              "target_identity": plan["target_identity"], "target": plan["target"]})
             continue
         if (any(reason in {"empty_grasp_recovery", "grasp_lost_recovery"}
@@ -604,35 +551,28 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
             continue
         target = plan["target"]
         selected_proposal = None
-        if target["view"] == "external":
-            if required_source_proposal is not None:
-                target["proposal_id"] = required_source_proposal
-            selected_proposal = next(
-                (item for item in proposals if item["id"] == target["proposal_id"]), None)
-            if selected_proposal is None:
-                rejected.append({"attempt": attempt + 1,
-                                 "reason": "target did not return an available RGB-D proposal_id",
-                                 "target_identity": plan["target_identity"], "target": target})
-                continue
-            target.update(u=selected_proposal["u"], v=selected_proposal["v"])
-        elif target["proposal_id"] is not None:
-            rejected.append({"attempt": attempt + 1,
-                             "reason": "wrist targets require proposal_id null",
-                             "target_identity": plan["target_identity"], "target": target})
-            continue
         geometry = worker.request({"command": "grounded_geometry", "view": target["view"],
                                    "u": target["u"], "v": target["v"],
                                    "image_rotated_180": True,
                                    "contact_mode": plan["contact_mode"]})["geometry"]
-        interior = (proposal_geometry.get(target.get("proposal_id"))
-                    if plan["contact_mode"] == "release" else None)
-        if (selected_proposal is not None
-                and selected_proposal.get("candidate_kind") == "geometric_interior_probe"
-                and isinstance(interior, list) and len(interior) == 3):
-            geometry = {**geometry, "point_world": [float(value) for value in interior],
+        if plan["contact_mode"] == "release" and plan["goal_relation"] == "inside":
+            interior = [float(value) for value in geometry["point_world"]]
+            interior[2] += .10
+            geometry = {**geometry, "surface_point_world": geometry["point_world"],
+                        "point_world": interior,
                         "normal_toward_camera_world": [0., 0., 1.],
-                        "height_above_support_m": float(interior[2]),
-                        "source": "VLM-selected RGB-D receptacle walls plus measured interior center"}
+                        "height_above_support_m": (float(geometry.get("height_above_support_m") or 0.) + .10),
+                        "source": "VLM-selected visible interior pixel plus relative release clearance"}
+        elif plan["contact_mode"] == "release" and plan["goal_relation"] in {"on", "at"}:
+            offset = .055 if plan["goal_relation"] == "on" else .035
+            surface = [float(value) for value in geometry["point_world"]]
+            normal = [float(value) for value in geometry["normal_toward_camera_world"]]
+            if normal[2] < 0:
+                normal = [-value for value in normal]
+            geometry = {**geometry,
+                        "surface_point_world": surface,
+                        "point_world": [surface[i] + offset * normal[i] for i in range(3)],
+                        "source": "VLM-selected RGB-D destination surface plus relation clearance"}
         try:
             validate_semantic_grounding(plan, geometry)
             crop = target_crop_png(policy_input["images"][target["view"]], target["u"], target["v"])
@@ -641,16 +581,15 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
             model_inputs[f"target_crop_attempt_{attempt + 1}"] = {
                 "path": crop_relative, "sha256": hashlib.sha256(crop).hexdigest()}
             verifications = []
-            vote_count = (1 if cache_valid
-                          and semantic_cache.get("verified_proposal_id") == target.get("proposal_id") else 3)
+            vote_count = 3
             for vote in range(vote_count):
                 verification_images = {"target_crop": crop,
                                        "external_context": images["external_detail_reference_only"]}
-                if reference_image is not None:
-                    verification_images["target_reference"] = reference_image
                 verification = vlm.request("local_vlm_target_verification", {
                     "task": policy_input["prompt"], "phase": plan["phase"],
                     "proposed_contact_mode": plan["contact_mode"],
+                    "proposed_motion_hint": plan["motion_hint"],
+                    "goal_relation": plan["goal_relation"],
                     "independent_vote": vote + 1,
                     "crop_center": {"view": target["view"], "u": target["u"], "v": target["v"]}},
                     system=VLM_VERIFY_SYSTEM, images=verification_images)
@@ -667,7 +606,7 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
                 raise ValueError("target crop consensus rejected: " + reasons[:240])
             geometry = {**geometry, "target_verification_votes": verifications,
                         "target_verification_accepts": accepts,
-                        "semantic_cache_reused": cache_valid,
+                        "semantic_cache_reused": False,
                         "selected_rgbd_region": selected_proposal}
             if semantic_cache is not None:
                 semantic_cache["verified_proposal_id"] = target.get("proposal_id")
@@ -675,56 +614,6 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
         except ValueError as exc:
             rejected.append({"attempt": attempt + 1, "reason": str(exc),
                              "target_identity": plan["target_identity"], "target": target})
-            if cache_valid and source_stage and reference_image is not None and attempt == 0:
-                # Proposal IDs are ranked geometric components, not persistent
-                # object tracks.  Robot motion can reorder them.  A fresh crop
-                # rejection invalidates only the cached ID: rematch the same
-                # appearance reference against the current gallery, then use
-                # the normal three-vote verification on the next attempt.
-                refreshed_inventory_answer = vlm.request("local_vlm_task_blind_inventory", {
-                    "proposal_ids": [proposal["id"] for proposal in proposals],
-                    "note": "The robot task is deliberately withheld. Describe visible objects only."
-                }, system=VLM_INVENTORY_SYSTEM,
-                   images={"external_context": images["external_detail_reference_only"],
-                           "external_region_gallery": images["external_region_gallery"]})
-                refreshed_inventory = (refreshed_inventory_answer.get("regions")
-                                       if isinstance(refreshed_inventory_answer, dict) else None)
-                if (isinstance(refreshed_inventory, list)
-                        and len(refreshed_inventory) == len(expected_ids)
-                        and {item.get("proposal_id") for item in refreshed_inventory
-                             if isinstance(item, dict)} == expected_ids
-                        and all(set(item) == {"proposal_id", "category", "shape", "visible_text", "confidence"}
-                                and all(isinstance(item[field], str) and item[field]
-                                        for field in ("proposal_id", "category", "shape", "visible_text"))
-                                and not isinstance(item["confidence"], bool)
-                                and isinstance(item["confidence"], (int, float))
-                                and 0 <= float(item["confidence"]) <= 1
-                                for item in refreshed_inventory)):
-                    inventory = refreshed_inventory
-                    visual_state["task_blind_region_inventory"] = inventory
-                    semantic_cache["inventory"] = inventory
-                refreshed = vlm.request("local_vlm_reference_match", {
-                    "target_noun_phrase": reference["target_noun_phrase"],
-                    "available_proposal_ids": sorted(expected_ids),
-                    "task_blind_region_inventory": inventory,
-                    "reference_source": reference["source"]},
-                    system=VLM_REFERENCE_MATCH_SYSTEM,
-                    images={"target_reference": reference_image,
-                            "current_region_gallery": images["external_region_gallery"]})
-                if (isinstance(refreshed, dict)
-                        and set(refreshed) == {"choice", "evidence", "confidence"}
-                        and refreshed["choice"] in expected_ids
-                        and isinstance(refreshed["evidence"], str) and refreshed["evidence"]
-                        and not isinstance(refreshed["confidence"], bool)
-                        and isinstance(refreshed["confidence"], (int, float))
-                        and 0 <= float(refreshed["confidence"]) <= 1):
-                    required_source_proposal = refreshed["choice"]
-                    visual_state["source_appearance_match"] = {
-                        **refreshed, "target_noun_phrase": reference["target_noun_phrase"],
-                        "source": reference["source"]}
-                    semantic_cache["source_appearance_match"] = refreshed
-                    semantic_cache.pop("verified_proposal_id", None)
-                    cache_valid = False
     raise ValueError("VLM failed RGB-D semantic grounding validation: " + rejected[-1]["reason"])
 
 
@@ -735,10 +624,55 @@ def ground_plan(worker, plan, policy_input, previous_gripper, candidate_scale, g
                                            "u": target["u"], "v": target["v"],
                                            "image_rotated_180": True,
                                            "contact_mode": plan["contact_mode"]})["geometry"]
+    camera_packet = policy_input["images"][target["view"]]
+    hint = plan["motion_hint"]
+    if hint.startswith("image_"):
+        directions = {"x": "hold", "y": "hold", "z": "hold"}
+        components = {"image_left": {"x": "negative"},
+                      "image_right": {"x": "positive"},
+                      "image_up": {"y": "negative"},
+                      "image_down": {"y": "positive"},
+                      "image_up_left": {"x": "negative", "y": "negative"},
+                      "image_up_right": {"x": "positive", "y": "negative"},
+                      "image_down_left": {"x": "negative", "y": "positive"},
+                      "image_down_right": {"x": "positive", "y": "positive"}}[hint]
+        directions.update(components)
+        geometry = {**geometry, "manipulation_direction_world": camera_directions_to_world(
+            directions, camera_packet["camera_to_world"], image_rotated_180=True),
+                    "manipulation_direction_source": hint}
+    elif hint in {"normal_in", "normal_out"}:
+        normal = [float(value) for value in geometry["normal_toward_camera_world"]]
+        geometry = {**geometry,
+                    "manipulation_direction_world": ([-value for value in normal]
+                                                       if hint == "normal_in" else normal),
+                    "manipulation_direction_source": hint}
+    if plan["contact_mode"] == "push" and geometry.get("push_geometry_refined"):
+        object_center = geometry.get("object_center_world")
+        half_extent = geometry.get("object_half_extent_world")
+        direction = geometry.get("manipulation_direction_world")
+        if (isinstance(object_center, list) and len(object_center) == 3
+                and isinstance(half_extent, list) and len(half_extent) == 3
+                and isinstance(direction, list) and len(direction) == 3):
+            horizontal = [float(direction[0]), float(direction[1]), 0.]
+            length = math.sqrt(horizontal[0] ** 2 + horizontal[1] ** 2)
+            if length > 1e-8:
+                horizontal = [value / length for value in horizontal]
+                component_radius = max(.012, min(.080, math.sqrt(sum(
+                    (horizontal[i] * float(half_extent[i])) ** 2 for i in range(2)))))
+                # The OSC TCP is the grip site between the fingers. Its body
+                # should remain near the object center while the fingertips
+                # contact the trailing edge, so compensate by only a small
+                # fraction of the measured object radius.
+                contact_offset = min(.018, .15 * component_radius)
+                contact = [float(object_center[i]) - contact_offset * horizontal[i] for i in range(3)]
+                contact[2] = float(geometry["point_world"][2])
+                geometry = {**geometry, "point_world": contact,
+                            "push_component_radius_m": component_radius,
+                            "push_trailing_contact_offset_m": contact_offset,
+                            "push_trailing_contact_source": "RGB-D component opposite verified motion"}
     candidates = generate_grounded_action_chunks(
         plan, geometry, policy_input["state"], previous_gripper, candidate_scale,
         previous_controller_phase, previous_aperture)
-    camera_packet = policy_input["images"][target["view"]]
     calibration = {"target_view": target["view"], "target_normalized_uv": [target["u"], target["v"]],
                    "camera_to_world": camera_packet["camera_to_world"],
                    "intrinsics": camera_packet["intrinsics"],
@@ -792,7 +726,7 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
         plan_geometry = None
         plan_revision = 0
         plan_age = 0
-        interaction_stage = "source"
+        interaction_stage = "ready"
         semantic_cache = {}
         previous_decision_input = None
         event("reset", metadata=row["metadata"], initial_fingerprint=fingerprint)
@@ -827,10 +761,12 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                     current_aperture = abs(float(policy_input["state"][-2])
                                            - float(policy_input["state"][-1]))
                     if current_aperture > .008:
-                        interaction_stage = "destination"
+                        interaction_stage = "holding"
+                        plan = None
+                        semantic_cache.clear()
                         trigger_reasons.append("contact_transition_complete")
                     else:
-                        interaction_stage = "source"
+                        interaction_stage = "ready"
                         trigger_reasons.append("grasp_lost_recovery")
                 elif prior_controller_phase == "contact_release":
                     current_aperture = abs(float(policy_input["state"][-2])
@@ -839,10 +775,12 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                     # in LIBERO. Keep the verified destination plan and repeat
                     # the open command until the fingers have actually opened.
                     if current_aperture > .075:
-                        interaction_stage = "verification"
+                        interaction_stage = "ready"
+                        plan = None
+                        semantic_cache.clear()
                         trigger_reasons.append("contact_transition_complete")
                 elif prior_controller_phase == "failed_grasp_reopen":
-                    interaction_stage = "source"
+                    interaction_stage = "ready"
                     semantic_cache.clear()
                     trigger_reasons.append("empty_grasp_recovery")
                 elif prior_controller_phase in {"grasp_descent", "contact_close", "grasp_squeeze",
@@ -852,25 +790,21 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                     # here, so dense semantic re-identification is unsafe; keep
                     # the already verified world geometry until contact resolves.
                     pass
-                elif mode == "vlm-jev-dense" and interaction_stage == "source":
+                elif mode == "vlm-jev-dense" and interaction_stage == "ready":
                     trigger_reasons.append("dense_schedule")
                 elif plan is None:
                     trigger_reasons.append("initial_plan")
+                elif plan["contact_mode"] == "none" and row["decisions"]:
+                    trigger_reasons.append("observation_complete")
                 elif (plan_age >= min(plan["plan_horizon_decisions"], args.vlm_max_plan_decisions)
-                      and plan is not None and plan["contact_mode"] not in {"grasp", "release"}):
+                      and plan is not None and plan["contact_mode"] not in {"grasp", "release"}
+                      and prior_controller_phase not in {"surface_manipulation",
+                                                          "rotational_manipulation"}):
                     trigger_reasons.append("plan_horizon")
-                if mode in {"vlm-jev-triggered", "vlm-chunk-no-jev"} and row["decisions"]:
-                    prior_point = prior_candidate_geometry.get("point_world")
-                    if prior_point is None:
-                        prior_point = prior.get("calibration", {}).get("geometry", {}).get("point_world")
-                    if isinstance(prior_point, list) and len(prior_point) == 3:
-                        tcp = policy_input["state"][:3]
-                        target_distance = math.sqrt(sum((float(prior_point[i]) - float(tcp[i])) ** 2
-                                                        for i in range(3)))
-                        if target_distance < .085 and plan["contact_mode"] not in {"grasp", "release"}:
-                            trigger_reasons.append("grounded_target_reached")
                 if (mode in {"vlm-jev-triggered", "vlm-chunk-no-jev"} and recent
-                        and recent[-1].get("chunk_family") in {"retreat", "tangent_probe"}):
+                        and recent[-1].get("chunk_family") in {"retreat", "tangent_probe"}
+                        and prior_controller_phase not in {"surface_manipulation",
+                                                           "rotational_manipulation"}):
                     trigger_reasons.append("previous_probe_or_retreat")
                 if (mode in {"vlm-jev-triggered", "vlm-chunk-no-jev"}
                         and prior_controller_phase not in {"contact_close", "grasp_squeeze"}
@@ -882,10 +816,13 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                 model_inputs = {}
                 if vlm_called:
                     plan_revision += 1
+                    locked_motion_hint = (plan["motion_hint"] if plan is not None
+                        and plan["contact_mode"] in {"push", "pull", "rotate"} else None)
                     plan, model_inputs, plan_geometry = plan_with_vlm(
                         vlm, worker, directory, index, plan_revision, policy_input, recent,
                         previous_plan=plan, trigger_reasons=trigger_reasons,
-                        interaction_stage=interaction_stage, semantic_cache=semantic_cache)
+                        interaction_stage=interaction_stage, semantic_cache=semantic_cache,
+                        locked_motion_hint=locked_motion_hint)
                     plan_age = 0
                 if plan is None:
                     raise AssertionError("The hybrid policy requires an initialized VLM plan")
@@ -905,13 +842,19 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                                      "probabilities": probabilities, "confidence": metrics}]
                     low_confidence = confidence_triggers(metrics, args)
                 if (mode == "vlm-jev-triggered" and low_confidence and not vlm_called
-                        and prior_controller_phase not in {"contact_close", "grasp_squeeze"}):
+                        and stalled(recent, args.stagnation_actions, args.stagnation_threshold)
+                        and prior_controller_phase not in {"grasp_descent", "release_descent",
+                                                           "contact_close", "grasp_squeeze",
+                                                           "surface_manipulation",
+                                                           "rotational_manipulation"}):
                     trigger_reasons.extend("jev_" + reason for reason in low_confidence)
                     plan_revision += 1
                     plan, model_inputs, plan_geometry = plan_with_vlm(
                         vlm, worker, directory, index, plan_revision, policy_input, recent,
                         previous_plan=plan, trigger_reasons=trigger_reasons,
-                        interaction_stage=interaction_stage, semantic_cache=semantic_cache)
+                        interaction_stage=interaction_stage, semantic_cache=semantic_cache,
+                        locked_motion_hint=(plan["motion_hint"] if plan is not None
+                            and plan["contact_mode"] in {"push", "pull", "rotate"} else None))
                     plan_age = 0
                     vlm_called = True
                     candidates, calibration = ground_plan(
@@ -1053,12 +996,12 @@ def run(args):
                 "manifest": manifest, "modes": modes, "source_sha256": hashes,
                 "policy_contract": {"pi05": "official openpi LIBERO environment and direct finite 7D action chunks; Jev is never called",
                     "vlm-jev-triggered": "cached semantic pixel keyframe; calibrated RGB-D geometry creates exact Hx7 chunks for Jev",
-                    "vlm-jev-dense": ("fresh semantic pixel keyframe before each non-atomic source-stage Jev judgment; "
-                                      "verified geometry is locked through final contact and destination transport"),
+                    "vlm-jev-dense": ("fresh semantic pixel keyframe before each non-atomic ready-state Jev judgment; "
+                                      "verified geometry is locked through physical contact transitions"),
                     "vlm-chunk-no-jev": "cached semantic pixel keyframe with deterministic nominal grounded Hx7 selection",
-                    "hybrid_executor": ("task-agnostic semantic contact point, appearance-only public asset reference, "
-                                        "metric deprojection and staged XYZ chunks; no scene object pose, segmentation, "
-                                        "success state or task-named skill")},
+                    "hybrid_executor": ("direct semantic contact point, dynamic local support plane, relational placement "
+                                        "and generic grasp/push/pull/rotate chunks; no region proposals, static asset "
+                                        "texture, scene object pose, segmentation, success state or task-named skill")},
                 "budget": {key: getattr(args, key) for key in ("max_steps", "max_calls", "timeout", "max_usd",
                     "action_repeat", "candidate_scale", "pi05_replan_steps", "settle_steps",
                     "jev_confidence_threshold", "jev_margin_threshold", "jev_entropy_threshold",
