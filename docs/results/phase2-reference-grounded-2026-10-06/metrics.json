@@ -1,0 +1,40 @@
+{
+  "experiment": "phase2-reference-grounded-2026-10-06",
+  "date": "2026-10-06",
+  "benchmark": "LIBERO-90 development subset",
+  "official_success_predicate": "env.check_success()",
+  "cases": [
+    {
+      "id": "alphabet-soup-init0",
+      "suite": "libero_object",
+      "task_id": 0,
+      "init_index": 0,
+      "seed": 7,
+      "initial_fingerprint": "b23dc6f6fcf2846e6ab38a808fb4016f891301c3ac11f9d26b5e42b790358808"
+    },
+    {
+      "id": "cream-cheese-init0",
+      "suite": "libero_object",
+      "task_id": 1,
+      "init_index": 0,
+      "seed": 7,
+      "initial_fingerprint": "e8d0d584ef8d0ce42a93ab60931f89bf8c43ba381a6b9df5761ccf2aacde4a3f"
+    }
+  ],
+  "episodes": [
+    {"case_id":"alphabet-soup-init0","mode":"pi05","success":true,"steps":132,"wall_seconds":34.574305627000285,"pi05_inferences":27,"vlm_requests":0,"jev_requests":0,"known_jev_cost_usd":0.0},
+    {"case_id":"alphabet-soup-init0","mode":"vlm-chunk-no-jev","success":true,"steps":379,"wall_seconds":86.55168401700212,"pi05_inferences":0,"vlm_requests":11,"jev_requests":0,"known_jev_cost_usd":0.0},
+    {"case_id":"alphabet-soup-init0","mode":"vlm-jev-triggered","success":true,"steps":499,"wall_seconds":161.24421438598074,"pi05_inferences":0,"vlm_requests":19,"jev_requests":100,"known_jev_cost_usd":0.013437059999999997},
+    {"case_id":"alphabet-soup-init0","mode":"vlm-jev-dense","success":true,"steps":494,"wall_seconds":405.83328360898304,"pi05_inferences":0,"vlm_requests":55,"jev_requests":99,"known_jev_cost_usd":0.013014162},
+    {"case_id":"cream-cheese-init0","mode":"pi05","success":true,"steps":127,"wall_seconds":34.141034480009694,"pi05_inferences":26,"vlm_requests":0,"jev_requests":0,"known_jev_cost_usd":0.0},
+    {"case_id":"cream-cheese-init0","mode":"vlm-chunk-no-jev","success":true,"steps":362,"wall_seconds":84.46142374599003,"pi05_inferences":0,"vlm_requests":11,"jev_requests":0,"known_jev_cost_usd":0.0},
+    {"case_id":"cream-cheese-init0","mode":"vlm-jev-triggered","success":true,"steps":472,"wall_seconds":147.61607292899862,"pi05_inferences":0,"vlm_requests":16,"jev_requests":96,"known_jev_cost_usd":0.012688242000000004},
+    {"case_id":"cream-cheese-init0","mode":"vlm-jev-dense","success":true,"steps":472,"wall_seconds":338.8976807099825,"pi05_inferences":0,"vlm_requests":41,"jev_requests":95,"known_jev_cost_usd":0.012560561999999996}
+  ],
+  "aggregate": {
+    "pi05": {"successes":2,"episodes":2,"success_rate":1.0,"mean_steps":129.5,"mean_wall_seconds":34.35767005350499,"total_pi05_inferences":53,"total_vlm_requests":0,"total_jev_requests":0},
+    "vlm-chunk-no-jev": {"successes":2,"episodes":2,"success_rate":1.0,"mean_steps":370.5,"mean_wall_seconds":85.50655388149607,"total_pi05_inferences":0,"total_vlm_requests":22,"total_jev_requests":0},
+    "vlm-jev-triggered": {"successes":2,"episodes":2,"success_rate":1.0,"mean_steps":485.5,"mean_wall_seconds":154.43014365748968,"total_pi05_inferences":0,"total_vlm_requests":35,"total_jev_requests":196,"known_jev_cost_usd":0.026125302},
+    "vlm-jev-dense": {"successes":2,"episodes":2,"success_rate":1.0,"mean_steps":483.0,"mean_wall_seconds":372.36548215948277,"total_pi05_inferences":0,"total_vlm_requests":96,"total_jev_requests":194,"known_jev_cost_usd":0.025574724}
+  }
+}

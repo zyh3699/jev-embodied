@@ -9,31 +9,231 @@ DIRECTIONS = {"negative", "hold", "positive", "unknown"}
 PHASES = {"approach", "align", "contact", "manipulate", "release", "recover", "verify", "uncertain"}
 GRIPPER = {"open", "hold", "close", "unknown"}
 MAGNITUDES = {"fine", "medium", "coarse"}
+CONTACT_MODES = {"push", "pull", "grasp", "release", "none"}
 
 
 def validate_keyframe(value):
-    """Validate the closed VLM keyframe schema without task-specific skills."""
-    fields = {"phase", "summary", "visible_evidence", "motion_frame", "translation_camera",
-              "rotation_camera", "gripper", "magnitude", "chunk_horizon", "plan_horizon_decisions",
-              "completion_evidence", "risk", "replan_condition"}
+    """Validate a task-agnostic, pixel-grounded contact keyframe."""
+    fields = {"phase", "summary", "visible_evidence", "target_identity", "distractor_check",
+              "target", "contact_mode", "gripper",
+              "magnitude", "chunk_horizon", "plan_horizon_decisions", "completion_evidence",
+              "risk", "replan_condition"}
     if not isinstance(value, dict) or set(value) != fields or value["phase"] not in PHASES:
         raise ValueError("Local VLM returned an invalid keyframe schema")
-    for field in ("summary", "visible_evidence", "completion_evidence", "risk", "replan_condition"):
+    for field in ("summary", "visible_evidence", "target_identity", "distractor_check",
+                  "completion_evidence", "risk", "replan_condition"):
         if not isinstance(value[field], str) or not 1 <= len(value[field]) <= 600:
             raise ValueError(f"Local VLM returned invalid {field}")
-    if value["motion_frame"] not in {"external", "wrist"}:
-        raise ValueError("Local VLM returned an unknown camera frame")
-    for field in ("translation_camera", "rotation_camera"):
-        if (not isinstance(value[field], dict) or set(value[field]) != set(AXES)
-                or any(direction not in DIRECTIONS for direction in value[field].values())):
-            raise ValueError(f"Local VLM returned invalid {field}")
+    target = value["target"]
+    if (not isinstance(target, dict)
+            or set(target) != {"view", "proposal_id", "u", "v", "confidence"}
+            or target["view"] not in {"external", "wrist"}):
+        raise ValueError("Local VLM returned an invalid visual target")
+    if not (target["proposal_id"] is None or isinstance(target["proposal_id"], str)):
+        raise ValueError("Local VLM returned an invalid proposal id")
+    for field in ("u", "v", "confidence"):
+        if (isinstance(target[field], bool) or not isinstance(target[field], (int, float))
+                or not math.isfinite(float(target[field])) or not 0 <= float(target[field]) <= 1):
+            raise ValueError(f"Local VLM returned invalid target {field}")
+    if value["contact_mode"] not in CONTACT_MODES:
+        raise ValueError("Local VLM returned an invalid contact mode")
     if value["gripper"] not in GRIPPER or value["magnitude"] not in MAGNITUDES:
         raise ValueError("Local VLM returned invalid gripper or magnitude")
     if type(value["chunk_horizon"]) is not int or not 2 <= value["chunk_horizon"] <= 10:
         raise ValueError("Local VLM returned an invalid chunk horizon")
-    if type(value["plan_horizon_decisions"]) is not int or not 2 <= value["plan_horizon_decisions"] <= 8:
+    if type(value["plan_horizon_decisions"]) is not int or not 2 <= value["plan_horizon_decisions"] <= 40:
         raise ValueError("Local VLM returned an invalid plan horizon")
     return value
+
+
+def generate_grounded_action_chunks(keyframe, geometry, proprioception, previous_gripper,
+                                    maximum_scale=.5, previous_controller_phase=None,
+                                    previous_aperture=None):
+    """Generate generic Hx7 chunks from an RGB-D semantic contact point.
+
+    The VLM supplies semantics and a normalized pixel only. The worker deprojects
+    that pixel with a robot-mounted RGB-D camera; no task id, object pose, or
+    success predicate enters this controller.
+    """
+    validate_keyframe(keyframe)
+    if not -1 <= previous_gripper <= 1 or not 0 < maximum_scale <= .5:
+        raise ValueError("Invalid gripper command or candidate scale")
+    if (not isinstance(proprioception, (list, tuple)) or len(proprioception) < 3
+            or not geometry.get("valid")):
+        raise ValueError("Grounded chunks require valid TCP and RGB-D geometry")
+    tcp = [float(value) for value in proprioception[:3]]
+    gripper_aperture = (abs(float(proprioception[-2]) - float(proprioception[-1]))
+                        if len(proprioception) >= 8 else 0.)
+    target = [float(value) for value in geometry["point_world"]]
+    normal = [float(value) for value in geometry["normal_toward_camera_world"]]
+    if len(target) != 3 or len(normal) != 3 or any(not math.isfinite(x) for x in target + normal):
+        raise ValueError("Grounded geometry must contain finite 3D vectors")
+    norm = math.sqrt(sum(value * value for value in normal))
+    if norm < 1e-8:
+        raise ValueError("Grounded surface normal is degenerate")
+    normal = [value / norm for value in normal]
+    contact_mode = keyframe["contact_mode"]
+    clearance = .065 if keyframe["magnitude"] != "fine" else .045
+    approach_offset = (normal if contact_mode in {"push", "pull"} else [0., 0., 1.])
+    precontact = [target[i] + clearance * approach_offset[i] for i in range(3)]
+    distance_to_target = math.sqrt(sum((target[i] - tcp[i]) ** 2 for i in range(3)))
+    horizontal_error = math.sqrt(sum((target[i] - tcp[i]) ** 2 for i in range(2)))
+    vertical_gap = tcp[2] - target[2]
+    distance_to_precontact = math.sqrt(sum((precontact[i] - tcp[i]) ** 2 for i in range(3)))
+    # Once near the interaction surface, manipulate along its normal. Grasp and
+    # release also need a generic contact transition; closing the fingers alone
+    # is not evidence that a grasp has completed.
+    manipulating = contact_mode in {"push", "pull"} and distance_to_target < .105
+    controller_phase = "surface_manipulation" if manipulating else "approach"
+    destination = (target if contact_mode == "release" or distance_to_precontact < .045
+                   else precontact)
+    approach = [destination[i] - tcp[i] for i in range(3)]
+    motion = ([-value for value in normal] if contact_mode == "push" else list(normal)) if manipulating else approach
+    # LIBERO's robot0_eef_pos is the grip site between the fingers.  It should
+    # meet the object's mid-height contact point directly; adding a fingertip
+    # length here closes the fingers above the object.  The small positive gap
+    # keeps the grip site just above the RGB-D center while allowing compliance.
+    in_grasp_envelope = horizontal_error < .025 and -.005 < vertical_gap < .035
+    ready_to_close = horizontal_error < .014 and 0. < vertical_gap < .015
+    if contact_mode == "grasp" and previous_gripper > .5 and in_grasp_envelope:
+        if (previous_controller_phase in {"contact_close", "grasp_squeeze"}
+                and previous_aperture is not None
+                and abs(gripper_aperture - float(previous_aperture)) > .003):
+            controller_phase = "grasp_squeeze"
+            motion = [0., 0., 0.]
+        elif gripper_aperture > .008:
+            controller_phase = "post_grasp_lift"
+            motion = [0., 0., 1.]
+        else:
+            controller_phase = "failed_grasp_reopen"
+            motion = [0., 0., 1.]
+    elif contact_mode == "grasp" and ready_to_close:
+        controller_phase = "contact_close"
+    elif contact_mode == "grasp":
+        if horizontal_error >= .020:
+            controller_phase = "grasp_xy_transit"
+            destination = [target[0], target[1], max(tcp[2], target[2] + .14)]
+        else:
+            controller_phase = "grasp_descent"
+            destination = [target[0], target[1], target[2] + .006]
+        motion = [destination[i] - tcp[i] for i in range(3)]
+    elif contact_mode == "release":
+        if distance_to_target < .020:
+            controller_phase = "contact_release"
+            motion = [0., 0., 0.]
+        elif horizontal_error >= .050 and tcp[2] < target[2] + .12:
+            controller_phase = "release_lift_clearance"
+            destination = [tcp[0], tcp[1], target[2] + .14]
+            motion = [destination[i] - tcp[i] for i in range(3)]
+        elif horizontal_error >= .025:
+            controller_phase = "release_xy_transit"
+            destination = [target[0], target[1], max(tcp[2], target[2] + .12)]
+            motion = [destination[i] - tcp[i] for i in range(3)]
+        else:
+            controller_phase = "release_descent"
+            destination = target
+            motion = [destination[i] - tcp[i] for i in range(3)]
+    largest = max(map(abs, motion), default=0.)
+    direction = [value / largest for value in motion] if largest > 1e-8 else [0., 0., 0.]
+    base = {"fine": .10, "medium": .22, "coarse": .36}[keyframe["magnitude"]]
+    if controller_phase == "post_grasp_lift":
+        base = .06
+    elif controller_phase == "failed_grasp_reopen":
+        base = .22
+    elif controller_phase == "grasp_squeeze":
+        base = .03
+    elif contact_mode == "release" and controller_phase == "approach":
+        base = (.50 if distance_to_target > .14 else
+                (.34 if distance_to_target > .06 else .18))
+    elif not manipulating:
+        base = .50 if distance_to_precontact > .14 else (.34 if distance_to_precontact > .06 else .18)
+    effort = min(maximum_scale, base)
+    finger = {"open": -1., "close": 1., "hold": previous_gripper,
+              "unknown": previous_gripper}[keyframe["gripper"]]
+    if contact_mode == "push":
+        finger = 1.  # a compact closed tool is safer and more repeatable for pushing
+    elif contact_mode == "grasp":
+        finger = 1. if controller_phase in {"contact_close", "grasp_squeeze", "post_grasp_lift"} else -1.
+    elif contact_mode == "release":
+        finger = -1. if controller_phase == "contact_release" else previous_gripper
+    horizon = keyframe["chunk_horizon"]
+
+    def bounded(vector, multiplier=1., gripper=finger):
+        translation = [max(-maximum_scale, min(maximum_scale, effort * multiplier * value))
+                       for value in vector]
+        return _bounded_action(translation, [0., 0., 0.], gripper)
+
+    tangent_a = [normal[1], -normal[0], 0.]
+    tangent_norm = math.sqrt(sum(value * value for value in tangent_a))
+    tangent_a = ([value / tangent_norm for value in tangent_a]
+                 if tangent_norm > 1e-8 else [1., 0., 0.])
+    normal_motion = [-value for value in normal] if contact_mode == "push" else list(normal)
+    if controller_phase == "contact_release":
+        proposals = [
+            ("nominal", "Hold at the destination while opening the fingers.", bounded([0., 0., 0.], 1.)),
+            ("release_lift", "Open and add slight upward clearance.", bounded([0., 0., 1.], .4)),
+            ("release_retreat", "Open and retreat along the measured surface normal.", bounded(normal, .35)),
+        ]
+    elif controller_phase == "grasp_squeeze":
+        proposals = [
+            ("nominal", "Hold the TCP still while allowing the fingers to finish closing.",
+             bounded([0., 0., 0.], 1.)),
+            ("micro_lower", "Maintain closure with a tiny downward seating motion.",
+             bounded([0., 0., -1.], .25)),
+            ("micro_lift", "Maintain closure with a tiny upward tension motion.",
+             bounded([0., 0., 1.], .25)),
+        ]
+    else:
+        proposals = [
+            ("cautious", "Three-quarter-effort progress toward the deprojected contact geometry.", bounded(direction, .75)),
+            ("moderate", "Nine-tenths-effort progress toward the same grounded target.", bounded(direction, .9)),
+            ("nominal", "Nominal progress toward the deprojected contact geometry.", bounded(direction, 1.)),
+            ("assertive", "Higher-effort bounded progress toward the same grounded target.", bounded(direction, 1.3)),
+        ]
+    if manipulating:
+        proposals.extend([
+            ("surface_normal", "Manipulate along the locally measured surface normal.", bounded(normal_motion, 1.)),
+            ("surface_normal_cautious", "Manipulate cautiously along the measured surface normal.", bounded(normal_motion, .55)),
+            ("tangent_probe", "Small tangential probe if the contact normal is locally ambiguous.", bounded(tangent_a, .35)),
+        ])
+    elif controller_phase == "approach":
+        proposals.extend([
+            ("direct_contact", "Approach the measured contact point without the clearance offset.",
+             bounded([value / max(max(map(abs, [target[i] - tcp[i] for i in range(3)])), 1e-8)
+                      for value in [target[i] - tcp[i] for i in range(3)]], .65)),
+            ("retreat", "Retreat from the surface along its measured outward normal.", bounded(normal, .45)),
+        ])
+    if ((contact_mode == "grasp" and controller_phase == "contact_close")
+            or (contact_mode == "release" and controller_phase == "contact_release")):
+        proposals.append(("gripper", "Hold Cartesian pose and apply only the requested gripper command.",
+                          _bounded_action([0.] * 3, [0.] * 3, finger)))
+    result, seen = {}, set()
+    for family, description, first in proposals:
+        if controller_phase == "post_grasp_lift":
+            settle_steps = min(2, horizon - 1)
+            hold = _bounded_action([0.] * 3, [0.] * 3, finger)
+            chunk = [hold] * settle_steps + _profile(first, horizon - settle_steps)
+        else:
+            chunk = _profile(first, horizon)
+        signature = tuple(tuple(round(value, 10) for value in row) for row in chunk)
+        if signature in seen:
+            continue
+        seen.add(signature)
+        identity = f"chunk_{len(result):02d}"
+        result[identity] = {"family": family, "description": description, "actions": chunk,
+                            "frame": "world", "horizon": horizon,
+                            "geometry": {"distance_to_target_m": distance_to_target,
+                                         "horizontal_error_m": horizontal_error,
+                                         "vertical_gap_m": vertical_gap,
+                                         "distance_to_precontact_m": distance_to_precontact,
+                                         "manipulating": manipulating,
+                                         "controller_phase": controller_phase,
+                                         "gripper_aperture_m": gripper_aperture,
+                                         "depth_m": float(geometry["depth_m"]),
+                                         "target_confidence": float(keyframe["target"]["confidence"])}}
+    if len(result) < 3:
+        raise ValueError("Grounded keyframe did not produce enough distinct action chunks")
+    return result
 
 
 def _matmul(matrix, vector):

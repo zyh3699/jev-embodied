@@ -12,7 +12,15 @@ import importlib.metadata
 import io
 import json
 import math
+from pathlib import Path
 import sys
+
+
+def libero_array_row_to_camera_row(row, height):
+    """Map LIBERO's stored image row to robosuite's calibrated OpenCV row."""
+    if height <= 0 or row < 0 or row >= height:
+        raise ValueError("Image row is outside the camera frame")
+    return height - 1 - row
 
 
 def validate_action(action, size, bounded=True):
@@ -157,7 +165,7 @@ class MetaWorld:
 class Libero:
     def __init__(self, case, horizon, observation_mode="privileged", policy_profile="default"):
         from libero.libero import benchmark
-        from libero.libero.envs.env_wrapper import ControlEnv
+        from libero.libero.envs import OffScreenRenderEnv
         if policy_profile not in {"default", "openpi_libero"}:
             raise ValueError("Unknown LIBERO policy profile")
         self.case, self.steps, self.observation_mode, self.policy_profile = case, 0, observation_mode, policy_profile
@@ -170,10 +178,14 @@ class Libero:
         self.states = suite.get_task_init_states(task_id)
         if not 0 <= case["init_index"] < len(self.states):
             raise ValueError("LIBERO init_index out of range; never wrap initial-state indices")
-        self.env = ControlEnv(bddl_file_name=suite.get_task_bddl_file_path(task_id),
-                              use_camera_obs=observation_mode == "vision", has_offscreen_renderer=observation_mode == "vision",
-                              camera_names=["agentview", "robot0_eye_in_hand"], camera_heights=256, camera_widths=256,
-                              controller="OSC_POSE", control_freq=20, horizon=horizon)
+        # Match openpi/examples/libero/main.py exactly at the environment boundary.
+        # OffScreenRenderEnv owns the official OSC controller defaults; depth is
+        # captured only for the grounded hybrid controller and never sent to pi0.5.
+        self.env = OffScreenRenderEnv(bddl_file_name=suite.get_task_bddl_file_path(task_id),
+                                      use_camera_obs=observation_mode == "vision",
+                                      camera_names=["agentview", "robot0_eye_in_hand"],
+                                      camera_heights=256, camera_widths=256,
+                                      camera_depths=observation_mode == "vision", horizon=horizon)
         self.env.seed(case["seed"])
         self.raw = None
 
@@ -206,6 +218,308 @@ class Libero:
                 packet["camera_to_world"] = get_camera_extrinsic_matrix(self.env.sim, camera).tolist()
                 images[view] = packet
         return {"prompt": self.language, "state": state.tolist(), "images": images, "step": self.steps}
+
+    def grounded_geometry(self, view, u, v, image_rotated_180=True, contact_mode="none"):
+        """Deproject a semantic VLM pixel and estimate its local surface normal."""
+        import numpy as np
+        from robosuite.utils.camera_utils import (get_camera_extrinsic_matrix,
+                                                  get_camera_intrinsic_matrix,
+                                                  get_real_depth_map)
+        mapping = {"external": ("agentview_depth", "agentview"),
+                   "wrist": ("robot0_eye_in_hand_depth", "robot0_eye_in_hand")}
+        if view not in mapping or isinstance(u, bool) or isinstance(v, bool):
+            raise ValueError("Invalid grounded-geometry camera or pixel")
+        u, v = float(u), float(v)
+        if not 0 <= u <= 1 or not 0 <= v <= 1:
+            raise ValueError("Grounded-geometry pixels must be normalized")
+        depth_key, camera = mapping[view]
+        raw = np.asarray(self.raw[depth_key], dtype=float).squeeze()
+        height, width = raw.shape
+        model_column = int(round(u * (width - 1)))
+        model_row = int(round(v * (height - 1)))
+        if image_rotated_180:
+            # RGB and depth are returned together in robosuite's OpenGL row
+            # order. The policy rotates RGB by 180 degrees, so the metric depth
+            # sample is at the opposite stored row and column. Calibration uses
+            # OpenCV rows, however: OpenGL's vertical flip cancels the policy's
+            # vertical flip, making the model row the calibrated camera row.
+            sample_row = height - 1 - model_row
+            sample_column = width - 1 - model_column
+            camera_row = model_row
+            camera_column = sample_column
+        else:
+            sample_row = model_row
+            sample_column = model_column
+            camera_row = libero_array_row_to_camera_row(sample_row, height)
+            camera_column = sample_column
+        metric = get_real_depth_map(self.env.sim, raw)
+        intrinsic = get_camera_intrinsic_matrix(self.env.sim, camera, height, width)
+        camera_to_world = get_camera_extrinsic_matrix(self.env.sim, camera)
+
+        def point_at(depth_row, depth_column, calibrated_row, calibrated_column):
+            depth_row = int(np.clip(depth_row, 0, height - 1))
+            depth_column = int(np.clip(depth_column, 0, width - 1))
+            calibrated_row = int(np.clip(calibrated_row, 0, height - 1))
+            calibrated_column = int(np.clip(calibrated_column, 0, width - 1))
+            radius = 2
+            patch = metric[max(0, depth_row - radius):min(height, depth_row + radius + 1),
+                           max(0, depth_column - radius):min(width, depth_column + radius + 1)]
+            finite = patch[np.isfinite(patch) & (patch > 0)]
+            if not finite.size:
+                raise ValueError("No finite depth around the visual target")
+            z = float(np.median(finite))
+            camera_point = np.array([(calibrated_column - intrinsic[0, 2]) * z / intrinsic[0, 0],
+                                     (calibrated_row - intrinsic[1, 2]) * z / intrinsic[1, 1], z, 1.])
+            return (camera_to_world @ camera_point)[:3], z
+
+        center, depth = point_at(sample_row, sample_column, camera_row, camera_column)
+        semantic_center = center.copy()
+        left, _ = point_at(sample_row, sample_column + 3, camera_row, camera_column - 3)
+        right, _ = point_at(sample_row, sample_column - 3, camera_row, camera_column + 3)
+        up, _ = point_at(sample_row + 3, sample_column, camera_row - 3, camera_column)
+        down, _ = point_at(sample_row - 3, sample_column, camera_row + 3, camera_column)
+        normal = np.cross(right - left, down - up)
+        length = float(np.linalg.norm(normal))
+        valid = bool(np.isfinite(center).all() and np.isfinite(normal).all() and length > 1e-8)
+        if valid:
+            normal /= length
+            camera_position = camera_to_world[:3, 3]
+            if float(np.dot(normal, camera_position - center)) < 0:
+                normal = -normal
+        semantic_normal = normal.copy() if valid else np.array([0., 0., 0.])
+        # Fixed robot-workspace calibration for the LIBERO tabletop. This is
+        # shared across tasks and contains no object pose or success state.
+        support_height = 0.
+        grasp_refined = False
+        component_size = 0
+        if contact_mode == "grasp":
+            # The VLM owns semantic identity, while RGB-D owns precise contact.
+            # Grow a depth-continuous component around the semantic seed and use
+            # its upper world-space band for a top-down grasp point. This reads
+            # neither simulator segmentation nor privileged object poses.
+            radius = 36
+            r0, r1 = max(0, sample_row - radius), min(height, sample_row + radius + 1)
+            c0, c1 = max(0, sample_column - radius), min(width, sample_column + radius + 1)
+            local = metric[r0:r1, c0:c1]
+            seed = (sample_row - r0, sample_column - c0)
+            visited = np.zeros(local.shape, dtype=bool)
+            stack = [seed]
+            pixels = []
+            while stack:
+                rr, cc = stack.pop()
+                if visited[rr, cc]:
+                    continue
+                visited[rr, cc] = True
+                value = local[rr, cc]
+                if not np.isfinite(value) or value <= 0 or abs(float(value) - depth) > .12:
+                    continue
+                pixels.append((rr + r0, cc + c0, float(value)))
+                for nr, nc in ((rr - 1, cc), (rr + 1, cc), (rr, cc - 1), (rr, cc + 1)):
+                    if 0 <= nr < local.shape[0] and 0 <= nc < local.shape[1] and not visited[nr, nc]:
+                        neighbor = local[nr, nc]
+                        if np.isfinite(neighbor) and abs(float(neighbor) - float(value)) <= .018:
+                            stack.append((nr, nc))
+            component_size = len(pixels)
+            if component_size >= 12:
+                rr = np.asarray([item[0] for item in pixels], dtype=float)
+                cc = np.asarray([item[1] for item in pixels], dtype=float)
+                zz = np.asarray([item[2] for item in pixels], dtype=float)
+                calibrated_rr = height - 1 - rr
+                camera_component = np.stack([
+                    (cc - intrinsic[0, 2]) * zz / intrinsic[0, 0],
+                    (calibrated_rr - intrinsic[1, 2]) * zz / intrinsic[1, 1],
+                    zz, np.ones_like(zz)], axis=-1)
+                world_component = camera_component @ camera_to_world.T
+                # A depth-continuous flood can leak from an object's lower
+                # silhouette onto the table.  Split it again after projection:
+                # retain pixels physically above the support plane, then keep
+                # only the image-connected island containing the semantic seed.
+                above = world_component[:, 2] > support_height + .010
+                lookup = {(int(row), int(column)): index
+                          for index, (row, column) in enumerate(zip(rr, cc)) if above[index]}
+                seed_key = (sample_row, sample_column)
+                object_indices = []
+                if seed_key in lookup:
+                    pending, object_seen = [seed_key], set()
+                    while pending:
+                        key = pending.pop()
+                        if key in object_seen or key not in lookup:
+                            continue
+                        object_seen.add(key)
+                        object_indices.append(lookup[key])
+                        row, column = key
+                        pending.extend(((row - 1, column), (row + 1, column),
+                                        (row, column - 1), (row, column + 1)))
+                object_points = world_component[object_indices, :3]
+                component_size = len(object_points)
+                cutoff = (float(np.percentile(object_points[:, 2], 70))
+                          if component_size >= 12 else float("inf"))
+                upper = object_points[object_points[:, 2] >= cutoff]
+                if len(upper) >= 3:
+                    object_top = float(np.percentile(upper[:, 2], 65))
+                    # OSC controls the EEF grip site between the fingers, not
+                    # the fingertips. Keep semantic-seed XY and place the grip
+                    # site near the object's vertical center, rather than on
+                    # the top surface where the fingers would close in air.
+                    # The semantic pixel is deliberately allowed to land on a
+                    # distinctive part of the label.  It is therefore a poor
+                    # XY grasp target (and can sit over a centimetre away from
+                    # the cylinder axis).  The high world-Z band is the object
+                    # cap for top-down tabletop views; its robust XY median is
+                    # invariant to which part of the label the VLM selected.
+                    # This uses only RGB-D geometry, never simulator object
+                    # poses or segmentation.
+                    center = semantic_center.copy()
+                    center[:2] = np.median(upper[:, :2], axis=0)
+                    center[2] = (support_height + .50 * (object_top - support_height)
+                                 if support_height is not None else
+                                 (float(semantic_center[2]) + object_top) / 2)
+                    normal = np.array([0., 0., 1.])
+                    valid = bool(np.isfinite(center).all())
+                    grasp_refined = valid
+        return {"valid": valid, "view": view, "pixel_rotated_normalized": [u, v],
+                "raw_pixel_row_column": [sample_row, sample_column],
+                "camera_pixel_row_column": [camera_row, camera_column], "depth_m": depth,
+                "point_world": center.tolist(),
+                "semantic_seed_point_world": semantic_center.tolist(),
+                "semantic_seed_normal_toward_camera_world": semantic_normal.tolist(),
+                "normal_toward_camera_world": normal.tolist() if valid else [0., 0., 0.],
+                "dominant_support_height_m": support_height,
+                "height_above_support_m": (float(center[2]) - support_height
+                                             if support_height is not None else None),
+                "grasp_geometry_refined": grasp_refined,
+                "semantic_component_pixels": component_size,
+                "source": ("semantic RGB-D seed plus depth-connected object-center refinement"
+                           if grasp_refined else "metric RGB-D deprojection and local depth-plane normal")}
+
+    def grounded_proposals(self, view="external", image_rotated_180=True):
+        """Return RGB-D surface components without simulator segmentation."""
+        import numpy as np
+        from robosuite.utils.camera_utils import (get_camera_extrinsic_matrix,
+                                                  get_camera_intrinsic_matrix,
+                                                  get_real_depth_map)
+        if view != "external" or not image_rotated_180:
+            raise ValueError("Invalid proposal camera")
+        raw = np.asarray(self.raw["agentview_depth"], dtype=float).squeeze()
+        height, width = raw.shape
+        metric = get_real_depth_map(self.env.sim, raw)
+        intrinsic = get_camera_intrinsic_matrix(self.env.sim, "agentview", height, width)
+        camera_to_world = get_camera_extrinsic_matrix(self.env.sim, "agentview")
+        raw_rows, columns = np.indices((height, width))
+        camera_rows = height - 1 - raw_rows
+        camera_points = np.stack([
+            (columns - intrinsic[0, 2]) * metric / intrinsic[0, 0],
+            (camera_rows - intrinsic[1, 2]) * metric / intrinsic[1, 1],
+            metric, np.ones_like(metric)], axis=-1)
+        world = camera_points @ camera_to_world.T
+        # The threshold is relative to the common LIBERO tabletop calibration.
+        # It rejects the support plane while retaining flat packages such as
+        # small boxes and tubs, not only tall cans and bottles. Robot and basket
+        # surfaces remain as honest distractors for the semantic model.
+        support_height = 0.
+        mask = ((world[..., 2] > support_height + .012) & (world[..., 2] < .30)
+                & (np.abs(world[..., 0]) < .40) & (np.abs(world[..., 1]) < .40)
+                & np.isfinite(metric) & (metric > 0))
+        visited = np.zeros(mask.shape, dtype=bool)
+        components = []
+        for start_row, start_column in zip(*np.nonzero(mask)):
+            if visited[start_row, start_column]:
+                continue
+            visited[start_row, start_column] = True
+            stack = [(int(start_row), int(start_column))]
+            pixels = []
+            while stack:
+                row, column = stack.pop()
+                pixels.append((row, column))
+                depth = float(metric[row, column])
+                for nr, nc in ((row - 1, column), (row + 1, column),
+                               (row, column - 1), (row, column + 1)):
+                    if (0 <= nr < height and 0 <= nc < width and mask[nr, nc]
+                            and not visited[nr, nc]
+                            and abs(float(metric[nr, nc]) - depth) <= .025):
+                        visited[nr, nc] = True
+                        stack.append((nr, nc))
+            if len(pixels) >= 8:
+                components.append(pixels)
+
+        # Larger coherent surfaces are the most useful semantic candidates.
+        # Keep a bounded list so point labels never obscure the source image.
+        components.sort(key=len, reverse=True)
+        proposals = []
+        for pixels in components[:24]:
+            rr = np.asarray([pixel[0] for pixel in pixels], dtype=int)
+            cc = np.asarray([pixel[1] for pixel in pixels], dtype=int)
+            model_rr = height - 1 - rr
+            model_cc = width - 1 - cc
+            center_row, center_column = np.median(model_rr), np.median(model_cc)
+            index = int(np.argmin((model_rr - center_row) ** 2 + (model_cc - center_column) ** 2))
+            u = float(model_cc[index] / (width - 1))
+            v = float(model_rr[index] / (height - 1))
+            proposals.append({"id": "region_%02d" % len(proposals), "view": view,
+                              "u": u, "v": v,
+                              "bbox_uv": [float(model_cc.min() / (width - 1)),
+                                          float(model_rr.min() / (height - 1)),
+                                          float(model_cc.max() / (width - 1)),
+                                          float(model_rr.max() / (height - 1))],
+                              "pixels": len(pixels), "candidate_kind": "visible_surface",
+                              "height_m": round(float(world[rr[index], cc[index], 2]
+                                                      - support_height), 4)})
+        # A large U-shaped depth component has useful wall pixels but its median
+        # surface point is a poor drop target. Add an upper-middle interior probe
+        # for large components. This is geometric and carries no object identity.
+        for proposal in list(proposals):
+            left, top, right, bottom = proposal["bbox_uv"]
+            if (proposal["pixels"] < 1000 or right - left < .16 or bottom - top < .16):
+                continue
+            component = components[int(proposal["id"].split("_")[-1])]
+            component_rows = np.asarray([pixel[0] for pixel in component], dtype=int)
+            component_columns = np.asarray([pixel[1] for pixel in component], dtype=int)
+            component_world = world[component_rows, component_columns, :3]
+            x_bounds = np.percentile(component_world[:, 0], [2, 98])
+            y_bounds = np.percentile(component_world[:, 1], [2, 98])
+            wall_top = float(np.percentile(component_world[:, 2], 95))
+            interior_world = [float(x_bounds.mean()), float(y_bounds.mean()),
+                              float(min(.25, max(support_height + .10, wall_top + .025)))]
+            u = (left + right) / 2
+            v = top + .22 * (bottom - top)
+            try:
+                geometry = self.grounded_geometry(view, u, v, image_rotated_180, "none")
+            except ValueError:
+                continue
+            proposals.append({"id": "region_%02d" % len(proposals), "view": view,
+                              "u": u, "v": v,
+                              "bbox_uv": [u - .045, v - .035, u + .045, v + .035],
+                              "pixels": None, "candidate_kind": "geometric_interior_probe",
+                              "_interior_point_world": interior_world,
+                              "height_m": round(float(geometry["height_above_support_m"]), 4)})
+        return {"proposals": proposals, "support_height_m": support_height,
+                "source": "metric-depth-continuous surface components; no segmentation or object pose"}
+
+    def appearance_reference(self):
+        """Resolve a static public asset texture from the language noun phrase.
+
+        This is an appearance memory only: it never reads scene bodies, poses,
+        segmentation, contacts, predicates, or success state.
+        """
+        import numpy as np
+        from PIL import Image
+        import libero.libero as libero_package
+        root = Path(libero_package.__file__).resolve().parent / "assets" / "stable_hope_objects"
+        language = " ".join(self.language.lower().replace("_", " ").split())
+        matches = []
+        if root.is_dir():
+            for directory in root.iterdir():
+                texture = directory / "texture_map.png"
+                phrase = directory.name.lower().replace("_", " ")
+                if texture.is_file() and phrase in language:
+                    matches.append((len(phrase), phrase, texture))
+        if not matches:
+            return {"available": False, "source": "no matching public static appearance asset"}
+        _, phrase, texture = max(matches)
+        pixels = np.asarray(Image.open(texture).convert("RGB"), dtype=np.uint8)
+        return {"available": True, "target_noun_phrase": phrase,
+                "image": image_packet(pixels),
+                "source": "public LIBERO static asset texture; appearance only; no scene state"}
 
     def reset(self):
         self.env.reset()
@@ -266,6 +580,15 @@ def main():
                                  if isinstance(backend, Libero) else {})
                         result = backend.step(request.get("action"), request.get("scripted", False),
                                               request.get("capture", True), **extra)
+                    elif request["command"] == "grounded_geometry" and isinstance(backend, Libero):
+                        result = {"geometry": backend.grounded_geometry(
+                            request.get("view"), request.get("u"), request.get("v"),
+                            request.get("image_rotated_180", True), request.get("contact_mode", "none"))}
+                    elif request["command"] == "grounded_proposals" and isinstance(backend, Libero):
+                        result = backend.grounded_proposals(
+                            request.get("view", "external"), request.get("image_rotated_180", True))
+                    elif request["command"] == "appearance_reference" and isinstance(backend, Libero):
+                        result = backend.appearance_reference()
                     elif request["command"] == "close":
                         break
                     else:

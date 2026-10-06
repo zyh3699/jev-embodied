@@ -1,0 +1,30 @@
+{
+  "speed": 16.0,
+  "fps": 12,
+  "wall_seconds": 332.21000100299716,
+  "video_sha256": "6cb9168a6a63baa314991e2b1b3865840279a6ae88e13cb8f69176dfeed9d989",
+  "gif_sha256": "60fc8bb7433a7b63557917453e50294b864795806eae5a39fb86888b14eee031",
+  "gif_frames": 60,
+  "episodes": [
+    {
+      "mode": "pi05",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v5-pi-supported-20261005/cream-cheese-init0--pi05/episode.json",
+      "success": true
+    },
+    {
+      "mode": "vlm-jev-triggered",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v6-reference-grounded-final-20261006/phase2-v6-final-hybrid-20261006/cream-cheese-init0--vlm-jev-triggered/episode.json",
+      "success": true
+    },
+    {
+      "mode": "vlm-jev-dense",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v6-reference-grounded-final-20261006/phase2-v6-dev36-cream-jev-dense-20261006/cream-cheese-init0--vlm-jev-dense/episode.json",
+      "success": true
+    },
+    {
+      "mode": "vlm-chunk-no-jev",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v6-reference-grounded-final-20261006/phase2-v6-final-hybrid-20261006/cream-cheese-init0--vlm-chunk-no-jev/episode.json",
+      "success": true
+    }
+  ]
+}

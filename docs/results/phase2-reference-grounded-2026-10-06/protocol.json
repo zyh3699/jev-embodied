@@ -1,0 +1,53 @@
+{
+  "version": "libero-pi05-vs-local-vlm-jev-v6-reference-grounded-action-chunks",
+  "date": "2026-10-06",
+  "modes": ["pi05", "vlm-chunk-no-jev", "vlm-jev-triggered", "vlm-jev-dense"],
+  "models": {
+    "vla": "openpi pi05_libero checkpoint",
+    "vlm": "Qwen/Qwen3.5-27B served locally with vLLM; recorded revision was unspecified",
+    "jev": "jev-1.13.0 remote API"
+  },
+  "shared_conditions": {
+    "suite": "libero_object",
+    "task_ids": [0, 1],
+    "init_index": 0,
+    "seed": 7,
+    "settle_steps": 10,
+    "max_steps": 1000,
+    "success": "official env.check_success()",
+    "controller": "LIBERO OSC_POSE at 20 Hz, normalized XYZ + axis-angle + gripper",
+    "camera_names": ["agentview", "robot0_eye_in_hand"]
+  },
+  "hybrid_contract": {
+    "task_named_skills": false,
+    "planner": "Qwen returns semantic pixel/keyframe proposals only",
+    "geometry": "task-blind RGB-D region inventory, calibrated deprojection and staged XYZ contact/transport/release",
+    "reference_memory": "public static LIBERO asset texture used only for appearance matching; it supplies no scene pose, segmentation or success state",
+    "jev": "selects one executable Hx7 action chunk from state-dependent numeric candidates",
+    "stages": ["source", "destination", "verification"],
+    "locking": "contact phases and destination geometry are locked to prevent unsafe mid-contact replanning"
+  },
+  "scheduling": {
+    "vlm-chunk-no-jev": "cached semantic proposal; deterministic nominal candidate",
+    "vlm-jev-triggered": "cached semantic proposal; Qwen refreshes on stage/uncertainty/stagnation triggers; Jev judges local candidates",
+    "vlm-jev-dense": "fresh Qwen proposal before every non-atomic source-stage Jev judgment; atomic contact and transport remain locked"
+  },
+  "budgets": {
+    "action_repeat": 5,
+    "candidate_scale": 0.5,
+    "pi05_replan_steps": 5,
+    "max_calls": 1000,
+    "timeout_seconds": 7200,
+    "max_usd": 20.0,
+    "jev_confidence_threshold": 0.35,
+    "jev_margin_threshold": 0.08,
+    "jev_entropy_threshold": 0.9,
+    "vlm_max_plan_decisions": 20
+  },
+  "limitations": [
+    "Only two fixed development initial states were evaluated.",
+    "This is not a LIBERO leaderboard or cross-scene generalization result.",
+    "The VLM server revision field was not pinned in the captured protocol.",
+    "Only Jev provider cost is known; local GPU amortization is not priced."
+  ]
+}

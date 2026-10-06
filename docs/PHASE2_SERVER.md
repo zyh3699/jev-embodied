@@ -5,17 +5,17 @@
 本实验比较四条彼此独立的策略：
 
 1. `pi05`：相机图像、语言指令和机器人本体状态直接送入 π0.5，模型返回 7 维连续动作块。每次执行前 5 步后重新推理；整条路线不调用 Jev。
-2. `vlm-jev-triggered`：Qwen3.5-VL 根据双相机 RGB 提出一个至少覆盖 2 次 Jev 决策的相机坐标系视觉关键帧。程序通过已知相机外参转换方向，生成 3–8 个完整的连续 `H×7` 数值动作块，Jev 在动作块中决策。只有首次决策、关键帧期限到达、视觉与本体停滞，或 Jev 置信度越过冻结阈值时，才重新调用 Qwen3.5-VL。
-3. `vlm-jev-dense`：每次决策都由 Qwen3.5-VL 重新观察并生成关键帧，再由 Jev 选择连续动作块。它与触发式路线使用相同生成器和执行器，用于隔离 VLM 调度频率的影响。
-4. `vlm-chunk-no-jev`：与触发式路线使用相同视觉关键帧和候选生成器，但确定性选择 `nominal` 动作块，不调用 Jev。该路线用于判断性能变化究竟来自 Jev 还是来自几何与动作块生成器。
+2. `vlm-jev-triggered`：Qwen3.5-VL 根据图像提出语义像素/关键帧；任务无关的 RGB-D 几何层生成完整的连续 `H×7` 数值动作块，Jev 在动作块中决策。Qwen 只在首次、阶段变化、证据失效或停滞等触发条件下刷新。
+3. `vlm-jev-dense`：每个非原子 source 阶段的 Jev 决策前都刷新 Qwen 关键帧；最终接触和目的地运输阶段锁定已经验证的几何目标，避免抓取过程中漂移。它与触发式路线使用相同生成器和执行器，用于隔离 VLM 调度频率的影响。
+4. `vlm-chunk-no-jev`：与触发式路线使用相同视觉关键帧和候选生成器，但确定性选择 `nominal` 动作块，不调用 Jev。该路线用于判断性能变化究竟来自 Jev 还是来自 grounding 与动作块生成器。
 
-各路线使用相同的 LIBERO task、init state、seed、原始双相机图像、最大环境步数以及 `env.check_success()`。与 openpi 官方 LIBERO 示例一致，各路线会先执行 10 个不计入策略预算的 dummy steps，让场景稳定；驱动程序随后比较本体状态与图像指纹，不一致时直接停止该配对。混合模型看不到成功标志、对象真值位姿、深度图或力传感器数据，只使用机器人系统通常已知的相机内外参完成坐标转换。
+各路线使用相同的 LIBERO task、init state、seed、原始双相机观测、最大环境步数以及 `env.check_success()`。与 openpi 官方 LIBERO 示例一致，各路线会先执行 10 个不计入策略预算的 dummy steps，让场景稳定；驱动程序随后比较本体状态与图像指纹，不一致时直接停止该配对。混合控制器可以读取仿真相机的 RGB-D 与机器人本体状态，并使用已知相机内外参；它看不到成功标志、对象真值位姿或仿真分割。公开 LIBERO 静态资产纹理只用于外观匹配，不携带当前场景位姿。
 
 这是不同动作抽象与调度方式的系统级对比，不应把推理调用次数直接解释成单模型能力。报告成功率和端到端时间时，也应同时报告 π0.5 推理延迟、VLM/Jev 各自的请求数与延迟。
 
-### v4 视觉关键帧与连续动作块
+### v6 参考外观 grounding 与分层连续动作块
 
-混合路线既不让 Jev 选择单轴脉冲，也不向系统提供任务命名技能。Qwen3.5-VL 只输出当前阶段、所选相机视角、相机坐标系中的平移/旋转方向、夹爪意图、动作幅度和有限期限。相机标定把方向变换到世界坐标，通用生成器产生以下完整数值轨迹：
+混合路线既不让 Jev 选择单轴脉冲，也不向系统提供任务命名技能。Qwen3.5-VL 输出语义像素/关键帧；任务无关区域提议器从 RGB-D 构建候选，外观参考完成语义绑定，相机标定将像素深度反投影到世界坐标。执行器显式维护 `source → destination → verification`，并把抓取拆成高位 XY 对齐、下降、闭合、夹紧和抬升，把释放拆成安全抬升、XY 运输、下降和张爪。通用生成器在每一阶段产生以下完整数值轨迹：
 
 | 动作块族 | 维度 | 执行含义 |
 |---|---:|---|
@@ -30,7 +30,7 @@
 | `recover` | `H×7` | 反向运动并恢复向上间隙 |
 | `gripper` | `H×7` | 保持位姿，仅执行夹爪意图 |
 
-每个动作块具有随时间衰减的控制轮廓，最终接口与 π0.5 一样是连续 `H×7` 数组。`--action-repeat` 是每次滚动执行的最大前缀长度；`--candidate-scale` 是单通道幅度上限。每个环境步后仍检查官方成功条件。候选ID只在当前决策内有效，控制器中不存在 `close_microwave`、`pull_drawer` 等任务专用函数。
+每个动作块具有随时间衰减的控制轮廓，最终接口与 π0.5 一样是连续 `H×7` 数组。`--action-repeat` 是每次滚动执行的最大前缀长度；`--candidate-scale` 是单通道幅度上限。每个环境步后仍检查官方成功条件。候选 ID 只在当前决策内有效，控制器中不存在 `pick_alphabet_soup`、`put_in_basket` 等任务专用函数。接触、夹紧与释放下降等原子阶段锁定目标，不允许 VLM 中途重定向。
 
 ## 推荐的双 H20 分配
 
@@ -115,7 +115,7 @@ export TYPESAFE_MODEL='固定的模型版本，例如 jev-1.13.0'
 
 ```bash
 jev-embodied phase2-compare \
-  --manifest benchmarks/libero-phase2-smoke.json \
+  --manifest benchmarks/libero-phase2-supported-smoke.json \
   --output runs/phase2-smoke-001 \
   --worker-python .venv-libero/bin/python \
   --modes pi05 vlm-jev-triggered vlm-jev-dense vlm-chunk-no-jev \
@@ -128,7 +128,7 @@ jev-embodied phase2-compare \
   --continue-on-error
 ```
 
-每个 `--output` 必须是尚不存在的新目录，避免覆盖实验。检查 `report.json` 中三条路线均为 `complete: true`，并确认 episode 的 `initial_fingerprint` 一致。smoke 成功后再扩大清单和步数。
+每个 `--output` 必须是尚不存在的新目录，避免覆盖实验。检查 `report.json` 中四条路线均为 `complete: true`，并确认 episode 的 `initial_fingerprint` 一致。smoke 成功后再扩大清单和步数。
 
 ## 6. 正式配对实验
 
@@ -136,7 +136,7 @@ jev-embodied phase2-compare \
 
 ```bash
 jev-embodied phase2-compare \
-  --manifest benchmarks/libero-vision-compare.json \
+  --manifest benchmarks/libero-phase2-supported-dev.json \
   --output runs/phase2-dev-001 \
   --worker-python .venv-libero/bin/python \
   --modes pi05 vlm-jev-triggered vlm-jev-dense vlm-chunk-no-jev \
@@ -144,15 +144,15 @@ jev-embodied phase2-compare \
   --pi05-replan-steps 5 \
   --vlm-base-url http://127.0.0.1:8001/v1 \
   --vlm-model Qwen/Qwen3.5-27B --vlm-revision REVISION_SHA \
-  --max-steps 400 --settle-steps 10 --max-calls 400 --timeout 3600 --max-usd 10 \
+  --max-steps 1000 --settle-steps 10 --max-calls 1000 --timeout 7200 --max-usd 20 \
   --action-repeat 5 --candidate-scale 0.5 \
   --jev-confidence-threshold 0.35 --jev-margin-threshold 0.08 \
-  --jev-entropy-threshold 0.90 --vlm-max-plan-decisions 6 \
+  --jev-entropy-threshold 0.90 --vlm-max-plan-decisions 20 \
   --stagnation-actions 3 --stagnation-threshold 0.001 \
   --request-retries 1 --continue-on-error
 ```
 
-开发清单只有两局，不能支持有说服力的成功率结论。完成链路验证后，应另外冻结包含多个 task、init index 和 seed 的评测清单；不要根据中途结果挑选样本。三种模式必须始终配对运行，并使用完全相同的预算。
+开发清单只有两局，不能支持有说服力的成功率结论。完成链路验证后，应另外冻结包含多个 task、init index 和 seed 的评测清单；不要根据中途结果挑选样本。四种模式必须始终配对运行，并使用完全相同的预算。2026-10-06 的两任务结果和边界见[实验报告](results/phase2-reference-grounded-2026-10-06/RESULTS.md)。
 
 ## 输出文件
 

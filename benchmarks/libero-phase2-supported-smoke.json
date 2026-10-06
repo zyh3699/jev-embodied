@@ -1,0 +1,15 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "libero-phase2-supported-suite-smoke",
+  "backend": "libero",
+  "split": "smoke",
+  "cases": [
+    {
+      "id": "alphabet-soup-init0",
+      "suite": "libero_object",
+      "task_id": 0,
+      "init_index": 0,
+      "seed": 7
+    }
+  ]
+}

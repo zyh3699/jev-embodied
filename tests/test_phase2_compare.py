@@ -1,9 +1,10 @@
 import unittest
 from types import SimpleNamespace
 
-from embodied_jev.benchmark_worker import openpi_libero_axis_angle, validate_action
-from embodied_jev.phase2_chunks import (camera_directions_to_world, generate_action_chunks,
-    nominal_chunk, validate_keyframe)
+from embodied_jev.benchmark_worker import (libero_array_row_to_camera_row,
+    openpi_libero_axis_angle, validate_action)
+from embodied_jev.phase2_chunks import (generate_grounded_action_chunks, nominal_chunk,
+    validate_keyframe)
 from embodied_jev.phase2_compare import (MODES, confidence_metrics, confidence_triggers,
     select_with_jev, stalled, validate_action_chunk)
 
@@ -11,28 +12,121 @@ from embodied_jev.phase2_compare import (MODES, confidence_metrics, confidence_t
 class Phase2ContractTests(unittest.TestCase):
     def keyframe(self):
         return {"phase": "align", "summary": "hand near handle", "visible_evidence": "handle visible",
-                "motion_frame": "external",
-                "translation_camera": {"x": "negative", "y": "positive", "z": "negative"},
-                "rotation_camera": {"x": "hold", "y": "positive", "z": "negative"},
+                "target_identity": "drawer handle", "distractor_check": "not the cabinet edge",
+                "target": {"view": "external", "proposal_id": "region_02",
+                           "u": .35, "v": .62, "confidence": .9},
+                "contact_mode": "push",
                 "gripper": "close", "magnitude": "medium", "chunk_horizon": 5,
-                "plan_horizon_decisions": 3, "completion_evidence": "hand aligned to handle",
+                "plan_horizon_decisions": 2, "completion_evidence": "hand aligned to handle",
                 "risk": "depth is uncertain", "replan_condition": "handle leaves view"}
 
-    def test_keyframe_generates_bounded_concurrent_action_chunks(self):
-        transform = [[1., 0., 0., 0.], [0., 1., 0., 0.],
-                     [0., 0., 1., 0.], [0., 0., 0., 1.]]
-        candidates = generate_action_chunks(self.keyframe(), transform, -1., .5)
-        self.assertGreaterEqual(len(candidates), 6)
+    def test_keyframe_generates_bounded_grounded_action_chunks(self):
+        geometry = {"valid": True, "point_world": [.1, .2, .9],
+                    "normal_toward_camera_world": [0., -1., 0.], "depth_m": .7}
+        candidates = generate_grounded_action_chunks(
+            self.keyframe(), geometry, [0., 0., 1.1] + [0.] * 5, -1., .5)
+        self.assertGreaterEqual(len(candidates), 5)
         self.assertEqual(candidates[nominal_chunk(candidates)]["family"], "nominal")
         for candidate in candidates.values():
             self.assertEqual(len(candidate["actions"]), 5)
             self.assertTrue(all(len(action) == 7 and max(map(abs, action)) <= 1
                                 for action in candidate["actions"]))
         nominal = candidates[nominal_chunk(candidates)]["actions"][0]
-        self.assertGreater(sum(value != 0 for value in nominal[:6]), 1)
+        self.assertGreater(sum(value != 0 for value in nominal[:3]), 1)
         self.assertEqual(nominal[-1], 1.)
-        self.assertEqual(camera_directions_to_world(
-            {"x": "positive", "y": "hold", "z": "hold"}, transform), [-1., 0., 0.])
+
+    def test_grounded_grasp_closes_then_lifts_without_reopening(self):
+        keyframe = {**self.keyframe(), "contact_mode": "grasp", "gripper": "open"}
+        geometry = {"valid": True, "point_world": [0., 0., .02],
+                    "normal_toward_camera_world": [0., 0., 1.], "depth_m": .2}
+        close = generate_grounded_action_chunks(
+            keyframe, geometry, [0., 0., .028, 0., 0., 0., .04, -.04], -1., .5)
+        close_nominal = close[nominal_chunk(close)]
+        self.assertEqual(close_nominal["geometry"]["controller_phase"], "contact_close")
+        self.assertEqual(close_nominal["actions"][0][-1], 1.)
+        lift = generate_grounded_action_chunks(
+            keyframe, geometry, [0., 0., .028, 0., 0., 0., .02, -.02], 1., .5)
+        lift_nominal = lift[nominal_chunk(lift)]
+        self.assertEqual(lift_nominal["geometry"]["controller_phase"], "post_grasp_lift")
+        self.assertEqual(lift_nominal["actions"][0][2], 0.)
+        self.assertTrue(any(action[2] > 0. for action in lift_nominal["actions"]))
+        self.assertTrue(all(action[-1] == 1. for action in lift_nominal["actions"]))
+
+    def test_empty_grasp_reopens_instead_of_claiming_lift(self):
+        keyframe = {**self.keyframe(), "contact_mode": "grasp", "gripper": "open"}
+        geometry = {"valid": True, "point_world": [0., 0., .02],
+                    "normal_toward_camera_world": [0., 0., 1.], "depth_m": .2}
+        empty = generate_grounded_action_chunks(
+            keyframe, geometry, [0., 0., .028, 0., 0., 0., .0005, -.0005], 1., .5)
+        result = empty[nominal_chunk(empty)]
+        self.assertEqual(result["geometry"]["controller_phase"], "failed_grasp_reopen")
+        self.assertGreater(result["actions"][0][2], 0.)
+        self.assertEqual(result["actions"][0][-1], -1.)
+
+    def test_grasp_waits_for_aperture_to_stabilize(self):
+        keyframe = {**self.keyframe(), "contact_mode": "grasp", "gripper": "open"}
+        geometry = {"valid": True, "point_world": [0., 0., .02],
+                    "normal_toward_camera_world": [0., 0., 1.], "depth_m": .2}
+        squeeze = generate_grounded_action_chunks(
+            keyframe, geometry, [0., 0., .028, 0., 0., 0., .025, -.025], 1., .5,
+            previous_controller_phase="contact_close", previous_aperture=.08)
+        result = squeeze[nominal_chunk(squeeze)]
+        self.assertEqual(result["geometry"]["controller_phase"], "grasp_squeeze")
+        self.assertTrue(all(action[:3] == [0., 0., 0.] for action in result["actions"]))
+        self.assertTrue(all(action[-1] == 1. for action in result["actions"]))
+
+    def test_grasp_uses_xy_then_vertical_hierarchy(self):
+        keyframe = {**self.keyframe(), "contact_mode": "grasp", "gripper": "open"}
+        geometry = {"valid": True, "point_world": [0., 0., .02],
+                    "normal_toward_camera_world": [0., 0., 1.], "depth_m": .2}
+        xy = generate_grounded_action_chunks(
+            keyframe, geometry, [.10, .10, .20, 0., 0., 0., .04, -.04], -1., .5)
+        xy_nominal = xy[nominal_chunk(xy)]
+        self.assertEqual(xy_nominal["geometry"]["controller_phase"], "grasp_xy_transit")
+        self.assertEqual(xy_nominal["actions"][0][2], 0.)
+        descent = generate_grounded_action_chunks(
+            keyframe, geometry, [.005, .005, .20, 0., 0., 0., .04, -.04], -1., .5)
+        descent_nominal = descent[nominal_chunk(descent)]
+        self.assertEqual(descent_nominal["geometry"]["controller_phase"], "grasp_descent")
+        self.assertLess(descent_nominal["actions"][0][2], 0.)
+
+    def test_release_keeps_hold_until_contact_radius(self):
+        keyframe = {**self.keyframe(), "phase": "release", "contact_mode": "release",
+                    "gripper": "hold"}
+        geometry = {"valid": True, "point_world": [0., 0., .10],
+                    "normal_toward_camera_world": [0., 0., 1.], "depth_m": .5}
+        approach = generate_grounded_action_chunks(
+            keyframe, geometry, [0., 0., .175, 0., 0., 0., .02, -.02], 1., .5)
+        approach_nominal = approach[nominal_chunk(approach)]
+        self.assertEqual(approach_nominal["geometry"]["controller_phase"], "release_descent")
+        self.assertEqual(approach_nominal["actions"][0][-1], 1.)
+        release = generate_grounded_action_chunks(
+            keyframe, geometry, [0., 0., .115, 0., 0., 0., .02, -.02], 1., .5)
+        release_nominal = release[nominal_chunk(release)]
+        self.assertEqual(release_nominal["geometry"]["controller_phase"], "contact_release")
+        self.assertEqual(release_nominal["actions"][0][-1], -1.)
+
+    def test_release_uses_lift_translate_descend_hierarchy(self):
+        keyframe = {**self.keyframe(), "phase": "release", "contact_mode": "release",
+                    "gripper": "hold"}
+        geometry = {"valid": True, "point_world": [0., 0., .10],
+                    "normal_toward_camera_world": [0., 0., 1.], "depth_m": .5}
+        lift = generate_grounded_action_chunks(
+            keyframe, geometry, [.20, .20, .15, 0., 0., 0., .02, -.02], 1., .5)
+        lift_nominal = lift[nominal_chunk(lift)]
+        self.assertEqual(lift_nominal["geometry"]["controller_phase"], "release_lift_clearance")
+        self.assertEqual(lift_nominal["actions"][0][:2], [0., 0.])
+        self.assertGreater(lift_nominal["actions"][0][2], 0.)
+        translate = generate_grounded_action_chunks(
+            keyframe, geometry, [.20, .20, .30, 0., 0., 0., .02, -.02], 1., .5)
+        translate_nominal = translate[nominal_chunk(translate)]
+        self.assertEqual(translate_nominal["geometry"]["controller_phase"], "release_xy_transit")
+        self.assertTrue(all(value < 0. for value in translate_nominal["actions"][0][:2]))
+        descend = generate_grounded_action_chunks(
+            keyframe, geometry, [.01, .01, .30, 0., 0., 0., .02, -.02], 1., .5)
+        descend_nominal = descend[nominal_chunk(descend)]
+        self.assertEqual(descend_nominal["geometry"]["controller_phase"], "release_descent")
+        self.assertLess(descend_nominal["actions"][0][2], 0.)
 
     def test_pi05_chunk_matches_official_unclipped_actions(self):
         with self.assertRaises(ValueError):
@@ -48,7 +142,7 @@ class Phase2ContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_keyframe({**value, "success": True})
         with self.assertRaises(ValueError):
-            validate_keyframe({**value, "motion_frame": "world"})
+            validate_keyframe({**value, "target": {**value["target"], "u": 1.1}})
 
     def test_trigger_metrics_are_explicit_and_deterministic(self):
         metrics = confidence_metrics({"a": .34, "b": .33, "c": .33}, "a")
@@ -90,6 +184,12 @@ class Phase2ContractTests(unittest.TestCase):
         negative = openpi_libero_axis_angle([0., 0., -.5, -.8660254038])
         self.assertAlmostEqual(positive[2], 1.0471975512, places=6)
         self.assertGreater(abs(negative[2]), 5.)
+
+    def test_libero_depth_rows_use_camera_calibration_convention(self):
+        self.assertEqual(libero_array_row_to_camera_row(0, 256), 255)
+        self.assertEqual(libero_array_row_to_camera_row(107, 256), 148)
+        with self.assertRaises(ValueError):
+            libero_array_row_to_camera_row(256, 256)
 
 
 if __name__ == "__main__":

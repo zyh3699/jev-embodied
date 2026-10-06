@@ -1,0 +1,30 @@
+{
+  "speed": 16.0,
+  "fps": 12,
+  "wall_seconds": 399.4177197449899,
+  "video_sha256": "1e10920c23bc047529644c89573bb5ed5ea7ddeb7cbd7250d3efafd68efdde9e",
+  "gif_sha256": "0fc96ed36dd94be48688229f363b2d7892cd0d932d3f35f1acb383cd3e9659cb",
+  "gif_frames": 60,
+  "episodes": [
+    {
+      "mode": "pi05",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v5-pi-supported-20261005/alphabet-soup-init0--pi05/episode.json",
+      "success": true
+    },
+    {
+      "mode": "vlm-jev-triggered",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v6-reference-grounded-final-20261006/phase2-v6-final-hybrid-20261006/alphabet-soup-init0--vlm-jev-triggered/episode.json",
+      "success": true
+    },
+    {
+      "mode": "vlm-jev-dense",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v6-reference-grounded-final-20261006/phase2-v6-dev35-jev-dense-20261006/alphabet-soup-init0--vlm-jev-dense/episode.json",
+      "success": true
+    },
+    {
+      "mode": "vlm-chunk-no-jev",
+      "path": "/mnt/oss/users/zyh/runs/phase2-v6-reference-grounded-final-20261006/phase2-v6-final-hybrid-20261006/alphabet-soup-init0--vlm-chunk-no-jev/episode.json",
+      "success": true
+    }
+  ]
+}

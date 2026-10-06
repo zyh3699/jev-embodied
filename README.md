@@ -2,7 +2,7 @@
 
 `jev-embodied` 是一个本地具身智能实验平台，用统一任务、初始状态和成功判定，对比 Jev、纯 GPT-6 Astra，以及 GPT-6 Astra + Jev 的决策效果、端到端时间和估算费用。项目支持 MuJoCo Panda、Meta-World 和 LIBERO，实验失败、超时与接口错误都会进入结果记录。
 
-二阶段新增独立的 LIBERO 四路线配对实验：`π0.5` 直接输出连续动作块，不调用 Jev；`Qwen3.5 + Jev` 分为按需规划和逐轮规划；第四条无 Jev 路线固定采用 Qwen 视觉关键帧生成的名义动作块。当前 v4 混合控制器不含任务命名宏技能：Qwen3.5-27B 只输出相机坐标系视觉关键帧，通用生成器产生数值 `H×7` 候选动作块，Jev 选择要执行的精确数组。二阶段不调用远端 GPT，Jev 可暂时使用远端接口。四条路线共享任务、初始状态、相机、步数上限和 LIBERO 官方成功判定。
+二阶段新增独立的 LIBERO 四路线配对实验：`π0.5` 直接输出连续动作块，不调用 Jev；`Qwen3.5 + Jev` 分为按需规划和逐轮规划；第四条无 Jev 路线固定采用 Qwen 语义关键帧对应的名义动作块。当前混合控制器不含任务命名宏技能：本地 Qwen3.5-27B 提供语义像素/关键帧，任务无关的 RGB-D 几何层产生数值 `H×7` 候选动作块，Jev 选择要执行的精确数组。二阶段不调用远端 GPT，Jev 可暂时使用远端接口。四条路线共享任务、初始状态、相机、步数上限和 LIBERO 官方成功判定。
 
 一期评测的是“结构化候选动作 + 模型决策 + 确定性控制器”路线；二阶段才把它与端到端 VLA 正面对比。结构化路线由环境或视觉模型生成证据与候选项，Jev 负责选择；π0.5 路线则直接生成连续动作。所有路线最终成功与否都只采用仿真环境的物理判定。
 
@@ -32,19 +32,19 @@ Panda、Meta-World 或 LIBERO 环境
 
 ### 二阶段：π0.5 vs Qwen3.5 + Jev
 
-2026-10-05 在双卡 H20 上完成了 2 个 LIBERO-90 开发用例的四路线配对实验。π0.5 为 1/2 成功；按需 `Qwen3.5 + Jev`、逐轮 `Qwen3.5 + Jev` 和无 Jev 名义动作块均为 0/2。按需调度相对逐轮调度减少 19.4% 的 VLM 请求（129 vs 160），平均端到端时间降低 14.9%（502.06 s vs 589.99 s），但没有带来成功率提升。
+2026-10-06 在双卡 H20 上完成了 2 个 LIBERO-90 固定开发初态的四路线配对实验，共 8/8 局通过官方成功判定：`π0.5`、无 Jev、按需 `Qwen3.5 + Jev` 和逐轮 `Qwen3.5 + Jev` 均为 2/2。π0.5 平均 129.5 步、34.36 秒；无 Jev 为 370.5 步、85.51 秒；按需 Jev 为 485.5 步、154.43 秒；逐轮 Jev 为 483.0 步、372.37 秒。
 
-这一版正式移除了任务命名宏技能，让四条路线都通过连续 `H×7` 接口执行。Jev 会实际改选谨慎、保持和恢复动作，而不是固定放行名义动作；但 RGB 视觉关键帧尚不能提供稳定的目标定位和接触轨迹。结论是输出接口已经对齐，视觉 grounding 与接触控制仍是主要瓶颈。样本仅有两个固定初始状态，这是系统级开发对比，不是 LIBERO 榜单结论。
+修正版仍让四条路线通过连续 `H×7` 接口执行，但为混合路线补齐了 RGB-D 反投影、分层 XYZ 接触/运输/释放和显式阶段锁定。Qwen 只提出语义关键帧；公开静态资产纹理只做外观匹配，不提供场景真值位姿、分割或成功标签。Jev 确实在多个动作块之间裁决，但本轮常偏向谨慎动作，所以不能声称它比无 Jev 或 π0.5 更快。样本仅有两个固定初态，这是系统级开发验证，不是 LIBERO 榜单或泛化结论。
 
-关闭抽屉：
+Alphabet soup 放入篮子：
 
-![二阶段关闭抽屉四路线动态对照](docs/results/phase2-action-chunks-2026-10-05/media/drawer-init0/comparison.gif)
+![Alphabet soup 四路线成功动态对照](docs/results/phase2-reference-grounded-2026-10-06/media/alphabet-soup-init0/comparison.gif)
 
-关闭微波炉：
+Cream cheese 放入篮子：
 
-![二阶段关闭微波炉四路线动态对照](docs/results/phase2-action-chunks-2026-10-05/media/microwave-init0/comparison.gif)
+![Cream cheese 四路线成功动态对照](docs/results/phase2-reference-grounded-2026-10-06/media/cream-cheese-init0/comparison.gif)
 
-[完整二阶段结果、限制与视频](docs/results/phase2-action-chunks-2026-10-05/RESULTS.md) · [机器可读指标](docs/results/phase2-action-chunks-2026-10-05/metrics.json) · [实验协议](docs/results/phase2-action-chunks-2026-10-05/protocol.json) · [上一版原子动作结果](docs/results/phase2-qwen35-2026-10-04/RESULTS.md)
+[完整二阶段结果、限制与视频](docs/results/phase2-reference-grounded-2026-10-06/RESULTS.md) · [机器可读指标](docs/results/phase2-reference-grounded-2026-10-06/metrics.json) · [实验协议](docs/results/phase2-reference-grounded-2026-10-06/protocol.json) · [上一版失败消融](docs/results/phase2-action-chunks-2026-10-05/RESULTS.md)
 
 ### 一阶段：Jev vs GPT-6 Astra
 
@@ -160,11 +160,11 @@ jev-embodied libero-compare \
 
 ### 二阶段：π0.5 vs Qwen3.5 + Jev
 
-服务器部署和运行步骤见 [二阶段双 H20 实验手册](docs/PHASE2_SERVER.md)，本轮正式结果见 [2026-10-05 动作块实验报告](docs/results/phase2-action-chunks-2026-10-05/RESULTS.md)。快速入口：
+服务器部署和运行步骤见 [二阶段双 H20 实验手册](docs/PHASE2_SERVER.md)，本轮正式结果见 [2026-10-06 参考外观 grounding 实验报告](docs/results/phase2-reference-grounded-2026-10-06/RESULTS.md)。快速入口：
 
 ```bash
 jev-embodied phase2-compare \
-  --manifest benchmarks/libero-phase2-smoke.json \
+  --manifest benchmarks/libero-phase2-supported-smoke.json \
   --output runs/phase2-smoke \
   --worker-python .venv-libero/bin/python \
   --modes pi05 vlm-jev-triggered vlm-jev-dense vlm-chunk-no-jev \
@@ -174,7 +174,7 @@ jev-embodied phase2-compare \
   --continue-on-error
 ```
 
-四条路线最终都通过同一个连续 `H×7` 动作接口控制 LIBERO。混合路线不含任务命名宏技能：Qwen3.5-VL 只产生相机坐标系视觉关键帧，已知相机标定将其转换为世界方向，通用生成器提出数值动作块，Jev 负责裁决；`vlm-chunk-no-jev` 固定选择名义动作块，用于隔离 Jev 的真实贡献。主进程只负责模型调用与记录，LIBERO 仍在隔离的 worker 环境中运行。正式实验前先跑 smoke 清单，确认所有链路和配对初始状态完全一致。
+四条路线最终都通过同一个连续 `H×7` 动作接口控制 LIBERO。混合路线不含任务命名宏技能：Qwen3.5-VL 产生语义像素/关键帧，已知相机标定和 RGB-D 几何层构造分层数值动作块，Jev 负责局部裁决；`vlm-chunk-no-jev` 固定选择名义动作块，用于隔离 Jev 的真实贡献。主进程只负责模型调用与记录，LIBERO 仍在隔离的 worker 环境中运行。正式实验前先跑 smoke 清单，确认所有链路和配对初始状态完全一致。
 
 ## 指标口径
 

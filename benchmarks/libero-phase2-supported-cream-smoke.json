@@ -1,0 +1,15 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "libero-phase2-supported-cream-cheese-smoke",
+  "backend": "libero",
+  "split": "development",
+  "cases": [
+    {
+      "id": "cream-cheese-init0",
+      "suite": "libero_object",
+      "task_id": 1,
+      "init_index": 0,
+      "seed": 7
+    }
+  ]
+}

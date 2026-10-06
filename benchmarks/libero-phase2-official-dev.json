@@ -1,0 +1,22 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "libero-phase2-official-seed-development",
+  "backend": "libero",
+  "split": "development",
+  "cases": [
+    {
+      "id": "drawer-init0-seed7",
+      "suite": "libero_90",
+      "task_id": 0,
+      "init_index": 0,
+      "seed": 7
+    },
+    {
+      "id": "microwave-init0-seed7",
+      "suite": "libero_90",
+      "task_id": 33,
+      "init_index": 0,
+      "seed": 7
+    }
+  ]
+}
