@@ -297,9 +297,16 @@ class ModelClient:
                 result = body["answers"]
             else:
                 items = body.get("choices")
-                if not isinstance(items, list) or len(items) != 1 or items[0].get("finish_reason") != "stop":
+                if not isinstance(items, list) or len(items) != 1:
                     raise ValueError("Incomplete chat response")
-                result = json.loads(items[0]["message"]["content"])
+                # Some OpenAI-compatible local VLM servers label an otherwise
+                # complete JSON object with finish_reason="length". Parse first;
+                # the caller's strict schema validator remains authoritative.
+                # Only malformed/truncated JSON is retryable as incomplete.
+                try:
+                    result = json.loads(items[0]["message"]["content"])
+                except (KeyError, TypeError, json.JSONDecodeError) as exc:
+                    raise ValueError("Incomplete chat response") from exc
             if time.monotonic() >= self.budget.deadline:
                 raise RuntimeError("time_budget")  # Do not execute a late result.
             self.last_answer = self.policy._public_plan_value(result)

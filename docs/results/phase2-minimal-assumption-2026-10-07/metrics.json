@@ -1,0 +1,13 @@
+{
+  "protocol": "libero-pi05-vs-local-vlm-jev-v8-minimal-reference-fallback",
+  "official_success_only": true,
+  "smoke": {"planned": 1, "successes": 1, "success_rate": 1.0},
+  "frozen_trial_1": {"planned": 4, "successes": 2, "success_rate": 0.5, "total_vlm_requests": 34, "total_jev_requests": 223},
+  "frozen_trial_2": {"planned": 4, "successes": 1, "success_rate": 0.25, "total_vlm_requests": 37, "total_jev_requests": 219},
+  "per_task_two_frozen_trials": {
+    "alphabet-soup-init0": {"successes": 2, "trials": 2},
+    "cream-cheese-init0": {"successes": 0, "trials": 2, "terminal_status": "runtime_error"},
+    "salad-dressing-init0": {"successes": 0, "trials": 2, "terminal_status": "runtime_error"},
+    "milk-init0": {"successes": 1, "trials": 2}
+  }
+}

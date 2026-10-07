@@ -1,0 +1,12 @@
+{
+  "format": "embodied-jev-suite-v1",
+  "name": "libero-phase2-minimal-assumption-final",
+  "backend": "libero",
+  "split": "development",
+  "cases": [
+    {"id": "alphabet-soup-init0", "suite": "libero_object", "task_id": 0, "init_index": 0, "seed": 7},
+    {"id": "cream-cheese-init0", "suite": "libero_object", "task_id": 1, "init_index": 0, "seed": 7},
+    {"id": "salad-dressing-init0", "suite": "libero_object", "task_id": 2, "init_index": 0, "seed": 7},
+    {"id": "milk-init0", "suite": "libero_object", "task_id": 7, "init_index": 0, "seed": 7}
+  ]
+}

@@ -26,10 +26,25 @@ from .phase2_chunks import (camera_directions_to_world, generate_grounded_action
 from .policies import environment_connection, validate_answer
 
 
-PROTOCOL = "libero-pi05-vs-local-vlm-jev-v7-general-relational-action-chunks"
+PROTOCOL = "libero-pi05-vs-local-vlm-jev-v8-minimal-reference-fallback"
 MODES = ("pi05", "vlm-jev-triggered", "vlm-jev-dense", "vlm-chunk-no-jev")
 SOURCE_FILES = ("phase2_compare.py", "benchmark_worker.py", "evaluation.py",
                 "libero_policy.py", "phase2_chunks.py", "evaluation_meter.py", "policies.py")
+
+VLM_REFERENCE_MATCH_SYSTEM = """You are an appearance-matching juror.
+The target_reference is a public static texture for the language-named source object and
+contains no current scene pose, segmentation, state, or success information. Match its
+colors, artwork, package shape and category to exactly one current RGB-D region-gallery
+proposal. Numbered regions are task-blind geometry, not object identities. Return exactly:
+{"choice":"region_00","evidence":"brief visible correspondence","confidence":0.8}"""
+
+VLM_DESTINATION_MATCH_SYSTEM = """You are a destination-region juror.
+Choose exactly one task-blind RGB-D gallery proposal for the stated destination relation.
+Use the task, target identity and current full image. For relation inside, prefer a
+geometric_interior_probe visibly centered in the named open receptacle; never choose its
+rim, outside wall, nearby floor or held source. For on/at, choose the named support surface.
+The proposal supplies geometry only, never identity or success. Return exactly:
+{"choice":"region_00","evidence":"brief visible reason","confidence":0.8}"""
 
 VLM_SYSTEM = """You are the semantic visual keypoint planner in a robot-control experiment.
 Inspect the current upright external and wrist RGB images, the language task,
@@ -129,6 +144,9 @@ pull, or rotate, also reject when the proposed motion_hint contradicts the langu
 relation in the full external context (for example, motion must lead toward the named
 landmark, not merely along any screen direction). Judge image directions in the exact
 upright external_context frame.
+When target_reference is supplied, it is a public static appearance-only image of the
+language-named source object. Compare the centered crop to it directly; it supplies no
+current pose, segmentation, state or success information and is never a destination.
 Return exactly:
 {"accept":true,"observed_identity":"what is visibly centered","evidence":"brief reason"}"""
 
@@ -459,7 +477,8 @@ def validate_semantic_grounding(plan, geometry):
 
 def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_input, recent,
                   previous_plan=None, trigger_reasons=None, interaction_stage=None,
-                  semantic_cache=None, locked_motion_hint=None):
+                  semantic_cache=None, locked_motion_hint=None,
+                  source_grounding="direct"):
     visual_state = {"task": policy_input["prompt"], "proprioception": policy_input["state"],
                     "recent_executed_actions": recent[-4:],
                     "camera_frames": ["external", "wrist"],
@@ -482,6 +501,47 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
     images = {view: annotated_planner_png(image, policy_input["state"], ())
         for view, image in policy_input["images"].items()}
     images["external_detail_reference_only"] = inspection_png(policy_input["images"]["external"])
+    reference_image = None
+    reference_match = None
+    reference_proposals = {}
+    private_reference_proposals = {}
+    if source_grounding == "appearance-reference":
+        proposal_packet = worker.request({"command": "grounded_proposals", "view": "external",
+                                          "image_rotated_180": True})
+        private_proposals = proposal_packet["proposals"]
+        private_reference_proposals = {item["id"]: item for item in private_proposals}
+        public_proposals = [{key: value for key, value in item.items()
+                             if not key.startswith("_")} for item in private_proposals]
+        reference_proposals = {item["id"]: item for item in public_proposals}
+        if not reference_proposals:
+            raise ValueError("appearance-reference fallback found no task-blind RGB-D regions")
+        images["external_region_gallery"] = proposal_gallery_png(
+            policy_input["images"]["external"], public_proposals)
+        reference = (worker.request({"command": "appearance_reference"})
+                     if interaction_stage != "holding" else {"available": False})
+        if reference.get("available"):
+            reference_image = decode_png(reference["image"])
+            images["target_appearance_reference"] = reference_image
+            reference_match = vlm.request("local_vlm_reference_match", {
+                "target_noun_phrase": reference["target_noun_phrase"],
+                "available_proposal_ids": sorted(reference_proposals),
+                "reference_source": reference["source"]},
+                system=VLM_REFERENCE_MATCH_SYSTEM,
+                images={"target_reference": reference_image,
+                        "current_region_gallery": images["external_region_gallery"]})
+            if (not isinstance(reference_match, dict)
+                    or set(reference_match) != {"choice", "evidence", "confidence"}
+                    or reference_match.get("choice") not in reference_proposals
+                    or not isinstance(reference_match.get("evidence"), str)
+                    or not reference_match["evidence"]
+                    or isinstance(reference_match.get("confidence"), bool)
+                    or not isinstance(reference_match.get("confidence"), (int, float))
+                    or not 0 <= float(reference_match["confidence"]) <= 1):
+                raise ValueError("appearance-reference matcher returned an invalid choice")
+            visual_state["source_grounding_assumption"] = {
+                "kind": "public_static_appearance_reference",
+                "target_noun_phrase": reference["target_noun_phrase"],
+                "matched_proposal": reference_match}
     model_inputs = {}
     for view, image in images.items():
         relative = f"inputs/{decision_index:05d}-plan{plan_revision:03d}-{view}-vlm.png"
@@ -490,6 +550,7 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
     if semantic_cache is not None:
         semantic_cache.clear()
     rejected = []
+    destination_match = None
     for attempt in range(6):
         state = dict(visual_state)
         if rejected:
@@ -551,11 +612,57 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
             continue
         target = plan["target"]
         selected_proposal = None
+        if (source_grounding == "appearance-reference"
+                and plan["contact_mode"] == "grasp"
+                and reference_match is not None):
+            selected_proposal = reference_proposals[reference_match["choice"]]
+            target.update(view="external", proposal_id=selected_proposal["id"],
+                          u=selected_proposal["u"], v=selected_proposal["v"])
+        elif (source_grounding == "appearance-reference"
+              and plan["contact_mode"] == "release"):
+            if destination_match is None:
+                destination_match = vlm.request("local_vlm_destination_match", {
+                    "task": policy_input["prompt"],
+                    "target_identity": plan["target_identity"],
+                    "goal_relation": plan["goal_relation"],
+                    "available_proposals": list(reference_proposals.values())},
+                    system=VLM_DESTINATION_MATCH_SYSTEM,
+                    images={"external_context": images["external_detail_reference_only"],
+                            "current_region_gallery": images["external_region_gallery"]})
+                if (not isinstance(destination_match, dict)
+                        or set(destination_match) != {"choice", "evidence", "confidence"}
+                        or destination_match.get("choice") not in reference_proposals
+                        or not isinstance(destination_match.get("evidence"), str)
+                        or not destination_match["evidence"]
+                        or isinstance(destination_match.get("confidence"), bool)
+                        or not isinstance(destination_match.get("confidence"), (int, float))
+                        or not 0 <= float(destination_match["confidence"]) <= 1):
+                    raise ValueError("destination-region matcher returned an invalid choice")
+            selected_proposal = reference_proposals[destination_match["choice"]]
+            target.update(view="external", proposal_id=selected_proposal["id"],
+                          u=selected_proposal["u"], v=selected_proposal["v"])
         geometry = worker.request({"command": "grounded_geometry", "view": target["view"],
                                    "u": target["u"], "v": target["v"],
                                    "image_rotated_180": True,
-                                   "contact_mode": plan["contact_mode"]})["geometry"]
-        if plan["contact_mode"] == "release" and plan["goal_relation"] == "inside":
+                                   "contact_mode": plan["contact_mode"],
+                                   "support_profile": ("libero_tabletop"
+                                                       if source_grounding == "appearance-reference"
+                                                       and plan["contact_mode"] == "grasp"
+                                                       else "dynamic")})["geometry"]
+        selected_private = (private_reference_proposals.get(selected_proposal["id"])
+                            if selected_proposal is not None else None)
+        measured_interior = (selected_private.get("_interior_point_world")
+                             if selected_private is not None
+                             and selected_proposal.get("candidate_kind") == "geometric_interior_probe"
+                             else None)
+        if (plan["contact_mode"] == "release" and plan["goal_relation"] == "inside"
+                and isinstance(measured_interior, list) and len(measured_interior) == 3):
+            geometry = {**geometry, "surface_point_world": geometry["point_world"],
+                        "point_world": [float(value) for value in measured_interior],
+                        "normal_toward_camera_world": [0., 0., 1.],
+                        "height_above_support_m": float(measured_interior[2]),
+                        "source": "task-blind RGB-D receptacle walls plus measured interior center"}
+        elif plan["contact_mode"] == "release" and plan["goal_relation"] == "inside":
             interior = [float(value) for value in geometry["point_world"]]
             interior[2] += .10
             geometry = {**geometry, "surface_point_world": geometry["point_world"],
@@ -575,6 +682,17 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
                         "source": "VLM-selected RGB-D destination surface plus relation clearance"}
         try:
             validate_semantic_grounding(plan, geometry)
+            if (plan["contact_mode"] == "release" and selected_proposal is not None
+                    and destination_match is not None):
+                geometry = {**geometry,
+                            "destination_region_match": destination_match,
+                            "target_verification_votes": [],
+                            "target_verification_accepts": 1,
+                            "target_verification_source": "dedicated destination-region juror",
+                            "semantic_cache_reused": False,
+                            "selected_rgbd_region": selected_proposal,
+                            "source_grounding": source_grounding}
+                return plan, model_inputs, geometry
             crop = target_crop_png(policy_input["images"][target["view"]], target["u"], target["v"])
             crop_relative = f"inputs/{decision_index:05d}-plan{plan_revision:03d}-verify{attempt + 1:02d}.png"
             (directory / crop_relative).write_bytes(crop)
@@ -585,6 +703,8 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
             for vote in range(vote_count):
                 verification_images = {"target_crop": crop,
                                        "external_context": images["external_detail_reference_only"]}
+                if reference_image is not None and plan["contact_mode"] == "grasp":
+                    verification_images["target_reference"] = reference_image
                 verification = vlm.request("local_vlm_target_verification", {
                     "task": policy_input["prompt"], "phase": plan["phase"],
                     "proposed_contact_mode": plan["contact_mode"],
@@ -607,7 +727,8 @@ def plan_with_vlm(vlm, worker, directory, decision_index, plan_revision, policy_
             geometry = {**geometry, "target_verification_votes": verifications,
                         "target_verification_accepts": accepts,
                         "semantic_cache_reused": False,
-                        "selected_rgbd_region": selected_proposal}
+                        "selected_rgbd_region": selected_proposal,
+                        "source_grounding": source_grounding}
             if semantic_cache is not None:
                 semantic_cache["verified_proposal_id"] = target.get("proposal_id")
             return plan, model_inputs, geometry
@@ -822,7 +943,8 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                         vlm, worker, directory, index, plan_revision, policy_input, recent,
                         previous_plan=plan, trigger_reasons=trigger_reasons,
                         interaction_stage=interaction_stage, semantic_cache=semantic_cache,
-                        locked_motion_hint=locked_motion_hint)
+                        locked_motion_hint=locked_motion_hint,
+                        source_grounding=args.source_grounding)
                     plan_age = 0
                 if plan is None:
                     raise AssertionError("The hybrid policy requires an initialized VLM plan")
@@ -854,7 +976,8 @@ def run_episode(args, case, mode, directory, reference_fingerprint=None):
                         previous_plan=plan, trigger_reasons=trigger_reasons,
                         interaction_stage=interaction_stage, semantic_cache=semantic_cache,
                         locked_motion_hint=(plan["motion_hint"] if plan is not None
-                            and plan["contact_mode"] in {"push", "pull", "rotate"} else None))
+                            and plan["contact_mode"] in {"push", "pull", "rotate"} else None),
+                        source_grounding=args.source_grounding)
                     plan_age = 0
                     vlm_called = True
                     candidates, calibration = ground_plan(
@@ -1000,8 +1123,9 @@ def run(args):
                                       "verified geometry is locked through physical contact transitions"),
                     "vlm-chunk-no-jev": "cached semantic pixel keyframe with deterministic nominal grounded Hx7 selection",
                     "hybrid_executor": ("direct semantic contact point, dynamic local support plane, relational placement "
-                                        "and generic grasp/push/pull/rotate chunks; no region proposals, static asset "
-                                        "texture, scene object pose, segmentation, success state or task-named skill")},
+                                        "and generic grasp/push/pull/rotate chunks; optional source-only public appearance "
+                                        "reference fallback; no scene object pose, segmentation, success state or task-named skill")},
+                "source_grounding": args.source_grounding,
                 "budget": {key: getattr(args, key) for key in ("max_steps", "max_calls", "timeout", "max_usd",
                     "action_repeat", "candidate_scale", "pi05_replan_steps", "settle_steps",
                     "jev_confidence_threshold", "jev_margin_threshold", "jev_entropy_threshold",
@@ -1040,6 +1164,8 @@ def add_arguments(parser):
     parser.add_argument("--vlm-base-url", default="http://127.0.0.1:8001/v1")
     parser.add_argument("--vlm-model", default="Qwen/Qwen3.5-27B")
     parser.add_argument("--vlm-revision", default="unspecified")
+    parser.add_argument("--source-grounding", choices=["direct", "appearance-reference"], default="direct",
+                        help="Optional source-only public asset appearance match over task-blind RGB-D regions")
     parser.add_argument("--jev-connection-source", choices=["environment", "saved"], default="environment")
     parser.add_argument("--max-steps", type=int, default=400)
     parser.add_argument("--settle-steps", type=int, default=10,

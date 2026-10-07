@@ -32,6 +32,14 @@ Panda、Meta-World 或 LIBERO 环境
 
 ### 二阶段：π0.5 vs Qwen3.5 + Jev
 
+2026-10-07 最后补充了一个显式可关闭的最小假设模式：公开静态资产外观只用于源物体匹配，固定 `z=0` 只用于 LIBERO 桌面候选，开放容器内部由任务无关 RGB-D 几何推导；Jev 仍只在具体连续动作块间裁决。该模式不再全部失败：独立烟雾局 1/1，第一次四任务冻结重复 2/4，第二次重复 1/4。alphabet soup 两次均成功，之前未见的 milk 成功一次；其他局主要被本地 Qwen 不完整 JSON 安全中止。这个结果只适用于已知外观的桌面抓放任务族，不能替代下面的完全通用 0/5 结论。
+
+![最小假设 alphabet soup 成功](docs/results/phase2-minimal-assumption-2026-10-07/media/alphabet-soup-success.gif)
+
+![最小假设 milk 成功](docs/results/phase2-minimal-assumption-2026-10-07/media/milk-success.gif)
+
+[最小假设补充实验、四组 GIF 与两次冻结重复](docs/results/phase2-minimal-assumption-2026-10-07/RESULTS.md) · [机器可读指标](docs/results/phase2-minimal-assumption-2026-10-07/metrics.json)
+
 2026-10-07 完成了通用化冻结评估。新版本去掉静态纹理、候选区域编号和任务命名宏技能，同一套 Qwen3.5 语义像素 + RGB-D 动作块 + Jev 代码覆盖抓放、空间关系、抽屉、推压和旋钮五类任务。结果必须如实强调：π0.5 在开发集和未见 holdout 都是 5/5；通用 VLM+Jev 两组都是 0/5，无 Jev 开发消融也是 0/5。瓶颈已经定位为学习式 6D 末端姿态、接触保持和遮挡闭环，而不是继续添加物体/任务小规则。
 
 推盘任务（三路线共享墙钟）：

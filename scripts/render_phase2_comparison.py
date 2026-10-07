@@ -1,4 +1,4 @@
-"""Render the three phase-two LIBERO modes on one shared wall clock."""
+"""Render one to four phase-two LIBERO episodes on one shared wall clock."""
 from __future__ import annotations
 
 import argparse
@@ -84,9 +84,9 @@ class Episode:
 def render(episode_paths, output, speed=8., fps=12):
     episodes = [Episode(path) for path in episode_paths]
     modes = {episode.row["mode"] for episode in episodes}
-    if (not 2 <= len(modes) <= len(LABELS) or not modes.issubset(LABELS)
+    if (not 1 <= len(modes) <= len(LABELS) or not modes.issubset(LABELS)
             or len(episodes) != len(modes)):
-        raise ValueError("Expected two to four distinct known phase-two modes")
+        raise ValueError("Expected one to four distinct known phase-two modes")
     episodes.sort(key=lambda episode: tuple(LABELS).index(episode.row["mode"]))
     width = PANEL_WIDTH * len(episodes)
     fingerprints = {episode.row.get("initial_fingerprint") for episode in episodes}
@@ -165,7 +165,8 @@ def render(episode_paths, output, speed=8., fps=12):
                         wrap(draw, "trigger: " + trigger, x + 14, 746, 430, size=13, color=MUTED, lines=1)
                 else:
                     draw.text((x + 14, 646), "waiting for first decision", font=FONTS[18], fill=MUTED)
-            draw.text((22, 798), "same task · paired reset · official success predicate · raw dual-camera observations",
+            footer = ("single recorded rollout" if len(episodes) == 1 else "same task · paired reset")
+            draw.text((22, 798), footer + " · official success predicate · raw dual-camera observations",
                       font=FONTS[13], fill=MUTED)
             if frame_id == 0:
                 canvas.save(output / "poster.png")

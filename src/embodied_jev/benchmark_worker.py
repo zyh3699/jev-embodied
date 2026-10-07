@@ -219,7 +219,8 @@ class Libero:
                 images[view] = packet
         return {"prompt": self.language, "state": state.tolist(), "images": images, "step": self.steps}
 
-    def grounded_geometry(self, view, u, v, image_rotated_180=True, contact_mode="none"):
+    def grounded_geometry(self, view, u, v, image_rotated_180=True, contact_mode="none",
+                          support_profile="dynamic"):
         """Deproject a semantic VLM pixel and estimate its local surface normal."""
         import numpy as np
         from robosuite.utils.camera_utils import (get_camera_extrinsic_matrix,
@@ -303,8 +304,10 @@ class Libero:
                      & (np.abs(world_cloud[..., 1]) < .90)
                      & (world_cloud[..., 2] > -.15) & (world_cloud[..., 2] < 1.20))
         below = world_cloud[..., 2][workspace & (world_cloud[..., 2] < semantic_center[2] - .008)]
-        support_height = None
-        if below.size:
+        if support_profile not in {"dynamic", "libero_tabletop"}:
+            raise ValueError("Invalid support profile")
+        support_height = 0. if support_profile == "libero_tabletop" else None
+        if support_height is None and below.size:
             quantized = np.round(below / .005).astype(int)
             bins, counts = np.unique(quantized, return_counts=True)
             broad = bins[counts >= max(40, int(.001 * below.size))]
@@ -454,25 +457,16 @@ class Libero:
             (camera_rows - intrinsic[1, 2]) * metric / intrinsic[1, 1],
             metric, np.ones_like(metric)], axis=-1)
         world = camera_points @ camera_to_world.T
-        # Segment every finite camera-depth surface, independent of world-frame
-        # table height or a hand-written workspace box. Very large connected
-        # regions are background/support planes; useful objects, handles and
-        # fixtures form smaller depth-continuous islands.
-        support_height = None
-        finite = np.isfinite(metric) & (metric > .05) & (metric < 3.)
-        # Remove every broad horizontal Z mode observed in the current frame,
-        # rather than assuming one table plane at a calibrated height. This
-        # handles table, stove, cabinet and shelf supports with the same code.
-        z_values = world[..., 2][finite & np.isfinite(world[..., 2])]
-        horizontal_distance = np.full(metric.shape, np.inf, dtype=float)
-        if z_values.size:
-            z_bins, z_counts = np.unique(np.round(z_values / .005).astype(int),
-                                         return_counts=True)
-            broad_bins = z_bins[z_counts >= max(150, int(.003 * z_values.size))]
-            for value in broad_bins:
-                horizontal_distance = np.minimum(horizontal_distance,
-                                                 np.abs(world[..., 2] - value * .005))
-        mask = finite & (horizontal_distance > .010)
+        # Minimal assisted-grounding assumption: LIBERO tabletop object tasks
+        # use the calibrated z=0 support and a bounded central workspace. This
+        # endpoint is only used by the opt-in appearance-reference fallback;
+        # the default direct-pixel controller remains support-height agnostic.
+        # Keeping robot/background surfaces outside this proposal set is what
+        # makes a task-blind appearance match meaningful.
+        support_height = 0.
+        mask = ((world[..., 2] > support_height + .012) & (world[..., 2] < .30)
+                & (np.abs(world[..., 0]) < .40) & (np.abs(world[..., 1]) < .40)
+                & np.isfinite(metric) & (metric > 0))
         visited = np.zeros(mask.shape, dtype=bool)
         components = []
         for start_row, start_column in zip(*np.nonzero(mask)):
@@ -492,17 +486,14 @@ class Libero:
                             and abs(float(metric[nr, nc]) - depth) <= .025):
                         visited[nr, nc] = True
                         stack.append((nr, nc))
-            if 8 <= len(pixels) <= int(.28 * height * width):
-                rows = [pixel[0] for pixel in pixels]
-                columns = [pixel[1] for pixel in pixels]
-                if max(rows) - min(rows) >= 2 and max(columns) - min(columns) >= 2:
-                    components.append(pixels)
+            if len(pixels) >= 8:
+                components.append(pixels)
 
         # Larger coherent surfaces are the most useful semantic candidates.
         # Keep a bounded list so point labels never obscure the source image.
         components.sort(key=len, reverse=True)
         proposals = []
-        for pixels in components[:16]:
+        for pixels in components[:24]:
             rr = np.asarray([pixel[0] for pixel in pixels], dtype=int)
             cc = np.asarray([pixel[1] for pixel in pixels], dtype=int)
             model_rr = height - 1 - rr
@@ -518,7 +509,8 @@ class Libero:
                                           float(model_cc.max() / (width - 1)),
                                           float(model_rr.max() / (height - 1))],
                               "pixels": len(pixels), "candidate_kind": "visible_surface",
-                              "height_m": round(float(world[rr[index], cc[index], 2]), 4)})
+                              "height_m": round(float(world[rr[index], cc[index], 2]
+                                                      - support_height), 4)})
         # A large U-shaped depth component has useful wall pixels but its median
         # surface point is a poor drop target. Add an upper-middle interior probe
         # for large components. This is geometric and carries no object identity.
@@ -640,7 +632,8 @@ def main():
                     elif request["command"] == "grounded_geometry" and isinstance(backend, Libero):
                         result = {"geometry": backend.grounded_geometry(
                             request.get("view"), request.get("u"), request.get("v"),
-                            request.get("image_rotated_180", True), request.get("contact_mode", "none"))}
+                            request.get("image_rotated_180", True), request.get("contact_mode", "none"),
+                            request.get("support_profile", "dynamic"))}
                     elif request["command"] == "grounded_proposals" and isinstance(backend, Libero):
                         result = backend.grounded_proposals(
                             request.get("view", "external"), request.get("image_rotated_180", True))
